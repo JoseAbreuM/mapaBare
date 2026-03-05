@@ -138,7 +138,10 @@ function popupContent(p) {
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
     if (p.taladro) content += `<br>Taladro: ${p.taladro}`;
-    content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
+    // Solo mostrar botones de editar/eliminar en desktop
+    if (window.innerWidth > 600) {
+        content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
+    }
     return content;
 }
 
