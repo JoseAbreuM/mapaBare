@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v7';
+const CACHE_NAME = 'pozos-cache-v9';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
