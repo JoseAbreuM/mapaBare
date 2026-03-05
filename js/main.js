@@ -20,7 +20,7 @@ async function init() {
     // cargar datos desde Firestore
     const docRef = db.collection('pozos').doc('data');
     const docSnap = await docRef.get();
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
         pozoData = docSnap.data().pozos || [];
     } else {
         pozoData = [];
