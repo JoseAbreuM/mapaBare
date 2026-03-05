@@ -5,7 +5,7 @@ let currentOverlay;
 const zones = {
     'bare-tradicional': 'assets/mapas/bare-tradicional.jpg',
     'bare-6': 'assets/mapas/bare6-1.jpg',
-    'bare-6-2': 'assets/mapas/bare6-2.jpg',
+    'bare-6-norte': 'assets/mapas/bare6-2.jpg',
     'bare-este': 'assets/mapas/trilla-asfaltada.jpg',
 };
 
