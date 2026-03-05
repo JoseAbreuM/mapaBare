@@ -110,19 +110,18 @@
         </form>
     </div>
 
-    <!-- botón flotante para search -->
-    <button id="open-search" class="open-search-btn">🔍</button>
-
-    <!-- search flotante -->
-    <div id="search-float" class="search-float hidden">
-        <input id="float-search" list="pozos-list" placeholder="Buscar pozo ID...">
-        <button id="float-search-btn">Buscar</button>
-        <button id="close-search">✕</button>
-    </div>
-
     <!-- scripts -->
     <script src="js/leaflet.js?v=1"></script>
     <script src="js/main.js?v=1"></script>
     <script src="js/sw-register.js?v=1" defer></script>
+
+    <!-- Botón flotante de búsqueda para móvil -->
+    <div id="floating-search-container">
+        <button id="floating-search-btn" class="floating-search-btn">🔍</button>
+        <div id="floating-search-input" class="floating-search-input hidden">
+            <input id="mobile-search" list="pozos-list" placeholder="Buscar pozo ID...">
+            <button id="mobile-search-btn">Buscar</button>
+        </div>
+    </div>
 </body>
 </html>

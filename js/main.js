@@ -295,26 +295,27 @@ function attachControls() {
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
 
-    // search flotante
-    document.getElementById('open-search').addEventListener('click', () => {
-        document.getElementById('search-float').classList.remove('hidden');
+    // Botón flotante de búsqueda para móvil
+    document.getElementById('floating-search-btn').addEventListener('click', () => {
+        const inputDiv = document.getElementById('floating-search-input');
+        inputDiv.classList.toggle('hidden');
     });
-    document.getElementById('close-search').addEventListener('click', () => {
-        document.getElementById('search-float').classList.add('hidden');
-    });
-    document.getElementById('float-search-btn').addEventListener('click', () => {
-        const id = document.getElementById('float-search').value.trim().toUpperCase();
+
+    document.getElementById('mobile-search-btn').addEventListener('click', () => {
+        const id = document.getElementById('mobile-search').value.trim().toUpperCase();
         const p = pozoData.find(p => p.id === id);
         if (p) {
             searchId = id;
             document.getElementById('zone-select').value = p.zona;
             loadZone(p.zona);
         }
-        document.getElementById('search-float').classList.add('hidden');
+        document.getElementById('floating-search-input').classList.add('hidden');
+        document.getElementById('mobile-search').value = '';
     });
-    document.getElementById('float-search').addEventListener('keydown', (e) => {
+
+    document.getElementById('mobile-search').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            document.getElementById('float-search-btn').click();
+            document.getElementById('mobile-search-btn').click();
         }
     });
 }

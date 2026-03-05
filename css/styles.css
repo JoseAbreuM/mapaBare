@@ -252,6 +252,10 @@ main {
         font-size: 1.1rem;
     }
 
+    .app-header {
+        z-index: 1000; /* Superior al mapa */
+    }
+
     .form-container {
         width: 98%;
         max-width: none;
@@ -281,80 +285,76 @@ main {
         display: none !important;
     }
 
-/* botones flotantes */
-.open-search-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #000;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 1001;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    display: none; /* oculto en desktop */
-    transition: transform 0.2s;
-}
+    /* Botón flotante de búsqueda para móvil */
+    #floating-search-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000; /* Superior al mapa */
+        display: none; /* Oculto por defecto */
+    }
 
-.open-search-btn:hover {
-    transform: scale(1.1);
-}
+    .floating-search-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        transition: transform 0.2s;
+    }
 
-.search-float {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    background: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 15px;
-    z-index: 1001;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 250px;
-}
+    .floating-search-btn:hover {
+        transform: scale(1.1);
+    }
 
-.search-float.hidden {
-    display: none;
-}
+    .floating-search-input {
+        margin-top: 10px;
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 250px;
+    }
 
-.search-float input {
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 8px;
-    background: #121212;
-    color: var(--fg);
-    font-size: 16px;
-}
+    .floating-search-input.hidden {
+        display: none;
+    }
 
-.search-float button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 8px;
-    background: var(--accent);
-    color: #000;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background 0.2s;
-}
+    .floating-search-input input {
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        background: #121212;
+        color: var(--fg);
+        font-size: 16px;
+    }
 
-.search-float button:hover {
-    background: #ffdd44;
-}
+    .floating-search-input button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #000;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+    }
 
-.search-float #close-search {
-    background: #555;
-    color: var(--fg);
-    align-self: flex-end;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 18px;
-}
+    .floating-search-input button:hover {
+        background: #ffdd44;
+    }
+
+    /* Mostrar en móvil */
+    #floating-search-container {
+        display: flex !important;
+        flex-direction: column;
+        align-items: flex-end;
+    }
