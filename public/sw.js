@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v4';
+const CACHE_NAME = 'pozos-cache-v5';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
@@ -9,9 +9,12 @@ const FILES_TO_CACHE = [
     '/js/lucide.min.js',
     '/js/main.js',
     '/js/sw-register.js',
+    '/js/firebase-init.js',
     '/manifest.json',
     '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/icon-512.png',
+    'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
+    'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
 ];
 
 self.addEventListener('install', event => {
