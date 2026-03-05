@@ -383,6 +383,14 @@ main {
         display: none; /* Oculto por defecto */
     }
 
+    /* Hide mobile floating controls on desktop */
+    @media (min-width: 769px) {
+        #floating-search-container,
+        #floating-zone-container {
+            display: none !important;
+        }
+    }
+
     .floating-zone-btn {
         width: 60px;
         height: 60px;
@@ -418,13 +426,19 @@ main {
     }
 
     .floating-zone-input select {
-        padding: 10px;
+        padding: 12px 14px;
         border: 1px solid #333;
         border-radius: 8px;
         background: #121212;
         color: var(--fg);
         font-size: 16px;
         cursor: pointer;
+        width: 100%;
+        appearance: none;
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-size: 16px;
     }
 
     /* Mostrar flotantes en móvil */
