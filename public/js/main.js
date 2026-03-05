@@ -69,8 +69,7 @@ async function init() {
         });
     }
 
-    setupMap();
-    renderMarkers(document.getElementById('zone-select').value);
+    await setupMap();
     attachControls();
 
     // Listeners para online/offline
@@ -93,40 +92,40 @@ async function syncData() {
     }
 }
 
-function setupMap() {
+async function setupMap() {
     map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -2
     });
 
-    loadZone(document.getElementById('zone-select').value);
+    await loadZone(document.getElementById('zone-select').value);
+    renderMarkers(document.getElementById('zone-select').value);
 
     map.on('click', onMapClick);
 }
 
 function loadZone(zone) {
-    if (currentOverlay) {
-        map.removeLayer(currentOverlay);
-    }
-    const url = zones[zone];
-    if (!url) return;
-    const img = new Image();
-    img.src = url;
-    img.onload = () => {
-        const w = img.width;
-        const h = img.height;
-        const bounds = [[0, 0], [h, w]];
-        currentOverlay = L.imageOverlay(url, bounds).addTo(map);
-        map.setMaxBounds(bounds);
-        map.fitBounds(bounds);
-        renderMarkers(zone);
-        if (searchId && markers[searchId]) {
-            const p = pozoData.find(p => p.id === searchId);
-            map.flyTo(p.coords, Math.max(map.getZoom(), 2));
-            markers[searchId].openPopup();
-            searchId = null;
+    return new Promise((resolve) => {
+        if (currentOverlay) {
+            map.removeLayer(currentOverlay);
         }
-    };
+        const url = zones[zone];
+        if (!url) {
+            resolve();
+            return;
+        }
+        const img = new Image();
+        img.src = url;
+        img.onload = () => {
+            const w = img.width;
+            const h = img.height;
+            const bounds = [[0, 0], [h, w]];
+            currentOverlay = L.imageOverlay(url, bounds).addTo(map);
+            map.setMaxBounds(bounds);
+            map.fitBounds(bounds);
+            resolve();
+        };
+    });
 }
 
 function updateDatalist(filter = '') {
@@ -268,7 +267,9 @@ async function assignTaladro(e) {
     if (navigator.onLine) {
         await db.collection('pozos').doc('data').set({ pozos: pozoData });
     }
-    renderMarkers(document.getElementById('zone-select').value);
+    const zone = document.getElementById('zone-select').value;
+    loadZone(zone);
+    renderMarkers(zone);
     updateStats();
     closeAssignForm();
 }
@@ -287,7 +288,9 @@ window.deletePozo = async function(id) {
     if (navigator.onLine) {
         await db.collection('pozos').doc('data').set({ pozos: pozoData });
     }
-    renderMarkers(document.getElementById('zone-select').value);
+    const zone = document.getElementById('zone-select').value;
+    loadZone(zone);
+    renderMarkers(zone);
     updateStats();
     updateDatalist();
 };
@@ -327,7 +330,9 @@ async function savePozo(e) {
     if (navigator.onLine) {
         await db.collection('pozos').doc('data').set({ pozos: pozoData });
     }
+    loadZone(pozo.zona);
     renderMarkers(pozo.zona);
+    document.getElementById('zone-select').value = pozo.zona;
     updateDatalist();
     updateStats();
     console.log('Pozo guardado:', pozo);
@@ -343,8 +348,9 @@ function updateStats() {
 }
 
 function attachControls() {
-    document.getElementById('zone-select').addEventListener('change', e => {
-        loadZone(e.target.value);
+    document.getElementById('zone-select').addEventListener('change', async e => {
+        await loadZone(e.target.value);
+        renderMarkers(e.target.value);
     });
 
     const search = document.getElementById('search-input');
@@ -376,14 +382,20 @@ function attachControls() {
         document.getElementById('floating-zone-input').classList.add('hidden');
     });
 
-    document.getElementById('mobile-search-btn').addEventListener('click', () => {
+    document.getElementById('mobile-search-btn').addEventListener('click', async () => {
         const id = document.getElementById('mobile-search').value.trim().toUpperCase();
         const p = pozoData.find(p => p.id === id);
         if (p) {
             searchId = id;
             document.getElementById('zone-select').value = p.zona;
             document.getElementById('mobile-zone-select').value = p.zona;
-            loadZone(p.zona);
+            await loadZone(p.zona);
+            renderMarkers(p.zona);
+            if (markers[searchId]) {
+                map.flyTo(p.coords, Math.max(map.getZoom(), 2));
+                markers[searchId].openPopup();
+            }
+            searchId = null;
         }
         document.getElementById('floating-search-input').classList.add('hidden');
         document.getElementById('mobile-search').value = '';
@@ -403,10 +415,11 @@ function attachControls() {
         document.getElementById('floating-search-input').classList.add('hidden');
     });
 
-    document.getElementById('mobile-zone-select').addEventListener('change', (e) => {
+    document.getElementById('mobile-zone-select').addEventListener('change', async (e) => {
         const zona = e.target.value;
         document.getElementById('zone-select').value = zona;
-        loadZone(zona);
+        await loadZone(zona);
+        renderMarkers(zona);
         document.getElementById('floating-zone-input').classList.add('hidden');
     });
 }
