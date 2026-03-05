@@ -4,9 +4,9 @@ let map;
 let currentOverlay;
 const zones = {
     'bare-tradicional': 'assets/mapas/bare-tradicional.jpg',
-    'bare-6-1': 'assets/mapas/bare6-1.jpg',
+    'bare-6': 'assets/mapas/bare6-1.jpg',
     'bare-6-2': 'assets/mapas/bare6-2.jpg',
-    'trilla-asfaltada': 'assets/mapas/trilla-asfaltada.jpg',
+    'bare-este': 'assets/mapas/trilla-asfaltada.jpg',
 };
 
 let pozoData = [];
@@ -189,6 +189,7 @@ function popupContent(p) {
     Estado: ${p.estado}`;
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
+    if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Taladro: ${p.taladro}`;
     // Solo mostrar botones de editar/eliminar en desktop
     if (window.innerWidth > 600) {
@@ -214,6 +215,7 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-estado').value = p.estado;
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
+        document.getElementById('form-potencial').value = p.potencial || '';
         // no setear coords para edición
     } else {
         editId = null;
@@ -302,6 +304,7 @@ async function savePozo(e) {
         estado: document.getElementById('form-estado').value,
         cabezal: document.getElementById('form-cabezal').value || null,
         variador: document.getElementById('form-variador').value || null,
+        potencial: document.getElementById('form-potencial').value || null,
         taladro: editId ? pozoData.find(p => p.id === editId).taladro : null
     };
     if (!pozo.id) {
