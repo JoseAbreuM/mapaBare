@@ -275,6 +275,12 @@ main {
         font-size: 16px;
     }
 
+    /* Ocultar elementos no deseados en móvil */
+    #edit-mode,
+    #assign-taladro-btn {
+        display: none !important;
+    }
+
 /* botones flotantes */
 .open-search-btn {
     position: fixed;
