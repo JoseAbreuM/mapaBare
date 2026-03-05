@@ -302,6 +302,8 @@ function attachControls() {
     document.getElementById('floating-search-btn').addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-search-input');
         inputDiv.classList.toggle('hidden');
+        // Cerrar zona si está abierta
+        document.getElementById('floating-zone-input').classList.add('hidden');
     });
 
     document.getElementById('mobile-search-btn').addEventListener('click', () => {
@@ -310,6 +312,7 @@ function attachControls() {
         if (p) {
             searchId = id;
             document.getElementById('zone-select').value = p.zona;
+            document.getElementById('mobile-zone-select').value = p.zona;
             loadZone(p.zona);
         }
         document.getElementById('floating-search-input').classList.add('hidden');
@@ -320,6 +323,21 @@ function attachControls() {
         if (e.key === 'Enter') {
             document.getElementById('mobile-search-btn').click();
         }
+    });
+
+    // Botón flotante de zona para móvil
+    document.getElementById('floating-zone-btn').addEventListener('click', () => {
+        const inputDiv = document.getElementById('floating-zone-input');
+        inputDiv.classList.toggle('hidden');
+        // Cerrar búsqueda si está abierta
+        document.getElementById('floating-search-input').classList.add('hidden');
+    });
+
+    document.getElementById('mobile-zone-select').addEventListener('change', (e) => {
+        const zona = e.target.value;
+        document.getElementById('zone-select').value = zona;
+        loadZone(zona);
+        document.getElementById('floating-zone-input').classList.add('hidden');
     });
 }
 

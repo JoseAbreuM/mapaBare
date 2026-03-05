@@ -279,6 +279,7 @@ main {
 
     .app-header {
         z-index: 1000; /* Superior al mapa */
+        display: none; /* Oculto en móvil */
     }
 
     .form-container {
@@ -373,13 +374,63 @@ main {
         transition: background 0.2s;
     }
 
-    .floating-search-input button:hover {
-        background: #ffdd44;
+    /* Botón flotante de zona para móvil */
+    #floating-zone-container {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 10000; /* Superior al mapa */
+        display: none; /* Oculto por defecto */
     }
 
-    /* Mostrar en móvil */
-    #floating-search-container {
+    .floating-zone-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        transition: transform 0.2s;
+    }
+
+    .floating-zone-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .floating-zone-input {
+        margin-top: 10px;
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 200px;
+    }
+
+    .floating-zone-input.hidden {
+        display: none;
+    }
+
+    .floating-zone-input select {
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        background: #121212;
+        color: var(--fg);
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    /* Mostrar flotantes en móvil */
+    #floating-search-container,
+    #floating-zone-container {
         display: flex !important;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
     }
