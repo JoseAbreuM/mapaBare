@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v5';
+const CACHE_NAME = 'pozos-cache-v6';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
@@ -40,14 +40,33 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request).then(cached => {
-            if (cached) {
-                return cached;
-            }
-            return fetch(event.request).catch(() => {
-                // podría retornar un offline fallback si se desea
-            });
-        })
-    );
+    // Cachear tiles del mapa
+    if (event.request.url.includes('tile.openstreetmap.org')) {
+        event.respondWith(
+            caches.match(event.request).then(cached => {
+                if (cached) {
+                    return cached;
+                }
+                return fetch(event.request).then(response => {
+                    // Cachear la respuesta
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                    return response;
+                });
+            })
+        );
+    } else {
+        event.respondWith(
+            caches.match(event.request).then(cached => {
+                if (cached) {
+                    return cached;
+                }
+                return fetch(event.request).catch(() => {
+                    // podría retornar un offline fallback si se desea
+                });
+            })
+        );
+    }
 });

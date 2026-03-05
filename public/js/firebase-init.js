@@ -12,4 +12,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Habilitar persistencia offline para Firestore
+db.enablePersistence().catch(err => {
+    console.log('Error habilitando persistencia offline:', err);
+});
+
 window.db = db;

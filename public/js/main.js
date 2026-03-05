@@ -25,9 +25,17 @@ async function init() {
             renderMarkers(document.getElementById('zone-select').value);
             updateDatalist();
             updateStats();
+        } else if (!navigator.onLine) {
+            // Primera carga sin internet
+            document.getElementById('map').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:18px;">Requiere conexión a internet para la primera carga</div>';
+            return; // No continuar
         }
     } catch (e) {
         console.log('No hay datos locales', e);
+        if (!navigator.onLine) {
+            document.getElementById('map').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:18px;">Requiere conexión a internet para la primera carga</div>';
+            return;
+        }
     }
 
     // Si está online, cargar desde Firestore y actualizar local
