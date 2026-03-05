@@ -187,7 +187,7 @@ main {
 .desktop-only {
     display: block;
 }
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .desktop-only {
         display: none !important;
     }
@@ -246,11 +246,25 @@ main {
     .controls select {
         background: #1e1e1e;
         color: var(--fg);
-        border: 1px solid #333;
-        border-radius: 8px;
+        border: 2px solid var(--accent);
+        border-radius: 12px;
         font-size: 18px;
-        padding: 14px;
-        margin-bottom: 10px;
+        padding: 16px;
+        margin-bottom: 15px;
+        width: 100%;
+        appearance: none; /* Remove default arrow */
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        background-size: 16px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+
+    .controls select:focus {
+        outline: none;
+        border-color: #ffdd44;
+        box-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
     }
 
     .switch {
