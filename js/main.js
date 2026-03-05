@@ -28,7 +28,7 @@ async function init() {
 
     // listener para cambios en tiempo real
     docRef.onSnapshot((doc) => {
-        if (doc.exists()) {
+        if (doc.exists) {
             pozoData = doc.data().pozos || [];
             renderMarkers(document.getElementById('zone-select').value);
             updateDatalist();
