@@ -1,0 +1,25 @@
+{
+  "name": "mapabare",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoseAbreuM/mapaBare.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JoseAbreuM/mapaBare/issues"
+  },
+  "homepage": "https://github.com/JoseAbreuM/mapaBare#readme",
+  "dependencies": {
+    "canvas": "^3.2.1",
+    "firebase": "^12.10.0"
+  }
+}
