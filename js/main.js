@@ -294,29 +294,6 @@ function attachControls() {
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
-
-    // search flotante
-    document.getElementById('open-search').addEventListener('click', () => {
-        document.getElementById('search-float').classList.remove('hidden');
-    });
-    document.getElementById('close-search').addEventListener('click', () => {
-        document.getElementById('search-float').classList.add('hidden');
-    });
-    document.getElementById('float-search-btn').addEventListener('click', () => {
-        const id = document.getElementById('float-search').value.trim().toUpperCase();
-        const p = pozoData.find(p => p.id === id);
-        if (p) {
-            searchId = id;
-            document.getElementById('zone-select').value = p.zona;
-            loadZone(p.zona);
-        }
-        document.getElementById('search-float').classList.add('hidden');
-    });
-    document.getElementById('float-search').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            document.getElementById('float-search-btn').click();
-        }
-    });
 }
 
 // para depuración
