@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v6';
+const CACHE_NAME = 'pozos-cache-v7';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
@@ -11,8 +11,11 @@ const FILES_TO_CACHE = [
     '/js/sw-register.js',
     '/js/firebase-init.js',
     '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
+    '/icons/icono.png',
+    '/assets/mapas/bare-tradicional.jpg',
+    '/assets/mapas/bare6-1.jpg',
+    '/assets/mapas/bare6-2.jpg',
+    '/assets/mapas/trilla-asfaltada.jpg',
     'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
     'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
 ];
