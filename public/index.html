@@ -126,7 +126,47 @@
 
     <!-- scripts -->
     <script src="js/leaflet.js?v=3"></script>
-    <script src="js/localforage.min.js"></script>
+    <!-- localForage se carga antes de main.js; se agrega un query string para
+         invalidar la cache cuando cambie de versión -->
+    <script src="js/localforage.min.js?v=3" onerror="console.error('No se pudo cargar localforage desde el archivo local')"></script>
+    <script>
+        // Si localforage no está disponible (por cache antigua o fallos de SW),
+        // tratamos de cargarlo desde un CDN y finalmente caer en un envoltorio
+        // basado en localStorage para que la aplicación no se rompa.
+        (function(){
+            function fallbackToStorage(){
+                console.warn('Usando fallback de localStorage');
+                window.localforage = {
+                    getItem: async function(key){
+                        var v = localStorage.getItem(key);
+                        return v ? JSON.parse(v) : null;
+                    },
+                    setItem: async function(key,value){
+                        localStorage.setItem(key, JSON.stringify(value));
+                        return value;
+                    },
+                    removeItem: async function(key){
+                        localStorage.removeItem(key);
+                    }
+                };
+            }
+            if(typeof localforage === 'undefined'){
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js';
+                s.onload = function(){
+                    if(typeof localforage === 'undefined'){
+                        console.error('localforage no se definió aun después de cargar CDN');
+                        fallbackToStorage();
+                    }
+                };
+                s.onerror = function(){
+                    console.error('Error cargando localforage desde CDN');
+                    fallbackToStorage();
+                };
+                document.head.appendChild(s);
+            }
+        })();
+    </script>
     <script src="js/main.js?v=3"></script>
     <script src="js/sw-register.js?v=3" defer></script>
 

@@ -4,12 +4,13 @@ const FILES_TO_CACHE = [
     '/index.html',
     '/css/styles.css',
     '/css/leaflet.css',
-    '/js/leaflet.js',
-    '/js/localforage.min.js',
-    '/js/lucide.min.js',
-    '/js/main.js',
-    '/js/sw-register.js',
-    '/js/firebase-init.js',
+    // incluimos las rutas con query string para que coincidan exactamente
+    '/js/leaflet.js?v=3',
+    '/js/localforage.min.js?v=3',
+    '/js/lucide.min.js?v=3',
+    '/js/main.js?v=3',
+    '/js/sw-register.js?v=3',
+    '/js/firebase-init.js?v=3',
     '/manifest.json',
     '/icons/icono.png',
     '/assets/mapas/bare-tradicional.jpg',
@@ -46,7 +47,8 @@ self.addEventListener('fetch', event => {
     // Cachear tiles del mapa
     if (event.request.url.includes('tile.openstreetmap.org')) {
         event.respondWith(
-            caches.match(event.request).then(cached => {
+            // ignorar parámetros de búsqueda para que ej. main.js?v=3 coincida
+            caches.match(event.request, {ignoreSearch: true}).then(cached => {
                 if (cached) {
                     return cached;
                 }
@@ -62,7 +64,7 @@ self.addEventListener('fetch', event => {
         );
     } else {
         event.respondWith(
-            caches.match(event.request).then(cached => {
+            caches.match(event.request, {ignoreSearch: true}).then(cached => {
                 if (cached) {
                     return cached;
                 }

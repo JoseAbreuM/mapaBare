@@ -16,7 +16,36 @@ let editId = null;
 
 window.addEventListener('DOMContentLoaded', init);
 
+// antes de usar localforage asegurarnos de que existe (posible carga desde CDN)
+async function ensureLocalForage() {
+    if (typeof localforage !== 'undefined') return;
+    // esperamos un corto periodo para ver si el script externo termina de cargar
+    for (let i = 0; i < 20; i++) {
+        if (typeof localforage !== 'undefined') return;
+        await new Promise(r => setTimeout(r, 100));
+    }
+    // si aún no está definido hacemos un envoltorio mínimo usando localStorage
+    if (typeof localforage === 'undefined') {
+        console.warn('localforage no disponible; usando localStorage como respaldo');
+        window.localforage = {
+            getItem: async function(key) {
+                const v = localStorage.getItem(key);
+                return v ? JSON.parse(v) : null;
+            },
+            setItem: async function(key, value) {
+                localStorage.setItem(key, JSON.stringify(value));
+                return value;
+            },
+            removeItem: async function(key) {
+                localStorage.removeItem(key);
+            }
+        };
+    }
+}
+
 async function init() {
+    // garantizar que localforage esté listo antes de intentar usarlo
+    await ensureLocalForage();
     // Cargar datos desde local storage primero
     try {
         const localData = await localforage.getItem('pozoData');
