@@ -48,14 +48,17 @@ async function ensureLocalForage() {
 async function init() {
     // garantizar que localforage esté listo antes de intentar usarlo
     await ensureLocalForage();
+
     // Cargar datos desde local storage primero
     try {
         const localData = await localforage.getItem(POZO_DATA_KEY);
-        if (localData) {
+        if (localData && Array.isArray(localData)) {
             pozoData = localData;
-            renderMarkers(document.getElementById('zone-select').value);
-            updateDatalist();
-            updateStats();
+        } else if (Array.isArray(window.POZOS_SEED) && window.POZOS_SEED.length > 0) {
+            // Fallback opcional: snapshot embebido para primer uso offline.
+            pozoData = window.POZOS_SEED;
+            await localforage.setItem(POZO_DATA_KEY, pozoData);
+            await clearDataDirty();
         } else if (!navigator.onLine) {
             // Primera carga sin internet
             document.getElementById('map').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:18px;">Requiere conexión a internet para la primera carga</div>';
@@ -68,6 +71,14 @@ async function init() {
             return;
         }
     }
+
+    await setupMap();
+    attachControls();
+
+    // Render inicial usando lo que ya esté en memoria local/remota
+    renderMarkers(document.getElementById('zone-select').value);
+    updateDatalist();
+    updateStats();
 
     // Si está online y Firestore está disponible, sincronizar en arranque.
     if (navigator.onLine && isDbReady()) {
@@ -94,11 +105,41 @@ async function init() {
         });
     }
 
-    await setupMap();
-    attachControls();
-
     // Listeners para online/offline
     window.addEventListener('online', syncData);
+
+        // Precalentar cache para que la app instalada abra offline de forma robusta.
+        warmOfflineResources();
+}
+
+    async function warmOfflineResources() {
+        if (!('caches' in window)) return;
+        const resources = [
+            '/index.html',
+            '/css/styles.css',
+            '/css/leaflet.css',
+            '/js/leaflet.js?v=3',
+            '/js/localforage.min.js?v=3',
+            '/js/main.js?v=3',
+            '/js/sw-register.js?v=3',
+            '/js/firebase-init.js?v=3',
+            '/js/pozos-data.js?v=1',
+            '/manifest.json',
+            '/icons/icono.png',
+            '/icons/header.png',
+            '/assets/mapas/bare-tradicional.jpg',
+            '/assets/mapas/bare6-1.jpg',
+            '/assets/mapas/bare6-2.jpg',
+            '/assets/mapas/trilla-asfaltada.jpg',
+            'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
+            'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
+        ];
+        try {
+            const cache = await caches.open('pozos-cache-v11');
+            await Promise.allSettled(resources.map(url => cache.add(url)));
+        } catch (e) {
+            console.log('No se pudo completar warmup de cache offline', e);
+        }
 }
 
 function isDbReady() {

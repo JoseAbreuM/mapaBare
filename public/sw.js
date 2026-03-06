@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v10';
+const CACHE_NAME = 'pozos-cache-v11';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
@@ -11,13 +11,16 @@ const FILES_TO_CACHE = [
     '/js/main.js?v=3',
     '/js/sw-register.js?v=3',
     '/js/firebase-init.js?v=3',
+    '/js/pozos-data.js?v=1',
     '/manifest.json',
     '/icons/icono.png',
     '/icons/header.png',
     '/assets/mapas/bare-tradicional.jpg',
     '/assets/mapas/bare6-1.jpg',
     '/assets/mapas/bare6-2.jpg',
-    '/assets/mapas/trilla-asfaltada.jpg'
+    '/assets/mapas/trilla-asfaltada.jpg',
+    'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
+    'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
 ];
 
 self.addEventListener('install', event => {
