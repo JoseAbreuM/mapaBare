@@ -448,3 +448,58 @@ main {
         flex-direction: column;
         align-items: flex-start;
     }
+/* Estilos para los iconos de taladros */
+.contenedor-icono-taladro {
+    background: none !important;
+    border: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contenedor-icono-taladro svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilos para el icono de WT (well testing) */
+.contenedor-icono-wt {
+    background: none !important;
+    border: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contenedor-icono-wt svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilos para los iconos de taladros */
+.contenedor-icono-taladro {
+    background: none !important;
+    border: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contenedor-icono-taladro svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilos para el icono de WT (well testing) */
+.contenedor-icono-wt {
+    background: none !important;
+    border: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contenedor-icono-wt svg {
+    width: 100%;
+    height: 100%;
+}

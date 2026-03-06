@@ -181,6 +181,79 @@ function renderMarkers(zone) {
     });
 }
 
+// Función para crear el icono de la torre con color personalizado y número opcional
+function crearIconoTaladro(colorPrincipal, numero = null) {
+    // Definimos el SVG dentro de una cadena de texto (template literal)
+    let svgTorre = `
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="svg-taladro">
+            <style>
+                .svg-taladro path, .svg-taladro line, .svg-taladro rect {
+                    stroke: ${colorPrincipal};
+                    fill: none;
+                }
+                .svg-taladro rect {
+                    fill: ${colorPrincipal};
+                }
+                .svg-taladro {
+                    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+                }
+                .numero-taladro {
+                    fill: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    text-anchor: middle;
+                }
+            </style>
+            <path d="M10 90 L40 10 L60 10 L90 90 Z" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="25" y1="50" x2="75" y2="50" stroke-width="4"/>
+            <line x1="18" y1="70" x2="82" y2="70" stroke-width="4"/>
+            <rect x="5" y="85" width="90" height="10" rx="2" stroke-width="4"/>
+            <rect x="42" y="5" width="16" height="8" rx="1" stroke-width="2"/>
+    `;
+    
+    if (numero !== null) {
+        svgTorre += `<text x="50" y="75" class="numero-taladro">${numero}</text>`;
+    }
+    
+    svgTorre += `</svg>`;
+
+    return L.divIcon({
+        html: svgTorre,
+        className: 'contenedor-icono-taladro',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+    });
+}
+
+// Función para crear el icono de gotas (droplets) para WT
+function crearIconoWT() {
+    const svgDroplets = `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="svg-wt">
+            <style>
+                .svg-wt path {
+                    fill: #000000;
+                }
+                .svg-wt {
+                    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+                }
+            </style>
+            <path d="M12 21.5c.5 0 .9-.4.9-.9V18c0-.5-.4-.9-.9-.9s-.9.4-.9.9v2.6c0 .5.4.9.9.9z"/>
+            <path d="M12 2.5c-2.8 0-5 2.2-5 5 0 1.4.6 2.7 1.7 3.6L12 16l3.3-4.9c1.1-.9 1.7-2.2 1.7-3.6 0-2.8-2.2-5-5-5z"/>
+            <path d="M7 9.5c-.5 0-.9.4-.9.9s.4.9.9.9c.8 0 1.5-.7 1.5-1.5S7.8 9.5 7 9.5z"/>
+            <path d="M17 9.5c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5c.5 0 .9-.4.9-.9s-.4-.9-.9-.9z"/>
+        </svg>
+    `;
+
+    return L.divIcon({
+        html: svgDroplets,
+        className: 'contenedor-icono-wt',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+    });
+}
+
 function createMarker(p) {
     const color =
         p.estado === 'activo'
@@ -190,14 +263,20 @@ function createMarker(p) {
             : '#fb8c00';
     let marker;
     if (p.taladro) {
-        // icono SVG de drill
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9c0 .6-.4 1-1 1H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9c.6 0 1 .4 1 1Z"/><path d="M18 8V5a2 2 0 0 0-2-2h-2"/><path d="M14 21v-6"/><path d="M10 21v-6"/><path d="M6 21v-6"/><path d="M10 17h4"/><path d="M4 17h2"/><path d="M20 17h2"/></svg>`;
-        const icon = L.divIcon({
-            className: 'taladro-icon',
-            html: svg,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-        });
+        let icon;
+        if (p.taladro === 'WT') {
+            icon = crearIconoWT();
+        } else {
+            // Mapear taladros a colores y números
+            const taladroConfig = {
+                'Ranger-357': { color: '#000000', numero: 7 },
+                'RIG-351': { color: '#e53935', numero: 1 },
+                'RIG-352': { color: '#3388ff', numero: 2 },
+                'Ranger-151': { color: '#fb8c00', numero: null }
+            };
+            const config = taladroConfig[p.taladro] || { color: '#000000', numero: null };
+            icon = crearIconoTaladro(config.color, config.numero);
+        }
         marker = L.marker(p.coords, { icon });
     } else {
         marker = L.circleMarker(p.coords, {
