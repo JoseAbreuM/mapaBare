@@ -13,8 +13,45 @@ let pozoData = [];
 let markers = {};
 let searchId = null;
 let editId = null;
+let currentStatsFilter = 'all';
+let pendingServiceAssignment = null;
 const POZO_DATA_KEY = 'pozoData';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
+
+const STATUS = {
+    ACTIVO: 'activo',
+    INACTIVO_SERVICIO: 'inactivo-servicio',
+    EN_SERVICIO: 'en-servicio',
+    DIAGNOSTICO: 'diagnostico',
+    CANDIDATO: 'candidato',
+    DIFERIDO: 'diferido'
+};
+
+function normalizeEstado(estado) {
+    const value = (estado || '').toString().trim().toLowerCase();
+    if (value === 'inactivo' || value === 'inactivo por servicio') return STATUS.INACTIVO_SERVICIO;
+    if (value === 'revision' || value === 'revisión' || value === 'en revision' || value === 'en revisión' || value === 'diagnostico' || value === 'diagnóstico') {
+        return STATUS.DIAGNOSTICO;
+    }
+    if (value === 'diferido') return STATUS.DIFERIDO;
+    if (value === 'en servicio') return STATUS.EN_SERVICIO;
+    if (value === STATUS.ACTIVO || value === STATUS.INACTIVO_SERVICIO || value === STATUS.EN_SERVICIO || value === STATUS.DIAGNOSTICO || value === STATUS.CANDIDATO || value === STATUS.DIFERIDO) {
+        return value;
+    }
+    return STATUS.ACTIVO;
+}
+
+function normalizePozo(pozo) {
+    const hasServicio = !!pozo.taladro;
+    return {
+        ...pozo,
+        estado: hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado)
+    };
+}
+
+function isDesktop() {
+    return window.innerWidth > 768;
+}
 
 window.addEventListener('DOMContentLoaded', init);
 
@@ -53,10 +90,10 @@ async function init() {
     try {
         const localData = await localforage.getItem(POZO_DATA_KEY);
         if (localData && Array.isArray(localData)) {
-            pozoData = localData;
+            pozoData = localData.map(normalizePozo);
         } else if (Array.isArray(window.POZOS_SEED) && window.POZOS_SEED.length > 0) {
             // Fallback opcional: snapshot embebido para primer uso offline.
-            pozoData = window.POZOS_SEED;
+            pozoData = window.POZOS_SEED.map(normalizePozo);
             await localforage.setItem(POZO_DATA_KEY, pozoData);
             await clearDataDirty();
         } else if (!navigator.onLine) {
@@ -96,7 +133,7 @@ async function init() {
             if (doc.exists) {
                 const isDirty = await localforage.getItem(POZO_DIRTY_KEY);
                 if (isDirty) return; // evita pisar cambios locales pendientes
-                pozoData = doc.data().pozos || [];
+                pozoData = (doc.data().pozos || []).map(normalizePozo);
                 await localforage.setItem(POZO_DATA_KEY, pozoData);
                 renderMarkers(document.getElementById('zone-select').value);
                 updateDatalist();
@@ -120,7 +157,7 @@ async function init() {
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=3',
+            '/js/main.js?v=5',
             '/js/sw-register.js?v=3',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -169,7 +206,7 @@ async function syncData() {
         }
         const docSnap = await docRef.get();
         if (docSnap.exists) {
-            pozoData = docSnap.data().pozos || [];
+            pozoData = (docSnap.data().pozos || []).map(normalizePozo);
             await localforage.setItem(POZO_DATA_KEY, pozoData);
             renderMarkers(document.getElementById('zone-select').value);
             updateDatalist();
@@ -233,11 +270,21 @@ function renderMarkers(zone) {
     Object.values(markers).forEach(m => map.removeLayer(m));
     markers = {};
 
-    pozoData.filter(p => p.zona === zone).forEach(p => {
+    pozoData
+        .filter(p => p.zona === zone)
+        .filter(matchesCurrentFilter)
+        .forEach(p => {
         const marker = createMarker(p);
         marker.addTo(map);
         markers[p.id] = marker;
-    });
+        });
+}
+
+function matchesCurrentFilter(pozo) {
+    if (!isDesktop()) return true;
+    if (currentStatsFilter === 'all') return true;
+    if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
+    return normalizeEstado(pozo.estado) === currentStatsFilter;
 }
 
 // Función para crear el icono de servicio con color personalizado, número opcional y borde
@@ -290,11 +337,16 @@ function crearIconoWT() {
 }
 
 function createMarker(p) {
+    const normalizedEstado = normalizeEstado(p.estado);
     const color =
-        p.estado === 'activo'
+        normalizedEstado === STATUS.ACTIVO
             ? '#43a047'
-            : p.estado === 'inactivo'
+            : normalizedEstado === STATUS.INACTIVO_SERVICIO
+            ? '#1e88e5'
+            : normalizedEstado === STATUS.CANDIDATO
             ? '#e53935'
+            : normalizedEstado === STATUS.DIFERIDO
+            ? '#7f8c8d'
             : '#fb8c00';
     let marker;
     if (p.taladro) {
@@ -328,15 +380,25 @@ function createMarker(p) {
 }
 
 function popupContent(p) {
+    const estadoLabelMap = {
+        [STATUS.ACTIVO]: 'Activo',
+        [STATUS.INACTIVO_SERVICIO]: 'Inactivo por servicio',
+        [STATUS.EN_SERVICIO]: 'En servicio',
+        [STATUS.DIAGNOSTICO]: 'En diagnostico',
+        [STATUS.CANDIDATO]: 'Candidato',
+        [STATUS.DIFERIDO]: 'Diferido'
+    };
+    const estadoLabel = estadoLabelMap[normalizeEstado(p.estado)] || p.estado;
     let content = `<strong>${p.id}</strong><br>
     Zona: ${p.zona}<br>
-    Estado: ${p.estado}`;
+    Estado: ${estadoLabel}`;
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
+    if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
     // Solo mostrar botones de editar/eliminar en desktop
-    if (window.innerWidth > 600) {
+    if (isDesktop()) {
         content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
     }
     return content;
@@ -356,7 +418,10 @@ function openForm(lat = null, lng = null, id = null) {
         const p = pozoData.find(p => p.id === id);
         document.getElementById('form-id').value = p.id;
         document.getElementById('form-id').disabled = true;
-        document.getElementById('form-estado').value = p.estado;
+        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
+        document.getElementById('form-estado').value = normalizedEstado;
+        document.getElementById('form-diferido-cause').value = normalizedEstado === STATUS.DIFERIDO ? (p.causaDiferido || '') : '';
+        togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
         document.getElementById('form-potencial').value = p.potencial || '';
@@ -367,6 +432,8 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-id').disabled = false;
         document.getElementById('form-lat').value = lat;
         document.getElementById('form-lng').value = lng;
+        document.getElementById('form-diferido-cause').value = '';
+        togglePozoDiferidoCause();
     }
 }
 
@@ -376,7 +443,19 @@ function closeForm() {
     document.getElementById('pozo-form').reset();
     document.getElementById('form-title').textContent = 'Nuevo Pozo';
     document.getElementById('form-id').disabled = false;
+    document.getElementById('form-diferido-cause').value = '';
+    togglePozoDiferidoCause();
     editId = null;
+}
+
+function togglePozoDiferidoCause() {
+    const estado = normalizeEstado(document.getElementById('form-estado').value);
+    const causeWrapper = document.getElementById('form-diferido-cause-wrapper');
+    if (estado === STATUS.DIFERIDO) {
+        causeWrapper.classList.remove('hidden');
+        return;
+    }
+    causeWrapper.classList.add('hidden');
 }
 
 function openAssignForm() {
@@ -392,20 +471,97 @@ async function assignTaladro(e) {
     e.preventDefault();
     const pozoId = document.getElementById('assign-pozo-id').value.trim().toUpperCase();
     const taladro = document.getElementById('assign-taladro-select').value;
-    const p = pozoData.find(p => p.id === pozoId);
+    const p = pozoData.find(pozo => pozo.id === pozoId);
     if (!p) {
         alert('Pozo no encontrado');
         return;
     }
-    // quitar servicio de cualquier otro pozo y setear a activo
-    pozoData.forEach(pozo => {
-        if (pozo.taladro === taladro && pozo.id !== pozoId) {
-            pozo.taladro = null;
-            pozo.estado = 'activo';
-        }
-    });
+    const previousPozo = pozoData.find(pozo => pozo.taladro === taladro && pozo.id !== pozoId);
+    if (previousPozo) {
+        pendingServiceAssignment = { pozoId, taladro, previousPozoId: previousPozo.id };
+        openServiceVerification(previousPozo.id);
+        return;
+    }
+
     p.taladro = taladro;
-    p.estado = 'inactivo';
+    p.estado = STATUS.EN_SERVICIO;
+    p.causaDiferido = null;
+
+    await persistPozosAndRefresh();
+    closeAssignForm();
+}
+
+function openServiceVerification(previousPozoId) {
+    document.getElementById('verification-pozo-label').textContent = `Pozo saliente: ${previousPozoId}`;
+    document.querySelector('input[name="verification-estado"][value="activo"]').checked = true;
+    document.getElementById('verification-cause').value = '';
+    document.getElementById('verification-cause-wrapper').classList.add('hidden');
+    document.getElementById('service-verification-container').classList.remove('hidden');
+}
+
+function closeServiceVerification() {
+    document.getElementById('service-verification-container').classList.add('hidden');
+    document.getElementById('service-verification-form').reset();
+    document.getElementById('verification-cause-wrapper').classList.add('hidden');
+}
+
+async function submitServiceVerification(e) {
+    e.preventDefault();
+    if (!pendingServiceAssignment) {
+        closeServiceVerification();
+        return;
+    }
+
+    const selectedEstadoInput = document.querySelector('input[name="verification-estado"]:checked');
+    const selectedEstado = normalizeEstado(selectedEstadoInput ? selectedEstadoInput.value : STATUS.ACTIVO);
+    const causeInput = document.getElementById('verification-cause');
+    const cause = causeInput.value.trim();
+
+    if (selectedEstado === STATUS.DIFERIDO && !cause) {
+        alert('Indique la causa para estado diferido');
+        causeInput.focus();
+        return;
+    }
+
+    const { pozoId, taladro, previousPozoId } = pendingServiceAssignment;
+    const currentPozo = pozoData.find(pozo => pozo.id === pozoId);
+    const previousPozo = pozoData.find(pozo => pozo.id === previousPozoId);
+
+    if (!currentPozo) {
+        alert('Pozo destino no encontrado');
+        pendingServiceAssignment = null;
+        closeServiceVerification();
+        return;
+    }
+
+    if (previousPozo) {
+        previousPozo.taladro = null;
+        previousPozo.estado = selectedEstado;
+        previousPozo.causaDiferido = selectedEstado === STATUS.DIFERIDO ? cause : null;
+    }
+
+    currentPozo.taladro = taladro;
+    currentPozo.estado = STATUS.EN_SERVICIO;
+    currentPozo.causaDiferido = null;
+
+    pendingServiceAssignment = null;
+    await persistPozosAndRefresh();
+    closeServiceVerification();
+    closeAssignForm();
+}
+
+function toggleVerificationCause() {
+    const selectedEstadoInput = document.querySelector('input[name="verification-estado"]:checked');
+    const selectedEstado = selectedEstadoInput ? selectedEstadoInput.value : STATUS.ACTIVO;
+    const causeWrapper = document.getElementById('verification-cause-wrapper');
+    if (selectedEstado === STATUS.DIFERIDO) {
+        causeWrapper.classList.remove('hidden');
+        return;
+    }
+    causeWrapper.classList.add('hidden');
+}
+
+async function persistPozosAndRefresh() {
     // Guardar en local siempre
     await localforage.setItem(POZO_DATA_KEY, pozoData);
     await markDataDirty();
@@ -417,7 +573,6 @@ async function assignTaladro(e) {
     loadZone(zone);
     renderMarkers(zone);
     updateStats();
-    closeAssignForm();
 }
 
 // funciones globales para popup
@@ -444,19 +599,35 @@ window.deletePozo = async function(id) {
 
 async function savePozo(e) {
     e.preventDefault();
+    const previousPozo = editId ? pozoData.find(p => p.id === editId) : null;
+    const formEstado = normalizeEstado(document.getElementById('form-estado').value);
+    const formCausaDiferido = document.getElementById('form-diferido-cause').value.trim();
     const pozo = {
         id: document.getElementById('form-id').value.trim().toUpperCase(),
         zona: document.getElementById('zone-select').value,
-        coords: editId ? pozoData.find(p => p.id === editId).coords : [
+        coords: previousPozo ? previousPozo.coords : [
             parseFloat(document.getElementById('form-lat').value),
             parseFloat(document.getElementById('form-lng').value)
         ],
-        estado: document.getElementById('form-estado').value,
+        estado: formEstado,
         cabezal: document.getElementById('form-cabezal').value || null,
         variador: document.getElementById('form-variador').value || null,
         potencial: document.getElementById('form-potencial').value || null,
-        taladro: editId ? pozoData.find(p => p.id === editId).taladro : null
+        taladro: previousPozo ? previousPozo.taladro : null,
+        causaDiferido: formEstado === STATUS.DIFERIDO ? formCausaDiferido : null
     };
+    if (pozo.taladro) {
+        pozo.estado = STATUS.EN_SERVICIO;
+        pozo.causaDiferido = null;
+    }
+    if (pozo.estado !== STATUS.DIFERIDO) {
+        pozo.causaDiferido = null;
+    }
+    if (!pozo.taladro && pozo.estado === STATUS.DIFERIDO && !pozo.causaDiferido) {
+        alert('Debe indicar la causa para estado diferido');
+        document.getElementById('form-diferido-cause').focus();
+        return;
+    }
     if (!pozo.id) {
         alert('Debe indicar un ID');
         return;
@@ -488,11 +659,46 @@ async function savePozo(e) {
 }
 
 function updateStats() {
-    const counts = { activo: 0, inactivo: 0, revision: 0 };
-    pozoData.forEach(p => counts[p.estado]++);
+    const counts = {
+        total: pozoData.length,
+        activo: 0,
+        'inactivo-servicio': 0,
+        'en-servicio': 0,
+        diagnostico: 0,
+        candidato: 0,
+        diferido: 0
+    };
+
+    pozoData.forEach(p => {
+        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
+        if (normalizedEstado === STATUS.EN_SERVICIO) {
+            counts['en-servicio']++;
+            return;
+        }
+        if (Object.prototype.hasOwnProperty.call(counts, normalizedEstado)) {
+            counts[normalizedEstado]++;
+        }
+    });
+
+    document.getElementById('count-total').textContent = counts.total;
     document.getElementById('count-active').textContent = counts.activo;
-    document.getElementById('count-inactive').textContent = counts.inactivo;
-    document.getElementById('count-review').textContent = counts.revision;
+    document.getElementById('count-inactive-service').textContent = counts['inactivo-servicio'];
+    document.getElementById('count-in-service').textContent = counts['en-servicio'];
+    document.getElementById('count-diagnostic').textContent = counts.diagnostico;
+    document.getElementById('count-candidate').textContent = counts.candidato;
+    document.getElementById('count-deferred').textContent = counts.diferido;
+}
+
+function updateStatsFilterUi() {
+    document.querySelectorAll('.stats-item').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.filter === currentStatsFilter);
+    });
+}
+
+function applyStatsFilter(filter) {
+    currentStatsFilter = filter;
+    updateStatsFilterUi();
+    renderMarkers(document.getElementById('zone-select').value);
 }
 
 function attachControls() {
@@ -517,10 +723,19 @@ function attachControls() {
 
     document.getElementById('pozo-form').addEventListener('submit', savePozo);
     document.getElementById('form-cancel').addEventListener('click', closeForm);
+    document.getElementById('form-estado').addEventListener('change', togglePozoDiferidoCause);
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
+    document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
+    document.getElementById('verification-cancel').addEventListener('click', () => {
+        pendingServiceAssignment = null;
+        closeServiceVerification();
+    });
+    document.querySelectorAll('input[name="verification-estado"]').forEach(input => {
+        input.addEventListener('change', toggleVerificationCause);
+    });
 
     // Botón flotante de búsqueda para móvil
     document.getElementById('floating-search-btn').addEventListener('click', () => {
@@ -570,6 +785,16 @@ function attachControls() {
         renderMarkers(zona);
         document.getElementById('floating-zone-input').classList.add('hidden');
     });
+
+    // Filtro por estadísticas solo en desktop
+    document.querySelectorAll('.stats-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!isDesktop()) return;
+            applyStatsFilter(btn.dataset.filter || 'all');
+        });
+    });
+
+    updateStatsFilterUi();
 }
 
 // para depuración

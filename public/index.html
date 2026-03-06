@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=3">
+    <link rel="stylesheet" href="css/styles.css?v=4">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -40,9 +40,13 @@
 
     <aside id="stats-panel" class="stats-panel">
         <h2>Estadísticas</h2>
-        <p>Activos: <span id="count-active">0</span></p>
-        <p>Inactivos: <span id="count-inactive">0</span></p>
-        <p>Revisión: <span id="count-review">0</span></p>
+        <button type="button" class="stats-item is-active" data-filter="all">Total pozos: <span id="count-total">0</span></button>
+        <button type="button" class="stats-item" data-filter="activo">Activos: <span id="count-active">0</span></button>
+        <button type="button" class="stats-item" data-filter="inactivo-servicio">Inactivos por servicio: <span id="count-inactive-service">0</span></button>
+        <button type="button" class="stats-item" data-filter="en-servicio">En servicio: <span id="count-in-service">0</span></button>
+        <button type="button" class="stats-item" data-filter="diagnostico">En diagnóstico: <span id="count-diagnostic">0</span></button>
+        <button type="button" class="stats-item" data-filter="candidato">Candidatos: <span id="count-candidate">0</span></button>
+        <button type="button" class="stats-item" data-filter="diferido">Diferido: <span id="count-deferred">0</span></button>
     </aside>
 
     <main>
@@ -59,10 +63,14 @@
             <label>Estado<br>
                 <select id="form-estado">
                     <option value="activo">Activo</option>
-                    <option value="inactivo">Inactivo</option>
-                    <option value="revision">Revisión</option>
+                    <option value="inactivo-servicio">Inactivo por servicio</option>
+                    <option value="en-servicio">En servicio</option>
+                    <option value="diagnostico">En diagnóstico</option>
+                    <option value="candidato">Candidato</option>
+                    <option value="diferido">Diferido</option>
                 </select>
             </label>
+            <label id="form-diferido-cause-wrapper" class="hidden">Causa diferido<br><input type="text" id="form-diferido-cause" placeholder="Ej: arenamiento"></label>
             <label>Cabezal<br>
                 <select id="form-cabezal">
                     <option value="">Ninguno</option>
@@ -125,6 +133,36 @@
         </form>
     </div>
 
+    <!-- verificacion del pozo que sale de servicio -->
+    <div id="service-verification-container" class="form-container hidden">
+        <form id="service-verification-form">
+            <h3>Verificación de servicio</h3>
+            <p id="verification-pozo-label" class="verification-subtitle"></p>
+
+            <div class="radio-card-group">
+                <label class="radio-card">
+                    <input type="radio" name="verification-estado" value="activo" checked>
+                    <span>Activo</span>
+                </label>
+                <label class="radio-card">
+                    <input type="radio" name="verification-estado" value="candidato">
+                    <span>Candidato</span>
+                </label>
+                <label class="radio-card">
+                    <input type="radio" name="verification-estado" value="diferido">
+                    <span>Diferido</span>
+                </label>
+            </div>
+
+            <label id="verification-cause-wrapper" class="hidden">Causa diferido<br><input type="text" id="verification-cause" placeholder="Ej: arenamiento"></label>
+
+            <div class="form-actions">
+                <button type="submit">Confirmar</button>
+                <button type="button" id="verification-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
     <!-- scripts -->
     <script src="js/leaflet.js?v=3"></script>
     <!-- localForage se carga antes de main.js; se agrega un query string para
@@ -169,7 +207,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=3"></script>
+    <script src="js/main.js?v=5"></script>
     <script src="js/sw-register.js?v=3" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->

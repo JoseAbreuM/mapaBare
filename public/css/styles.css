@@ -19,6 +19,10 @@
     box-sizing: border-box;
 }
 
+.hidden {
+    display: none !important;
+}
+
 body {
     margin: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -140,6 +144,34 @@ body {
     color: var(--accent);
 }
 
+.stats-item {
+    width: 100%;
+    text-align: left;
+    padding: 0.6rem 0.7rem;
+    margin-bottom: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--fg);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s, background 0.2s;
+}
+
+.stats-item:hover {
+    border-color: #5b6bff;
+    transform: translateX(2px);
+}
+
+.stats-item.is-active {
+    background: rgba(26, 30, 207, 0.22);
+    border-color: #7d88ff;
+}
+
+.stats-item span {
+    font-weight: 700;
+}
+
 main {
     grid-row: 2 / -1;
     grid-column: 2 / -1;
@@ -209,6 +241,46 @@ main {
 .form-actions button#form-cancel {
     background: #252525;
     color: var(--fg);
+}
+
+.verification-subtitle {
+    margin-top: 0;
+    color: #bfc5ff;
+    font-size: 0.9rem;
+}
+
+.radio-card-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem;
+}
+
+.radio-card {
+    position: relative;
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #161616;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+}
+
+.radio-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.radio-card span {
+    display: block;
+    padding: 0.7rem 0.8rem;
+    font-weight: 600;
+}
+
+.radio-card:has(input:checked) {
+    border-color: #7d88ff;
+    background: rgba(26, 30, 207, 0.2);
 }
 
 /* responsive: en pantallas pequeñas el sidebar se oculta */
