@@ -1,11 +1,15 @@
-/* esquema dark mode industrial con acentos amarillos */
+/* esquema dark mode con acentos azul profundo */
 :root {
-    --bg: #121212;
-    --fg: #e0e0e0;
-    --accent: #ffcc00;
+    --bg: #0F0F0F;
+    --fg: #f5f7ff;
+    --accent: #020499;
+    --accent-strong: #1a1ecf;
+    --panel: #141414;
+    --surface: #1a1a1a;
+    --border: #2a2a2a;
     --danger: #e53935;
-    --warning: #fb8c00;
-    --success: #43a047;
+    --warning: #2f49e7;
+    --success: #1f7aff;
 
     --header-height: 60px;
     --sidebar-width: 200px;
@@ -28,11 +32,11 @@ body {
 
 .app-header {
     grid-column: 1 / -1;
-    background: #1e1e1e;
+    background: var(--surface);
     display: flex;
     align-items: center;
     padding: 0 0.75rem;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border);
     min-height: 60px;
 }
 
@@ -46,11 +50,35 @@ body {
 .controls input,
 .controls select {
     padding: 0.5rem;
-    border: 1px solid #333;
+    border: 1px solid var(--border);
     border-radius: 4px;
-    background: #1e1e1e;
+    background: var(--surface);
     color: var(--fg);
     font-size: 1rem;
+}
+
+#assign-taladro-btn {
+    padding: 0.58rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #3e45ff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #ffffff;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(2, 4, 153, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+#assign-taladro-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(2, 4, 153, 0.45);
+    filter: brightness(1.06);
+}
+
+#assign-taladro-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(2, 4, 153, 0.35);
 }
 
 .switch {
@@ -100,9 +128,9 @@ body {
 
 .stats-panel {
     grid-row: 2 / -1;
-    background: #1a1a1a;
+    background: var(--panel);
     padding: 1rem;
-    border-right: 1px solid #333;
+    border-right: 1px solid var(--border);
     overflow-y: auto;
 }
 
@@ -129,8 +157,8 @@ main {
     top: 10%;
     left: 50%;
     transform: translateX(-50%);
-    background: #1e1e1e;
-    border: 1px solid #333;
+    background: var(--surface);
+    border: 1px solid var(--border);
     padding: 1rem;
     border-radius: 5px;
     z-index: 1000;
@@ -153,9 +181,9 @@ main {
     width: 100%;
     padding: 0.5rem;
     margin-top: 0.25rem;
-    border: 1px solid #333;
+    border: 1px solid var(--border);
     border-radius: 4px;
-    background: #121212;
+    background: var(--bg);
     color: var(--fg);
 }
 
@@ -175,11 +203,11 @@ main {
 
 .form-actions button[type="submit"] {
     background: var(--accent);
-    color: #000;
+    color: #fff;
 }
 
 .form-actions button#form-cancel {
-    background: #333;
+    background: #252525;
     color: var(--fg);
 }
 
@@ -244,7 +272,7 @@ main {
     }
 
     .controls select {
-        background: #1e1e1e;
+        background: var(--surface);
         color: var(--fg);
         border: 2px solid var(--accent);
         border-radius: 12px;
@@ -253,7 +281,7 @@ main {
         margin-bottom: 15px;
         width: 100%;
         appearance: none; /* Remove default arrow */
-        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23020499" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
         background-repeat: no-repeat;
         background-position: right 16px center;
         background-size: 16px;
@@ -263,8 +291,8 @@ main {
 
     .controls select:focus {
         outline: none;
-        border-color: #ffdd44;
-        box-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+        border-color: var(--accent-strong);
+        box-shadow: 0 0 8px rgba(2, 4, 153, 0.45);
     }
 
     .switch {
@@ -325,7 +353,7 @@ main {
         height: 60px;
         border-radius: 50%;
         background: var(--accent);
-        color: #000;
+        color: #fff;
         border: none;
         font-size: 24px;
         cursor: pointer;
@@ -339,8 +367,8 @@ main {
 
     .floating-search-input {
         margin-top: 10px;
-        background: #1e1e1e;
-        border: 1px solid #333;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 12px;
         padding: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -356,9 +384,9 @@ main {
 
     .floating-search-input input {
         padding: 10px;
-        border: 1px solid #333;
+        border: 1px solid var(--border);
         border-radius: 8px;
-        background: #121212;
+        background: var(--bg);
         color: var(--fg);
         font-size: 16px;
     }
@@ -368,7 +396,7 @@ main {
         border: none;
         border-radius: 8px;
         background: var(--accent);
-        color: #000;
+        color: #fff;
         cursor: pointer;
         font-size: 16px;
         transition: background 0.2s;
@@ -396,7 +424,7 @@ main {
         height: 60px;
         border-radius: 50%;
         background: var(--accent);
-        color: #000;
+        color: #fff;
         border: none;
         font-size: 24px;
         cursor: pointer;
@@ -410,8 +438,8 @@ main {
 
     .floating-zone-input {
         margin-top: 10px;
-        background: #1e1e1e;
-        border: 1px solid #333;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 12px;
         padding: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -427,15 +455,15 @@ main {
 
     .floating-zone-input select {
         padding: 12px 14px;
-        border: 1px solid #333;
+        border: 1px solid var(--border);
         border-radius: 8px;
-        background: #121212;
+        background: var(--bg);
         color: var(--fg);
         font-size: 16px;
         cursor: pointer;
         width: 100%;
         appearance: none;
-        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23020499" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
         background-repeat: no-repeat;
         background-position: right 14px center;
         background-size: 16px;

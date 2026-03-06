@@ -197,9 +197,9 @@ function crearIconoServicio(colorPrincipal, numero = null, colorBorde = '#000000
     return L.divIcon({
         html: fullSvg,
         className: 'contenedor-icono-servicio',
-        iconSize: [18, 18],
-        iconAnchor: [9, 18],
-        popupAnchor: [0, -18]
+        iconSize: [23, 23],
+        iconAnchor: [11, 23],
+        popupAnchor: [0, -23]
     });
 }
 
