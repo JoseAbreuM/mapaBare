@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v9';
+const CACHE_NAME = 'pozos-cache-v10';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
@@ -13,17 +13,19 @@ const FILES_TO_CACHE = [
     '/js/firebase-init.js?v=3',
     '/manifest.json',
     '/icons/icono.png',
+    '/icons/header.png',
     '/assets/mapas/bare-tradicional.jpg',
     '/assets/mapas/bare6-1.jpg',
     '/assets/mapas/bare6-2.jpg',
-    '/assets/mapas/trilla-asfaltada.jpg',
-    'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
-    'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
+    '/assets/mapas/trilla-asfaltada.jpg'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
+        caches.open(CACHE_NAME).then(async cache => {
+            // No romper la instalación completa si un recurso falla.
+            await Promise.allSettled(FILES_TO_CACHE.map(file => cache.add(file)));
+        })
     );
     self.skipWaiting();
 });
@@ -44,8 +46,14 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    if (event.request.method !== 'GET') return;
+
+    const url = new URL(event.request.url);
+    const isFirebaseCdn = url.origin === 'https://www.gstatic.com' && url.pathname.includes('/firebasejs/');
+    const isSameOrigin = url.origin === self.location.origin;
+
     // Cachear tiles del mapa
-    if (event.request.url.includes('tile.openstreetmap.org')) {
+    if (url.hostname.includes('tile.openstreetmap.org')) {
         event.respondWith(
             // ignorar parámetros de búsqueda para que ej. main.js?v=3 coincida
             caches.match(event.request, {ignoreSearch: true}).then(cached => {
@@ -59,19 +67,56 @@ self.addEventListener('fetch', event => {
                         cache.put(event.request, responseClone);
                     });
                     return response;
-                });
+                }).catch(() => caches.match(event.request, {ignoreSearch: true}));
             })
         );
-    } else {
+        return;
+    }
+
+    // Navegación: intentar red, luego cache, y fallback a index offline.
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put('/index.html', responseClone);
+                    });
+                    return response;
+                })
+                .catch(async () => {
+                    const cachedPage = await caches.match('/index.html', {ignoreSearch: true});
+                    return cachedPage;
+                })
+        );
+        return;
+    }
+
+    // Runtime cache para recursos del mismo origen y SDK de Firebase.
+    if (isSameOrigin || isFirebaseCdn) {
         event.respondWith(
             caches.match(event.request, {ignoreSearch: true}).then(cached => {
-                if (cached) {
-                    return cached;
-                }
-                return fetch(event.request).catch(() => {
-                    // podría retornar un offline fallback si se desea
-                });
+                if (cached) return cached;
+                return fetch(event.request)
+                    .then(response => {
+                        if (response && response.status === 200) {
+                            const responseClone = response.clone();
+                            caches.open(CACHE_NAME).then(cache => {
+                                cache.put(event.request, responseClone);
+                            });
+                        }
+                        return response;
+                    })
+                    .catch(() => caches.match(event.request, {ignoreSearch: true}));
             })
         );
+        return;
     }
+
+    event.respondWith(
+        caches.match(event.request, {ignoreSearch: true}).then(cached => {
+            if (cached) return cached;
+            return fetch(event.request);
+        })
+    );
 });

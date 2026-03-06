@@ -8,13 +8,17 @@ const firebaseConfig = {
   appId: "1:836434447060:web:b5451aa44ec8af8a590941"
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// Initialize Firebase solo si SDK está disponible
+if (typeof firebase !== 'undefined') {
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-// Habilitar persistencia offline para Firestore
-db.enablePersistence().catch(err => {
-    console.log('Error habilitando persistencia offline:', err);
-});
+  // Habilitar persistencia offline para Firestore
+  db.enablePersistence().catch(err => {
+      console.log('Error habilitando persistencia offline:', err);
+  });
 
-window.db = db;
+  window.db = db;
+} else {
+  console.warn('Firebase SDK no disponible: la app seguirá usando datos locales en modo offline.');
+}

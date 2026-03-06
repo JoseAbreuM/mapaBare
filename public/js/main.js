@@ -13,6 +13,8 @@ let pozoData = [];
 let markers = {};
 let searchId = null;
 let editId = null;
+const POZO_DATA_KEY = 'pozoData';
+const POZO_DIRTY_KEY = 'pozoDataDirty';
 
 window.addEventListener('DOMContentLoaded', init);
 
@@ -48,7 +50,7 @@ async function init() {
     await ensureLocalForage();
     // Cargar datos desde local storage primero
     try {
-        const localData = await localforage.getItem('pozoData');
+        const localData = await localforage.getItem(POZO_DATA_KEY);
         if (localData) {
             pozoData = localData;
             renderMarkers(document.getElementById('zone-select').value);
@@ -67,30 +69,24 @@ async function init() {
         }
     }
 
-    // Si está online, cargar desde Firestore y actualizar local
-    if (navigator.onLine) {
+    // Si está online y Firestore está disponible, sincronizar en arranque.
+    if (navigator.onLine && isDbReady()) {
         try {
-            const docRef = db.collection('pozos').doc('data');
-            const docSnap = await docRef.get();
-            if (docSnap.exists) {
-                pozoData = docSnap.data().pozos || [];
-                await localforage.setItem('pozoData', pozoData);
-                renderMarkers(document.getElementById('zone-select').value);
-                updateDatalist();
-                updateStats();
-            }
+            await syncData();
         } catch (e) {
             console.log('Error cargando desde Firestore', e);
         }
     }
 
-    // Listener para actualizaciones en tiempo real si está online
-    if (navigator.onLine) {
-        const docRef = db.collection('pozos').doc('data');
+    // Listener en tiempo real solo cuando Firestore está disponible.
+    if (navigator.onLine && isDbReady()) {
+        const docRef = getPozosDocRef();
         docRef.onSnapshot(async (doc) => {
             if (doc.exists) {
+                const isDirty = await localforage.getItem(POZO_DIRTY_KEY);
+                if (isDirty) return; // evita pisar cambios locales pendientes
                 pozoData = doc.data().pozos || [];
-                await localforage.setItem('pozoData', pozoData);
+                await localforage.setItem(POZO_DATA_KEY, pozoData);
                 renderMarkers(document.getElementById('zone-select').value);
                 updateDatalist();
                 updateStats();
@@ -105,13 +101,35 @@ async function init() {
     window.addEventListener('online', syncData);
 }
 
+function isDbReady() {
+    return typeof window.db !== 'undefined' && window.db;
+}
+
+function getPozosDocRef() {
+    return window.db.collection('pozos').doc('data');
+}
+
+async function markDataDirty() {
+    await localforage.setItem(POZO_DIRTY_KEY, true);
+}
+
+async function clearDataDirty() {
+    await localforage.setItem(POZO_DIRTY_KEY, false);
+}
+
 async function syncData() {
+    if (!navigator.onLine || !isDbReady()) return;
     try {
-        const docRef = db.collection('pozos').doc('data');
+        const docRef = getPozosDocRef();
+        const isDirty = await localforage.getItem(POZO_DIRTY_KEY);
+        if (isDirty) {
+            await docRef.set({ pozos: pozoData });
+            await clearDataDirty();
+        }
         const docSnap = await docRef.get();
         if (docSnap.exists) {
             pozoData = docSnap.data().pozos || [];
-            await localforage.setItem('pozoData', pozoData);
+            await localforage.setItem(POZO_DATA_KEY, pozoData);
             renderMarkers(document.getElementById('zone-select').value);
             updateDatalist();
             updateStats();
@@ -210,7 +228,7 @@ function crearIconoWT() {
             <style>
                 .lucide-droplets path {
                     stroke: #000000;
-                    fill: #0066cc;
+                    fill: #27E4F5;
                 }
                 .lucide-droplets {
                     filter: drop-shadow(0 0 1px rgba(255,255,255,0.3));
@@ -348,10 +366,11 @@ async function assignTaladro(e) {
     p.taladro = taladro;
     p.estado = 'inactivo';
     // Guardar en local siempre
-    await localforage.setItem('pozoData', pozoData);
+    await localforage.setItem(POZO_DATA_KEY, pozoData);
+    await markDataDirty();
     // Guardar en Firestore solo si está online
-    if (navigator.onLine) {
-        await db.collection('pozos').doc('data').set({ pozos: pozoData });
+    if (navigator.onLine && isDbReady()) {
+        await syncData();
     }
     const zone = document.getElementById('zone-select').value;
     loadZone(zone);
@@ -369,10 +388,11 @@ window.deletePozo = async function(id) {
     if (!confirm('¿Eliminar pozo ' + id + '?')) return;
     pozoData = pozoData.filter(p => p.id !== id);
     // Guardar en local siempre
-    await localforage.setItem('pozoData', pozoData);
+    await localforage.setItem(POZO_DATA_KEY, pozoData);
+    await markDataDirty();
     // Guardar en Firestore solo si está online
-    if (navigator.onLine) {
-        await db.collection('pozos').doc('data').set({ pozos: pozoData });
+    if (navigator.onLine && isDbReady()) {
+        await syncData();
     }
     const zone = document.getElementById('zone-select').value;
     loadZone(zone);
@@ -411,10 +431,11 @@ async function savePozo(e) {
         pozoData.push(pozo);
     }
     // Guardar en local siempre
-    await localforage.setItem('pozoData', pozoData);
+    await localforage.setItem(POZO_DATA_KEY, pozoData);
+    await markDataDirty();
     // Guardar en Firestore solo si está online
-    if (navigator.onLine) {
-        await db.collection('pozos').doc('data').set({ pozos: pozoData });
+    if (navigator.onLine && isDbReady()) {
+        await syncData();
     }
     loadZone(pozo.zona);
     renderMarkers(pozo.zona);
