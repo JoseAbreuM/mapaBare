@@ -181,50 +181,43 @@ function renderMarkers(zone) {
     });
 }
 
-// Función para crear el icono de la torre con color personalizado y número opcional
-function crearIconoTaladro(colorPrincipal, numero = null) {
-    // Cargar el SVG del archivo oil-derrick.svg y modificarlo
-    const svgDerrick = `
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 40 76" class="derrick-svg" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+// Función para crear el icono de servicio con color personalizado, número opcional y borde
+function crearIconoServicio(colorPrincipal, numero = null, colorBorde = '#000000') {
+    // Nuevo SVG de torre de perforación
+    const svgTorre = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="servicio-svg">
             <style>
-                .derrick-svg path, .derrick-svg g {
-                    stroke: ${colorPrincipal} !important;
-                    fill: ${colorPrincipal} !important;
+                .servicio-svg path {
+                    fill: ${colorPrincipal};
+                    stroke: ${colorBorde};
+                    stroke-width: 8;
                 }
-                .derrick-svg {
+                .servicio-svg {
                     filter: drop-shadow(0 0 1px rgba(255,255,255,0.3));
                 }
-                .numero-taladro {
+                .numero-servicio {
                     fill: white;
-                    font-size: 8px;
+                    font-size: 60px;
                     font-weight: bold;
                     text-anchor: middle;
                     dominant-baseline: middle;
                 }
             </style>
-            <use xlink:href="#A" x=".5" y=".5"/>
-            <symbol id="A" overflow="visible">
-                <g class="derrick-structure">
-                    <path d="M31.695 62.1l-.225-1.485h.48V62.1h-.255m-11.76 0v-1.5h9.585l.18 1.485h-9.765M8.64 62.1l.195-1.485h9.045V62.1H8.64m-3.615 0v-1.5h1.83l-.225 1.485H5.025m12.87 2.49v-8.79h2.04v8.79h-2.04m0-9.99V49.23h2.055v5.355h-2.055m0-6.555v-5.37h2.04v5.37h-2.04m0-6.57v-5.385h2.04v5.385h-2.04m0-6.555v-5.37h2.04v5.37h-2.04m0-6.555v-5.37h2.025v5.37h-2.025m0-6.54v-5.385h2.025v5.385h-2.025m0-6.57V1.965h2.025v13.29l-2.025-.015"/>
-                    <path d="M27.78 7.11V5.28H10.125v1.83z"/>
-                    <path d="M28.8 55.17v-.585h-.06l-.75-5.88v-.675h-.09l-.735-5.955v-.6h-.075l-.765-6.03v-.54h-.075l-.75-5.895v-.63h-.075l-.765-6v-.57h-.06l-.78-6.075v-.495h-.06l-1.05-8.385.735-.525 8.595 58.005-2.055.24L28.8 55.17M6.315 64.335l8.61-58.005.735.525-1.065 8.385h-.075v.645l-.75 5.925h-.075v.525l-.765 6.045h-.075v.54l-.75 5.985h-.09v.63l-.735 5.94h-.09v.675l-.75 5.88h-.075v.555l-.75 6H9.54v.615l-1.2 9.375-2.025-.24"/>
-                    <path d="M22.23 1.425V0h-6.285v1.425h-5.82v1.77H27.78v-1.77zM14.52 16.41v-1.17h9.3v1.17h-9.3m-.825 6.555V21.81H24.66v1.155H13.695m-.84 6.57V28.38H25.5v1.155H12.855m-.84 6.555v-1.185h14.31v1.185h-14.31m-.825 6.57v-1.185h15.975v1.185H11.19m-.825 6.555V48.03H27.99v1.185H10.365m-.825 6.57v-1.2H28.8v1.2H9.54M0 64.17h38.325V75H0z"/>
-                </g>
-            </symbol>
+            <path d="M91.6 73.8C79.3 68.8 65.3 74.7 60.4 87C47.2 119.5 40 154.9 40 192C40 229.1 47.2 264.5 60.4 297C65.4 309.3 79.4 315.2 91.7 310.2C104 305.2 109.9 291.2 104.9 278.9C94 252.2 88 222.8 88 192C88 161.2 94 131.8 104.9 105C109.9 92.7 103.9 78.7 91.7 73.7zM548.4 73.8C536.1 78.8 530.2 92.8 535.2 105.1C546.1 131.9 552.1 161.3 552.1 192.1C552.1 222.9 546.1 252.3 535.2 279.1C530.2 291.4 536.2 305.4 548.4 310.4C560.6 315.4 574.7 309.4 579.7 297.2C592.8 264.7 600.1 229.3 600.1 192.2C600.1 155.1 592.9 119.7 579.7 87.2C574.7 74.9 560.7 69 548.4 74zM372.1 229.2C379.6 218.7 384 205.9 384 192C384 156.7 355.3 128 320 128C284.7 128 256 156.7 256 192C256 205.9 260.4 218.7 267.9 229.2L130.9 530.8C123.6 546.9 130.7 565.9 146.8 573.2C162.9 580.5 181.9 573.4 189.2 557.3L209.8 512.1L430.4 512.1L451 557.3C458.3 573.4 477.3 580.5 493.4 573.2C509.5 565.9 516.6 546.9 509.3 530.8L372.1 229.2zM408.5 464L231.5 464L253.3 416L386.6 416L408.4 464zM320 269.3L364.8 368L275.1 368L319.9 269.3zM195.3 137.6C200.6 125.5 195.1 111.3 182.9 106C170.7 100.7 156.6 106.2 151.3 118.4C141.5 141 136 165.9 136 192C136 218.1 141.5 243 151.3 265.6C156.6 277.7 170.8 283.3 182.9 278C195 272.7 200.6 258.5 195.3 246.4C188 229.8 184 211.4 184 192C184 172.6 188 154.2 195.3 137.6zM488.7 118.4C483.4 106.3 469.2 100.7 457.1 106C445 111.3 439.4 125.5 444.7 137.6C452 154.2 456 172.6 456 192C456 211.4 452 229.8 444.7 246.4C439.4 258.5 444.9 272.7 457.1 278C469.3 283.3 483.4 277.8 488.7 265.6C498.5 243 504 218.1 504 192C504 165.9 498.5 141 488.7 118.4z"/>
     `;
     
-    let fullSvg = svgDerrick;
+    let fullSvg = svgTorre;
     if (numero !== null) {
-        fullSvg += `<text x="20" y="35" class="numero-taladro">${numero}</text>`;
+        fullSvg += `<text x="320" y="200" class="numero-servicio">${numero}</text>`;
     }
     fullSvg += `</svg>`;
 
     return L.divIcon({
         html: fullSvg,
-        className: 'contenedor-icono-taladro',
-        iconSize: [20, 20],
-        iconAnchor: [10, 20],
-        popupAnchor: [0, -20]
+        className: 'contenedor-icono-servicio',
+        iconSize: [16, 16],
+        iconAnchor: [8, 16],
+        popupAnchor: [0, -16]
     });
 }
 
@@ -249,9 +242,9 @@ function crearIconoWT() {
     return L.divIcon({
         html: svgDroplets,
         className: 'contenedor-icono-wt',
-        iconSize: [18, 18],
-        iconAnchor: [9, 18],
-        popupAnchor: [0, -18]
+        iconSize: [14, 14],
+        iconAnchor: [7, 14],
+        popupAnchor: [0, -14]
     });
 }
 
@@ -268,15 +261,15 @@ function createMarker(p) {
         if (p.taladro === 'WT') {
             icon = crearIconoWT();
         } else {
-            // Mapear taladros a colores y números
-            const taladroConfig = {
-                'Ranger-357': { color: '#000000', numero: 7 },
-                'RIG-351': { color: '#e53935', numero: 1 },
-                'RIG-352': { color: '#3388ff', numero: 2 },
-                'Ranger-151': { color: '#fb8c00', numero: null }
+            // Mapear servicios a colores y números
+            const servicioConfig = {
+                'Ranger-357': { color: '#000000', numero: 7, borde: '#ffcc00' },
+                'RIG-351': { color: '#e53935', numero: 1, borde: '#000000' },
+                'RIG-352': { color: '#3388ff', numero: 2, borde: '#000000' },
+                'Ranger-151': { color: '#fb8c00', numero: null, borde: '#000000' }
             };
-            const config = taladroConfig[p.taladro] || { color: '#000000', numero: null };
-            icon = crearIconoTaladro(config.color, config.numero);
+            const config = servicioConfig[p.taladro] || { color: '#000000', numero: null, borde: '#000000' };
+            icon = crearIconoServicio(config.color, config.numero, config.borde);
         }
         marker = L.marker(p.coords, { icon });
     } else {
@@ -300,7 +293,7 @@ function popupContent(p) {
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
-    if (p.taladro) content += `<br>Taladro: ${p.taladro}`;
+    if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
     // Solo mostrar botones de editar/eliminar en desktop
     if (window.innerWidth > 600) {
         content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
@@ -363,7 +356,7 @@ async function assignTaladro(e) {
         alert('Pozo no encontrado');
         return;
     }
-    // quitar taladro de cualquier otro pozo y setear a activo
+    // quitar servicio de cualquier otro pozo y setear a activo
     pozoData.forEach(pozo => {
         if (pozo.taladro === taladro && pozo.id !== pozoId) {
             pozo.taladro = null;
