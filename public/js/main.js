@@ -183,74 +183,75 @@ function renderMarkers(zone) {
 
 // Función para crear el icono de la torre con color personalizado y número opcional
 function crearIconoTaladro(colorPrincipal, numero = null) {
-    // Definimos el SVG dentro de una cadena de texto (template literal)
-    let svgTorre = `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="svg-taladro">
+    // Cargar el SVG del archivo oil-derrick.svg y modificarlo
+    const svgDerrick = `
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 40 76" class="derrick-svg" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
             <style>
-                .svg-taladro path, .svg-taladro line, .svg-taladro rect {
-                    stroke: ${colorPrincipal};
-                    fill: none;
+                .derrick-svg path, .derrick-svg g {
+                    stroke: ${colorPrincipal} !important;
+                    fill: ${colorPrincipal} !important;
                 }
-                .svg-taladro rect {
-                    fill: ${colorPrincipal};
-                }
-                .svg-taladro {
-                    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+                .derrick-svg {
+                    filter: drop-shadow(0 0 1px rgba(255,255,255,0.3));
                 }
                 .numero-taladro {
                     fill: white;
-                    font-size: 12px;
+                    font-size: 8px;
                     font-weight: bold;
                     text-anchor: middle;
+                    dominant-baseline: middle;
                 }
             </style>
-            <path d="M10 90 L40 10 L60 10 L90 90 Z" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="25" y1="50" x2="75" y2="50" stroke-width="4"/>
-            <line x1="18" y1="70" x2="82" y2="70" stroke-width="4"/>
-            <rect x="5" y="85" width="90" height="10" rx="2" stroke-width="4"/>
-            <rect x="42" y="5" width="16" height="8" rx="1" stroke-width="2"/>
+            <use xlink:href="#A" x=".5" y=".5"/>
+            <symbol id="A" overflow="visible">
+                <g class="derrick-structure">
+                    <path d="M31.695 62.1l-.225-1.485h.48V62.1h-.255m-11.76 0v-1.5h9.585l.18 1.485h-9.765M8.64 62.1l.195-1.485h9.045V62.1H8.64m-3.615 0v-1.5h1.83l-.225 1.485H5.025m12.87 2.49v-8.79h2.04v8.79h-2.04m0-9.99V49.23h2.055v5.355h-2.055m0-6.555v-5.37h2.04v5.37h-2.04m0-6.57v-5.385h2.04v5.385h-2.04m0-6.555v-5.37h2.04v5.37h-2.04m0-6.555v-5.37h2.025v5.37h-2.025m0-6.54v-5.385h2.025v5.385h-2.025m0-6.57V1.965h2.025v13.29l-2.025-.015"/>
+                    <path d="M27.78 7.11V5.28H10.125v1.83z"/>
+                    <path d="M28.8 55.17v-.585h-.06l-.75-5.88v-.675h-.09l-.735-5.955v-.6h-.075l-.765-6.03v-.54h-.075l-.75-5.895v-.63h-.075l-.765-6v-.57h-.06l-.78-6.075v-.495h-.06l-1.05-8.385.735-.525 8.595 58.005-2.055.24L28.8 55.17M6.315 64.335l8.61-58.005.735.525-1.065 8.385h-.075v.645l-.75 5.925h-.075v.525l-.765 6.045h-.075v.54l-.75 5.985h-.09v.63l-.735 5.94h-.09v.675l-.75 5.88h-.075v.555l-.75 6H9.54v.615l-1.2 9.375-2.025-.24"/>
+                    <path d="M22.23 1.425V0h-6.285v1.425h-5.82v1.77H27.78v-1.77zM14.52 16.41v-1.17h9.3v1.17h-9.3m-.825 6.555V21.81H24.66v1.155H13.695m-.84 6.57V28.38H25.5v1.155H12.855m-.84 6.555v-1.185h14.31v1.185h-14.31m-.825 6.57v-1.185h15.975v1.185H11.19m-.825 6.555V48.03H27.99v1.185H10.365m-.825 6.57v-1.2H28.8v1.2H9.54M0 64.17h38.325V75H0z"/>
+                </g>
+            </symbol>
     `;
     
+    let fullSvg = svgDerrick;
     if (numero !== null) {
-        svgTorre += `<text x="50" y="75" class="numero-taladro">${numero}</text>`;
+        fullSvg += `<text x="20" y="35" class="numero-taladro">${numero}</text>`;
     }
-    
-    svgTorre += `</svg>`;
+    fullSvg += `</svg>`;
 
     return L.divIcon({
-        html: svgTorre,
+        html: fullSvg,
         className: 'contenedor-icono-taladro',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-        popupAnchor: [0, -40]
+        iconSize: [20, 20],
+        iconAnchor: [10, 20],
+        popupAnchor: [0, -20]
     });
 }
 
 // Función para crear el icono de gotas (droplets) para WT
 function crearIconoWT() {
     const svgDroplets = `
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="svg-wt">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-droplets-icon lucide-droplets">
             <style>
-                .svg-wt path {
-                    fill: #000000;
+                .lucide-droplets path {
+                    stroke: #000000;
+                    fill: #0066cc;
                 }
-                .svg-wt {
-                    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+                .lucide-droplets {
+                    filter: drop-shadow(0 0 1px rgba(255,255,255,0.3));
                 }
             </style>
-            <path d="M12 21.5c.5 0 .9-.4.9-.9V18c0-.5-.4-.9-.9-.9s-.9.4-.9.9v2.6c0 .5.4.9.9.9z"/>
-            <path d="M12 2.5c-2.8 0-5 2.2-5 5 0 1.4.6 2.7 1.7 3.6L12 16l3.3-4.9c1.1-.9 1.7-2.2 1.7-3.6 0-2.8-2.2-5-5-5z"/>
-            <path d="M7 9.5c-.5 0-.9.4-.9.9s.4.9.9.9c.8 0 1.5-.7 1.5-1.5S7.8 9.5 7 9.5z"/>
-            <path d="M17 9.5c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5c.5 0 .9-.4.9-.9s-.4-.9-.9-.9z"/>
+            <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/>
+            <path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/>
         </svg>
     `;
 
     return L.divIcon({
         html: svgDroplets,
         className: 'contenedor-icono-wt',
-        iconSize: [30, 30],
-        iconAnchor: [15, 30],
-        popupAnchor: [0, -30]
+        iconSize: [18, 18],
+        iconAnchor: [9, 18],
+        popupAnchor: [0, -18]
     });
 }
 
@@ -279,11 +280,13 @@ function createMarker(p) {
         }
         marker = L.marker(p.coords, { icon });
     } else {
+        // Hacer los marcadores de pozos más sutiles
         marker = L.circleMarker(p.coords, {
-            radius: 6,
+            radius: 4,
             color: color,
             fillColor: color,
-            fillOpacity: 1
+            fillOpacity: 0.6,
+            weight: 1
         });
     }
     marker.bindPopup(popupContent(p));
