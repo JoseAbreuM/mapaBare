@@ -307,7 +307,27 @@ main {
 
     .app-header {
         z-index: 1000; /* Superior al mapa */
-        display: none; /* Oculto en móvil */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #ffffff;
+        border-bottom: 1px solid #dfe3ff;
+        position: relative;
+    }
+
+    .app-header::before {
+        content: '';
+        width: 150px;
+        height: 42px;
+        background-image: url('../icons/header.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        display: block;
+    }
+
+    .app-header .controls {
+        display: none;
     }
 
     .form-container {
