@@ -701,6 +701,33 @@ function applyStatsFilter(filter) {
     renderMarkers(document.getElementById('zone-select').value);
 }
 
+async function runSearchById(rawId, clearMobileInput = false) {
+    const id = (rawId || '').trim().toUpperCase();
+    if (!id) return;
+
+    const p = pozoData.find(pozo => pozo.id === id);
+    if (!p) return;
+
+    searchId = id;
+    document.getElementById('zone-select').value = p.zona;
+    document.getElementById('mobile-zone-select').value = p.zona;
+
+    await loadZone(p.zona);
+    renderMarkers(p.zona);
+
+    if (markers[searchId]) {
+        map.flyTo(p.coords, Math.max(map.getZoom(), 2));
+        markers[searchId].openPopup();
+    }
+
+    searchId = null;
+
+    if (clearMobileInput) {
+        document.getElementById('floating-search-input').classList.add('hidden');
+        document.getElementById('mobile-search').value = '';
+    }
+}
+
 function attachControls() {
     document.getElementById('zone-select').addEventListener('change', async e => {
         await loadZone(e.target.value);
@@ -711,13 +738,13 @@ function attachControls() {
     search.addEventListener('input', e => {
         updateDatalist(e.target.value);
     });
-    search.addEventListener('change', e => {
-        const id = e.target.value.trim().toUpperCase();
-        const p = pozoData.find(p => p.id === id);
-        if (p) {
-            searchId = id;
-            document.getElementById('zone-select').value = p.zona;
-            loadZone(p.zona);
+    search.addEventListener('change', async e => {
+        await runSearchById(e.target.value);
+    });
+    search.addEventListener('keydown', async e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            await runSearchById(e.target.value);
         }
     });
 
@@ -746,22 +773,7 @@ function attachControls() {
     });
 
     document.getElementById('mobile-search-btn').addEventListener('click', async () => {
-        const id = document.getElementById('mobile-search').value.trim().toUpperCase();
-        const p = pozoData.find(p => p.id === id);
-        if (p) {
-            searchId = id;
-            document.getElementById('zone-select').value = p.zona;
-            document.getElementById('mobile-zone-select').value = p.zona;
-            await loadZone(p.zona);
-            renderMarkers(p.zona);
-            if (markers[searchId]) {
-                map.flyTo(p.coords, Math.max(map.getZoom(), 2));
-                markers[searchId].openPopup();
-            }
-            searchId = null;
-        }
-        document.getElementById('floating-search-input').classList.add('hidden');
-        document.getElementById('mobile-search').value = '';
+        await runSearchById(document.getElementById('mobile-search').value, true);
     });
 
     document.getElementById('mobile-search').addEventListener('keydown', (e) => {
