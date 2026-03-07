@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=4">
+    <link rel="stylesheet" href="css/styles.css?v=5">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -35,6 +35,9 @@
                 <span class="label">Modo edición</span>
             </label>
             <button id="assign-taladro-btn">Asignar Servicio</button>
+            <span id="auth-user-label" class="auth-user-label hidden"></span>
+            <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
+            <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
         </div>
     </header>
 
@@ -133,6 +136,20 @@
         </form>
     </div>
 
+    <!-- formulario login -->
+    <div id="login-form-container" class="form-container hidden">
+        <form id="login-form" autocomplete="on">
+            <h3>Iniciar sesión</h3>
+            <label>Usuario<br><input type="text" id="login-username" autocomplete="username" required></label>
+            <label>Contraseña<br><input type="password" id="login-password" autocomplete="current-password" required></label>
+            <p id="login-error" class="login-error hidden"></p>
+            <div class="form-actions">
+                <button type="submit">Entrar</button>
+                <button type="button" id="login-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
     <!-- verificacion del pozo que sale de servicio -->
     <div id="service-verification-container" class="form-container hidden">
         <form id="service-verification-form">
@@ -207,7 +224,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=5"></script>
+    <script src="js/main.js?v=6"></script>
     <script src="js/sw-register.js?v=3" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->

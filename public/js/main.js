@@ -17,6 +17,17 @@ let currentStatsFilter = 'all';
 let pendingServiceAssignment = null;
 const POZO_DATA_KEY = 'pozoData';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
+const AUTH_CONFIG_KEY = 'authConfig';
+const AUTH_SESSION_KEY = 'authSession';
+const AUTH_SEED_USER = {
+    usuario: 'optimizacion',
+    nombre: 'Optimizacion',
+    passwordHash: '480a8dd811e896329ea1d0940459c6c3ecac5b3a59807214956d667ddd5202c3'
+};
+
+let isAuthenticated = false;
+let authenticatedUser = null;
+let authConfig = null;
 
 const STATUS = {
     ACTIVO: 'activo',
@@ -53,6 +64,17 @@ function isDesktop() {
     return window.innerWidth > 768;
 }
 
+function bytesToHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashPassword(rawPassword) {
+    const value = (rawPassword || '').toString();
+    const data = new TextEncoder().encode(value);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return bytesToHex(new Uint8Array(hashBuffer));
+}
+
 window.addEventListener('DOMContentLoaded', init);
 
 // antes de usar localforage asegurarnos de que existe (posible carga desde CDN)
@@ -82,9 +104,232 @@ async function ensureLocalForage() {
     }
 }
 
+async function loadAuthConfigFromDb() {
+    if (!navigator.onLine || !isDbReady()) return null;
+    try {
+        const userRef = window.db.collection('usuarios').doc(AUTH_SEED_USER.usuario);
+        const userSnap = await userRef.get();
+        if (userSnap.exists) {
+            const data = userSnap.data() || {};
+            if (data.usuario && data.passwordHash) {
+                return {
+                    usuario: data.usuario,
+                    nombre: data.nombre || data.usuario,
+                    passwordHash: data.passwordHash
+                };
+            }
+        }
+        await userRef.set({
+            usuario: AUTH_SEED_USER.usuario,
+            nombre: AUTH_SEED_USER.nombre,
+            passwordHash: AUTH_SEED_USER.passwordHash
+        });
+    } catch (e) {
+        console.log('No se pudo cargar/crear usuario en Firestore', e);
+    }
+    return null;
+}
+
+async function ensureAuthConfig() {
+    const localConfig = await localforage.getItem(AUTH_CONFIG_KEY);
+    if (localConfig && localConfig.usuario && localConfig.passwordHash) {
+        authConfig = localConfig;
+    } else {
+        authConfig = { ...AUTH_SEED_USER };
+        await localforage.setItem(AUTH_CONFIG_KEY, authConfig);
+    }
+
+    const remoteConfig = await loadAuthConfigFromDb();
+    if (remoteConfig) {
+        authConfig = remoteConfig;
+        await localforage.setItem(AUTH_CONFIG_KEY, authConfig);
+    }
+}
+
+function encodeSessionPayload(payload) {
+    return btoa(JSON.stringify(payload));
+}
+
+function decodeSessionPayload(encodedPayload) {
+    try {
+        const json = atob(encodedPayload);
+        return JSON.parse(json);
+    } catch (e) {
+        return null;
+    }
+}
+
+async function createSessionToken(usuario) {
+    const payload = {
+        usuario,
+        iat: Date.now()
+    };
+    const encodedPayload = encodeSessionPayload(payload);
+    const signature = await hashPassword(`${encodedPayload}.${authConfig.passwordHash}`);
+    return `${encodedPayload}.${signature}`;
+}
+
+async function verifySessionToken(token) {
+    if (!token || typeof token !== 'string' || !authConfig) return null;
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const encodedPayload = parts[0];
+    const incomingSignature = parts[1];
+    const expectedSignature = await hashPassword(`${encodedPayload}.${authConfig.passwordHash}`);
+    if (incomingSignature !== expectedSignature) return null;
+    return decodeSessionPayload(encodedPayload);
+}
+
+async function restoreSession() {
+    const session = await localforage.getItem(AUTH_SESSION_KEY);
+    if (!session || !session.token || !authConfig) {
+        isAuthenticated = false;
+        authenticatedUser = null;
+        return;
+    }
+    const payload = await verifySessionToken(session.token);
+    if (!payload || payload.usuario !== authConfig.usuario) {
+        isAuthenticated = false;
+        authenticatedUser = null;
+        await localforage.removeItem(AUTH_SESSION_KEY);
+        return;
+    }
+    isAuthenticated = true;
+    authenticatedUser = {
+        usuario: payload.usuario,
+        nombre: session.nombre || authConfig.nombre || payload.usuario
+    };
+}
+
+function updateAuthUi() {
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userLabel = document.getElementById('auth-user-label');
+    const editSwitch = document.querySelector('.switch');
+    const assignButton = document.getElementById('assign-taladro-btn');
+
+    if (isDesktop()) {
+        if (isAuthenticated && authenticatedUser) {
+            loginBtn.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+            userLabel.classList.remove('hidden');
+            userLabel.textContent = authenticatedUser.nombre;
+            editSwitch.classList.remove('hidden');
+            assignButton.classList.remove('hidden');
+        } else {
+            loginBtn.classList.remove('hidden');
+            logoutBtn.classList.add('hidden');
+            userLabel.classList.add('hidden');
+            userLabel.textContent = '';
+            editSwitch.classList.add('hidden');
+            assignButton.classList.add('hidden');
+            document.getElementById('edit-mode').checked = false;
+            closeForm();
+            closeAssignForm();
+            pendingServiceAssignment = null;
+            closeServiceVerification();
+        }
+        return;
+    }
+
+    loginBtn.classList.add('hidden');
+    logoutBtn.classList.add('hidden');
+    userLabel.classList.add('hidden');
+    editSwitch.classList.add('hidden');
+    assignButton.classList.add('hidden');
+    document.getElementById('edit-mode').checked = false;
+}
+
+async function initAuth() {
+    await ensureAuthConfig();
+    await restoreSession();
+    updateAuthUi();
+}
+
+function showLoginError(message) {
+    const errorEl = document.getElementById('login-error');
+    if (!message) {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+        return;
+    }
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+}
+
+function openLoginForm() {
+    showLoginError('');
+    document.getElementById('login-form-container').classList.remove('hidden');
+    document.getElementById('login-username').focus();
+}
+
+function closeLoginForm() {
+    document.getElementById('login-form-container').classList.add('hidden');
+    document.getElementById('login-form').reset();
+    showLoginError('');
+}
+
+async function submitLogin(e) {
+    e.preventDefault();
+    if (!authConfig) {
+        showLoginError('No hay configuración de usuario disponible');
+        return;
+    }
+
+    const username = document.getElementById('login-username').value.trim().toLowerCase();
+    const password = document.getElementById('login-password').value;
+    const incomingHash = await hashPassword(password);
+
+    const isUserMatch = username === (authConfig.usuario || '').toLowerCase();
+    const isPasswordMatch = incomingHash === authConfig.passwordHash;
+    if (!isUserMatch || !isPasswordMatch) {
+        showLoginError('Usuario o contraseña inválidos');
+        return;
+    }
+
+    isAuthenticated = true;
+    authenticatedUser = {
+        usuario: authConfig.usuario,
+        nombre: authConfig.nombre || authConfig.usuario
+    };
+
+    const token = await createSessionToken(authenticatedUser.usuario);
+    await localforage.setItem(AUTH_SESSION_KEY, {
+        token,
+        nombre: authenticatedUser.nombre,
+        loginAt: Date.now()
+    });
+
+    closeLoginForm();
+    updateAuthUi();
+    renderMarkers(document.getElementById('zone-select').value);
+}
+
+async function logout() {
+    isAuthenticated = false;
+    authenticatedUser = null;
+    await localforage.removeItem(AUTH_SESSION_KEY);
+    closeLoginForm();
+    updateAuthUi();
+    renderMarkers(document.getElementById('zone-select').value);
+}
+
+function requireCrudAuth() {
+    if (!isDesktop()) {
+        return false;
+    }
+    if (isAuthenticated) {
+        return true;
+    }
+    openLoginForm();
+    alert('Debes iniciar sesión para usar funciones de edición');
+    return false;
+}
+
 async function init() {
     // garantizar que localforage esté listo antes de intentar usarlo
     await ensureLocalForage();
+    await initAuth();
 
     // Cargar datos desde local storage primero
     try {
@@ -144,6 +389,10 @@ async function init() {
 
     // Listeners para online/offline
     window.addEventListener('online', syncData);
+    window.addEventListener('resize', () => {
+        updateAuthUi();
+        renderMarkers(document.getElementById('zone-select').value);
+    });
 
         // Precalentar cache para que la app instalada abra offline de forma robusta.
         warmOfflineResources();
@@ -153,11 +402,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css',
+            '/css/styles.css?v=5',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=5',
+            '/js/main.js?v=6',
             '/js/sw-register.js?v=3',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -172,7 +421,7 @@ async function init() {
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
         try {
-            const cache = await caches.open('pozos-cache-v11');
+            const cache = await caches.open('pozos-cache-v12');
             await Promise.allSettled(resources.map(url => cache.add(url)));
         } catch (e) {
             console.log('No se pudo completar warmup de cache offline', e);
@@ -397,8 +646,8 @@ function popupContent(p) {
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
-    // Solo mostrar botones de editar/eliminar en desktop
-    if (isDesktop()) {
+    // Solo mostrar botones CRUD en desktop autenticado
+    if (isDesktop() && isAuthenticated) {
         content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
     }
     return content;
@@ -406,11 +655,13 @@ function popupContent(p) {
 
 function onMapClick(e) {
     if (!document.getElementById('edit-mode').checked) return;
+    if (!requireCrudAuth()) return;
     const { lat, lng } = e.latlng;
     openForm(lat, lng);
 }
 
 function openForm(lat = null, lng = null, id = null) {
+    if (!requireCrudAuth()) return;
     document.getElementById('form-container').classList.remove('hidden');
     if (id) {
         editId = id;
@@ -459,6 +710,7 @@ function togglePozoDiferidoCause() {
 }
 
 function openAssignForm() {
+    if (!requireCrudAuth()) return;
     document.getElementById('assign-form-container').classList.remove('hidden');
 }
 
@@ -469,6 +721,7 @@ function closeAssignForm() {
 
 async function assignTaladro(e) {
     e.preventDefault();
+    if (!requireCrudAuth()) return;
     const pozoId = document.getElementById('assign-pozo-id').value.trim().toUpperCase();
     const taladro = document.getElementById('assign-taladro-select').value;
     const p = pozoData.find(pozo => pozo.id === pozoId);
@@ -507,6 +760,7 @@ function closeServiceVerification() {
 
 async function submitServiceVerification(e) {
     e.preventDefault();
+    if (!requireCrudAuth()) return;
     if (!pendingServiceAssignment) {
         closeServiceVerification();
         return;
@@ -577,10 +831,12 @@ async function persistPozosAndRefresh() {
 
 // funciones globales para popup
 window.editPozo = function(id) {
+    if (!requireCrudAuth()) return;
     openForm(null, null, id);
 };
 
 window.deletePozo = async function(id) {
+    if (!requireCrudAuth()) return;
     if (!confirm('¿Eliminar pozo ' + id + '?')) return;
     pozoData = pozoData.filter(p => p.id !== id);
     // Guardar en local siempre
@@ -599,6 +855,7 @@ window.deletePozo = async function(id) {
 
 async function savePozo(e) {
     e.preventDefault();
+    if (!requireCrudAuth()) return;
     const previousPozo = editId ? pozoData.find(p => p.id === editId) : null;
     const formEstado = normalizeEstado(document.getElementById('form-estado').value);
     const formCausaDiferido = document.getElementById('form-diferido-cause').value.trim();
@@ -752,6 +1009,12 @@ function attachControls() {
     document.getElementById('form-cancel').addEventListener('click', closeForm);
     document.getElementById('form-estado').addEventListener('change', togglePozoDiferidoCause);
 
+    document.getElementById('edit-mode').addEventListener('change', (e) => {
+        if (e.target.checked && !requireCrudAuth()) {
+            e.target.checked = false;
+        }
+    });
+
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
@@ -763,6 +1026,11 @@ function attachControls() {
     document.querySelectorAll('input[name="verification-estado"]').forEach(input => {
         input.addEventListener('change', toggleVerificationCause);
     });
+
+    document.getElementById('login-btn').addEventListener('click', openLoginForm);
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('login-form').addEventListener('submit', submitLogin);
+    document.getElementById('login-cancel').addEventListener('click', closeLoginForm);
 
     // Botón flotante de búsqueda para móvil
     document.getElementById('floating-search-btn').addEventListener('click', () => {

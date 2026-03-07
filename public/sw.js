@@ -1,14 +1,14 @@
-const CACHE_NAME = 'pozos-cache-v11';
+const CACHE_NAME = 'pozos-cache-v12';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
-    '/css/styles.css',
+    '/css/styles.css?v=5',
     '/css/leaflet.css',
     // incluimos las rutas con query string para que coincidan exactamente
     '/js/leaflet.js?v=3',
     '/js/localforage.min.js?v=3',
     '/js/lucide.min.js?v=3',
-    '/js/main.js?v=3',
+    '/js/main.js?v=6',
     '/js/sw-register.js?v=3',
     '/js/firebase-init.js?v=3',
     '/js/pozos-data.js?v=1',

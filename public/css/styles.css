@@ -61,6 +61,37 @@ body {
     font-size: 1rem;
 }
 
+.auth-btn {
+    padding: 0.55rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid #4b4f66;
+    background: #20222b;
+    color: #f5f7ff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.auth-btn:hover {
+    background: #2a2e3d;
+    transform: translateY(-1px);
+}
+
+.auth-user-label {
+    font-size: 0.85rem;
+    color: #bfc5ff;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid #3a3f55;
+    border-radius: 8px;
+    background: #171923;
+}
+
+.login-error {
+    color: #ff8f8f;
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+}
+
 #assign-taladro-btn {
     padding: 0.58rem 1rem;
     border-radius: 10px;
