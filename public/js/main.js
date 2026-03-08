@@ -22,7 +22,25 @@ const SERVICE_SEARCH_CONFIG = [
     { taladro: 'RIG-352', tags: ['352', 'rig-352', 'rig 352', 'servicio 352'] },
     { taladro: 'RIG-RANGER-555', tags: ['555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
     { taladro: 'Ranger-151', tags: ['151', 'ranger-151', 'ranger 151', 'servicio 151'] },
-    { taladro: 'WT', tags: ['wt', 'ct', 'coiled tubing', 'coiled tubbing', 'prueba liquida', 'prueba liquida wt', 'prueba liquida ct'] }
+    {
+        taladro: 'WT',
+        tags: [
+            'wt',
+            'ct',
+            'coiled tubing',
+            'coiled-tubing',
+            'coiledtubing',
+            'coiled tubbing',
+            'coil tubing',
+            'well testing',
+            'wel testing',
+            'well-testing',
+            'wel-testing',
+            'prueba liquida',
+            'prueba liquida wt',
+            'prueba liquida ct'
+        ]
+    }
 ];
 const POZO_DATA_KEY = 'pozoData';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
@@ -575,7 +593,11 @@ function updateDatalist(filter = '') {
         const opt = document.createElement('option');
         const primaryAlias = service.tags[0];
         opt.value = `servicio ${primaryAlias}`;
-        opt.label = `Servicio ${service.taladro}`;
+        if (service.taladro === 'WT') {
+            opt.label = 'Servicio WT (Well Testing)';
+        } else {
+            opt.label = `Servicio ${service.taladro}`;
+        }
         list.appendChild(opt);
     });
 }
