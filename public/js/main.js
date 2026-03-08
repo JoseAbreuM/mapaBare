@@ -1095,6 +1095,7 @@ async function runSearchById(rawId, clearMobileInput = false) {
 }
 
 function setupUpdateUi() {
+    const UPDATE_APPLIED_KEY = 'sw-update-applied-version';
     const toast = document.getElementById('update-toast');
     const updateText = document.getElementById('update-toast-text');
     const updateNowBtn = document.getElementById('update-now-btn');
@@ -1108,7 +1109,10 @@ function setupUpdateUi() {
     updateText.textContent = `Nueva actualización disponible (${APP_VERSION}). ¿Desea actualizar ahora?`;
     updateFab.textContent = `Actualización disponible (${APP_VERSION})`;
 
-    const showToast = () => {
+    const showToast = (message) => {
+        if (message) {
+            updateText.textContent = message;
+        }
         toast.classList.remove('hidden');
         updateFab.classList.add('hidden');
     };
@@ -1119,6 +1123,7 @@ function setupUpdateUi() {
     };
 
     const applyUpdate = () => {
+        sessionStorage.setItem(UPDATE_APPLIED_KEY, APP_VERSION);
         if (typeof window.__applyServiceWorkerUpdate === 'function') {
             window.__applyServiceWorkerUpdate();
             return;
@@ -1126,12 +1131,37 @@ function setupUpdateUi() {
         window.location.reload();
     };
 
+    const showUpdatedToast = (version) => {
+        updateNowBtn.classList.add('hidden');
+        updateLaterBtn.classList.add('hidden');
+        updateFab.classList.add('hidden');
+        showToast(`Aplicación actualizada correctamente (${version}).`);
+        window.setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 3500);
+    };
+
+    const showPromptActions = () => {
+        updateNowBtn.classList.remove('hidden');
+        updateLaterBtn.classList.remove('hidden');
+    };
+
+    const appliedVersion = sessionStorage.getItem(UPDATE_APPLIED_KEY);
+    if (appliedVersion) {
+        sessionStorage.removeItem(UPDATE_APPLIED_KEY);
+        showUpdatedToast(appliedVersion);
+    }
+
     updateNowBtn.addEventListener('click', applyUpdate);
     updateLaterBtn.addEventListener('click', showFab);
-    updateFab.addEventListener('click', showToast);
+    updateFab.addEventListener('click', () => showToast());
 
     window.addEventListener('sw-update-available', () => {
-        showToast();
+        showPromptActions();
+        showToast(`Nueva actualización disponible (${APP_VERSION}). Actualizando...`);
+        window.setTimeout(() => {
+            applyUpdate();
+        }, 250);
     });
 }
 
