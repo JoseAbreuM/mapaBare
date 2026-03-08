@@ -15,6 +15,15 @@ let searchId = null;
 let editId = null;
 let currentStatsFilter = 'all';
 let pendingServiceAssignment = null;
+const APP_VERSION = 'v1.2';
+const SERVICE_SEARCH_CONFIG = [
+    { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
+    { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
+    { taladro: 'RIG-352', tags: ['352', 'rig-352', 'rig 352', 'servicio 352'] },
+    { taladro: 'RIG-RANGER-555', tags: ['555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
+    { taladro: 'Ranger-151', tags: ['151', 'ranger-151', 'ranger 151', 'servicio 151'] },
+    { taladro: 'WT', tags: ['wt', 'ct', 'coiled tubing', 'coiled tubbing', 'prueba liquida', 'prueba liquida wt', 'prueba liquida ct'] }
+];
 const POZO_DATA_KEY = 'pozoData';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
 const AUTH_CONFIG_KEY = 'authConfig';
@@ -62,6 +71,46 @@ function normalizePozo(pozo) {
 
 function isDesktop() {
     return window.innerWidth > 768;
+}
+
+function normalizeText(value) {
+    return (value || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+}
+
+function buildServiceAliasSet() {
+    const map = new Map();
+    SERVICE_SEARCH_CONFIG.forEach(item => {
+        map.set(normalizeText(item.taladro), item.taladro);
+        item.tags.forEach(tag => map.set(normalizeText(tag), item.taladro));
+    });
+    return map;
+}
+
+const serviceAliasMap = buildServiceAliasSet();
+
+function matchServicioFromInput(rawTerm) {
+    const term = normalizeText(rawTerm);
+    if (!term) return null;
+
+    if (serviceAliasMap.has(term)) {
+        return serviceAliasMap.get(term);
+    }
+
+    for (const [alias, taladro] of serviceAliasMap.entries()) {
+        if (alias.includes(term) || term.includes(alias)) {
+            return taladro;
+        }
+    }
+    return null;
+}
+
+function findPozoByServicio(taladro) {
+    return pozoData.find(pozo => (pozo.taladro || '').toLowerCase() === (taladro || '').toLowerCase()) || null;
 }
 
 function bytesToHex(bytes) {
@@ -396,18 +445,20 @@ async function init() {
 
         // Precalentar cache para que la app instalada abra offline de forma robusta.
         warmOfflineResources();
+
+    setupUpdateUi();
 }
 
     async function warmOfflineResources() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=6',
+            '/css/styles.css?v=7',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=7',
-            '/js/sw-register.js?v=3',
+            '/js/main.js?v=8',
+            '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
             '/manifest.json',
@@ -421,7 +472,7 @@ async function init() {
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
         try {
-            const cache = await caches.open('pozos-cache-v12');
+            const cache = await caches.open('pozos-cache-v13');
             await Promise.allSettled(resources.map(url => cache.add(url)));
         } catch (e) {
             console.log('No se pudo completar warmup de cache offline', e);
@@ -503,15 +554,30 @@ function loadZone(zone) {
 }
 
 function updateDatalist(filter = '') {
+    const term = normalizeText(filter);
     const list = document.getElementById('pozos-list');
     list.innerHTML = '';
-    pozoData
-        .filter(p => p.id.includes(filter.toUpperCase()))
-        .forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            list.appendChild(opt);
-        });
+
+    const pozoMatches = pozoData
+        .filter(p => !term || p.id.toUpperCase().includes((filter || '').toUpperCase()))
+        .slice(0, 20);
+
+    pozoMatches.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.label = `Pozo (${p.zona})`;
+        list.appendChild(opt);
+    });
+
+    SERVICE_SEARCH_CONFIG.forEach(service => {
+        const matchesService = !term || service.tags.some(tag => normalizeText(tag).includes(term)) || normalizeText(service.taladro).includes(term);
+        if (!matchesService) return;
+        const opt = document.createElement('option');
+        const primaryAlias = service.tags[0];
+        opt.value = `servicio ${primaryAlias}`;
+        opt.label = `Servicio ${service.taladro}`;
+        list.appendChild(opt);
+    });
 }
 
 function renderMarkers(zone) {
@@ -960,21 +1026,41 @@ function applyStatsFilter(filter) {
 }
 
 async function runSearchById(rawId, clearMobileInput = false) {
-    const id = (rawId || '').trim().toUpperCase();
-    if (!id) return;
+    const rawValue = (rawId || '').trim();
+    const typedValue = rawValue.toUpperCase();
+    if (!rawValue) return;
 
-    const p = pozoData.find(pozo => pozo.id === id);
-    if (!p) return;
+    const isServiceHint = normalizeText(rawValue).startsWith('servicio ');
+    const cleanedForService = isServiceHint ? rawValue.replace(/^\s*servicio\s+/i, '') : rawValue;
 
-    searchId = id;
-    document.getElementById('zone-select').value = p.zona;
-    document.getElementById('mobile-zone-select').value = p.zona;
+    let targetPozo = null;
+    if (!isServiceHint) {
+        targetPozo = pozoData.find(pozo => pozo.id === typedValue) || null;
+    }
 
-    await loadZone(p.zona);
-    renderMarkers(p.zona);
+    if (!targetPozo) {
+        const taladro = matchServicioFromInput(cleanedForService);
+        if (taladro) {
+            targetPozo = findPozoByServicio(taladro);
+            if (!targetPozo) {
+                alert(`No hay pozo asignado al servicio ${taladro}`);
+            }
+        }
+    }
+
+    if (!targetPozo) {
+        return;
+    }
+
+    searchId = targetPozo.id;
+    document.getElementById('zone-select').value = targetPozo.zona;
+    document.getElementById('mobile-zone-select').value = targetPozo.zona;
+
+    await loadZone(targetPozo.zona);
+    renderMarkers(targetPozo.zona);
 
     if (markers[searchId]) {
-        map.flyTo(p.coords, Math.max(map.getZoom(), 2));
+        map.flyTo(targetPozo.coords, Math.max(map.getZoom(), 2));
         markers[searchId].openPopup();
     }
 
@@ -984,6 +1070,47 @@ async function runSearchById(rawId, clearMobileInput = false) {
         document.getElementById('floating-search-input').classList.add('hidden');
         document.getElementById('mobile-search').value = '';
     }
+}
+
+function setupUpdateUi() {
+    const toast = document.getElementById('update-toast');
+    const updateText = document.getElementById('update-toast-text');
+    const updateNowBtn = document.getElementById('update-now-btn');
+    const updateLaterBtn = document.getElementById('update-later-btn');
+    const updateFab = document.getElementById('update-fab');
+
+    if (!toast || !updateNowBtn || !updateLaterBtn || !updateFab) {
+        return;
+    }
+
+    updateText.textContent = `Nueva actualización disponible (${APP_VERSION}). ¿Desea actualizar ahora?`;
+    updateFab.textContent = `Actualización disponible (${APP_VERSION})`;
+
+    const showToast = () => {
+        toast.classList.remove('hidden');
+        updateFab.classList.add('hidden');
+    };
+
+    const showFab = () => {
+        toast.classList.add('hidden');
+        updateFab.classList.remove('hidden');
+    };
+
+    const applyUpdate = () => {
+        if (typeof window.__applyServiceWorkerUpdate === 'function') {
+            window.__applyServiceWorkerUpdate();
+            return;
+        }
+        window.location.reload();
+    };
+
+    updateNowBtn.addEventListener('click', applyUpdate);
+    updateLaterBtn.addEventListener('click', showFab);
+    updateFab.addEventListener('click', showToast);
+
+    window.addEventListener('sw-update-available', () => {
+        showToast();
+    });
 }
 
 function attachControls() {
@@ -1046,6 +1173,10 @@ function attachControls() {
 
     document.getElementById('mobile-search-btn').addEventListener('click', async () => {
         await runSearchById(document.getElementById('mobile-search').value, true);
+    });
+
+    document.getElementById('mobile-search').addEventListener('input', (e) => {
+        updateDatalist(e.target.value);
     });
 
     document.getElementById('mobile-search').addEventListener('keydown', (e) => {

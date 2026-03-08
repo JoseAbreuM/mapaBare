@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=6">
+    <link rel="stylesheet" href="css/styles.css?v=7">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -19,7 +19,7 @@
 <body>
     <header class="app-header">
         <div class="controls">
-            <input id="search-input" class="desktop-only" list="pozos-list" placeholder="Buscar pozo ID..." autocomplete="off">
+            <input id="search-input" class="desktop-only" list="pozos-list" placeholder="Buscar pozo o servicio..." autocomplete="off">
             <datalist id="pozos-list"></datalist>
 
             <select id="zone-select" class="mobile-show">
@@ -226,14 +226,14 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=7"></script>
-    <script src="js/sw-register.js?v=3" defer></script>
+    <script src="js/main.js?v=8"></script>
+    <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
     <div id="floating-search-container">
         <button id="floating-search-btn" class="floating-search-btn">🔍</button>
         <div id="floating-search-input" class="floating-search-input hidden">
-            <input id="mobile-search" list="pozos-list" placeholder="Buscar pozo ID...">
+            <input id="mobile-search" list="pozos-list" placeholder="Buscar pozo o servicio...">
             <button id="mobile-search-btn">Buscar</button>
         </div>
     </div>
@@ -253,7 +253,7 @@
 
     <!-- Leyenda flotante para móvil -->
     <div id="floating-legend-container">
-        <button id="floating-legend-btn" class="floating-legend-btn" aria-label="Mostrar leyenda">●</button>
+        <button id="floating-legend-btn" class="floating-legend-btn" aria-label="Mostrar leyenda">i</button>
         <div id="floating-legend-box" class="floating-legend-box hidden" role="button" tabindex="0" aria-label="Ocultar leyenda">
             <div class="legend-item"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</div>
             <div class="legend-item"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Inactivos por servicio</div>
@@ -263,5 +263,15 @@
             <div class="legend-item"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido</div>
         </div>
     </div>
+
+    <div id="update-toast" class="update-toast hidden" role="status" aria-live="polite">
+        <p id="update-toast-text">Nueva actualización disponible (v1.2). ¿Desea actualizar ahora?</p>
+        <div class="update-toast-actions">
+            <button id="update-now-btn" type="button">Actualizar</button>
+            <button id="update-later-btn" type="button">Más tarde</button>
+        </div>
+    </div>
+
+    <button id="update-fab" class="update-fab hidden" type="button">Actualización disponible (v1.2)</button>
 </body>
 </html>

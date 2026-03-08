@@ -1,15 +1,15 @@
-const CACHE_NAME = 'pozos-cache-v12';
+const CACHE_NAME = 'pozos-cache-v13';
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
-    '/css/styles.css?v=5',
+    '/css/styles.css?v=7',
     '/css/leaflet.css',
     // incluimos las rutas con query string para que coincidan exactamente
     '/js/leaflet.js?v=3',
     '/js/localforage.min.js?v=3',
     '/js/lucide.min.js?v=3',
-    '/js/main.js?v=6',
-    '/js/sw-register.js?v=3',
+    '/js/main.js?v=8',
+    '/js/sw-register.js?v=4',
     '/js/firebase-init.js?v=3',
     '/js/pozos-data.js?v=1',
     '/manifest.json',
@@ -30,6 +30,10 @@ self.addEventListener('install', event => {
             await Promise.allSettled(FILES_TO_CACHE.map(file => cache.add(file)));
         })
     );
+});
+
+self.addEventListener('message', event => {
+    if (!event.data || event.data.type !== 'SKIP_WAITING') return;
     self.skipWaiting();
 });
 

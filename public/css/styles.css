@@ -248,7 +248,10 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.4);
     background: rgba(2, 4, 153, 0.92);
     color: #ffffff;
-    font-size: 18px;
+    font-size: 21px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 700;
     line-height: 1;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -283,6 +286,60 @@ body {
 
 .legend-item + .legend-item {
     margin-top: 0.35rem;
+}
+
+.update-toast {
+    position: fixed;
+    right: 14px;
+    bottom: 18px;
+    z-index: 10030;
+    width: min(360px, calc(100vw - 28px));
+    border: 1px solid rgba(125, 136, 255, 0.5);
+    border-radius: 12px;
+    background: rgba(22, 24, 36, 0.94);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+    padding: 0.8rem;
+}
+
+.update-toast p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #f5f7ff;
+}
+
+.update-toast-actions {
+    margin-top: 0.7rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.update-toast-actions button {
+    border: 1px solid #3f4665;
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+    background: #202533;
+    color: #f5f7ff;
+    cursor: pointer;
+}
+
+#update-now-btn {
+    border-color: #6d7bff;
+    background: #2b3bbd;
+}
+
+.update-fab {
+    position: fixed;
+    right: 14px;
+    bottom: 18px;
+    z-index: 10025;
+    border: 1px solid #5f70ff;
+    border-radius: 999px;
+    padding: 0.48rem 0.78rem;
+    font-size: 0.78rem;
+    background: rgba(12, 17, 45, 0.88);
+    color: #dbe1ff;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
 }
 
 main {
@@ -606,6 +663,10 @@ main {
         font-size: 16px;
     }
 
+    #mobile-search {
+        text-transform: uppercase;
+    }
+
     .floating-search-input button {
         padding: 10px 15px;
         border: none;
@@ -690,6 +751,18 @@ main {
         display: flex !important;
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .update-toast {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        bottom: 90px;
+    }
+
+    .update-fab {
+        right: 12px;
+        bottom: 84px;
     }
 /* Estilos para los iconos de taladros */
 .contenedor-icono-taladro {
