@@ -402,11 +402,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=5',
+            '/css/styles.css?v=6',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=6',
+            '/js/main.js?v=7',
             '/js/sw-register.js?v=3',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -1039,6 +1039,9 @@ function attachControls() {
         inputDiv.classList.toggle('hidden');
         // Cerrar zona si está abierta
         document.getElementById('floating-zone-input').classList.add('hidden');
+        // Cerrar leyenda si está abierta
+        document.getElementById('floating-legend-box').classList.add('hidden');
+        document.getElementById('floating-legend-btn').classList.remove('is-hidden');
     });
 
     document.getElementById('mobile-search-btn').addEventListener('click', async () => {
@@ -1057,6 +1060,39 @@ function attachControls() {
         inputDiv.classList.toggle('hidden');
         // Cerrar búsqueda si está abierta
         document.getElementById('floating-search-input').classList.add('hidden');
+        // Cerrar leyenda si está abierta
+        document.getElementById('floating-legend-box').classList.add('hidden');
+        document.getElementById('floating-legend-btn').classList.remove('is-hidden');
+    });
+
+    const floatingLegendBtn = document.getElementById('floating-legend-btn');
+    const floatingLegendBox = document.getElementById('floating-legend-box');
+
+    floatingLegendBtn.addEventListener('click', () => {
+        const shouldShow = floatingLegendBox.classList.contains('hidden');
+        if (shouldShow) {
+            floatingLegendBox.classList.remove('hidden');
+            floatingLegendBtn.classList.add('is-hidden');
+            // Si se abre la leyenda, cerramos otros paneles flotantes.
+            document.getElementById('floating-search-input').classList.add('hidden');
+            document.getElementById('floating-zone-input').classList.add('hidden');
+            return;
+        }
+        floatingLegendBox.classList.add('hidden');
+        floatingLegendBtn.classList.remove('is-hidden');
+    });
+
+    const hideFloatingLegend = () => {
+        floatingLegendBox.classList.add('hidden');
+        floatingLegendBtn.classList.remove('is-hidden');
+    };
+
+    floatingLegendBox.addEventListener('click', hideFloatingLegend);
+    floatingLegendBox.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            hideFloatingLegend();
+        }
     });
 
     document.getElementById('mobile-zone-select').addEventListener('change', async (e) => {
