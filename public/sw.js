@@ -33,7 +33,9 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('message', event => {
-    if (!event.data || event.data.type !== 'SKIP_WAITING') return;
+    const isLegacyMessage = !!event.data && event.data.type === 'SKIP_WAITING';
+    const isStringMessage = event.data === 'skipWaiting';
+    if (!isLegacyMessage && !isStringMessage) return;
     self.skipWaiting();
 });
 

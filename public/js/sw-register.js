@@ -1,7 +1,9 @@
 if ('serviceWorker' in navigator) {
     let waitingWorker = null;
+    window.__swUpdateAvailable = false;
 
     const emitUpdateAvailable = () => {
+        window.__swUpdateAvailable = true;
         window.dispatchEvent(new CustomEvent('sw-update-available'));
     };
 
@@ -17,8 +19,11 @@ if ('serviceWorker' in navigator) {
             window.location.reload();
             return;
         }
-        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        waitingWorker.postMessage('skipWaiting');
     };
+
+    // Alias compatible con el nombre solicitado en la app.
+    window.actualizarApp = window.__applyServiceWorkerUpdate;
 
     navigator.serviceWorker
         .register('/sw.js')

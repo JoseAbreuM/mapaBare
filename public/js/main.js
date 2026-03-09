@@ -1156,13 +1156,16 @@ function setupUpdateUi() {
     updateLaterBtn.addEventListener('click', showFab);
     updateFab.addEventListener('click', () => showToast());
 
-    window.addEventListener('sw-update-available', () => {
+    const handleUpdateAvailable = () => {
         showPromptActions();
-        showToast(`Nueva actualización disponible (${APP_VERSION}). Actualizando...`);
-        window.setTimeout(() => {
-            applyUpdate();
-        }, 250);
-    });
+        showToast(`Nueva actualización disponible (${APP_VERSION}). ¿Desea actualizar ahora?`);
+    };
+
+    window.addEventListener('sw-update-available', handleUpdateAvailable);
+
+    if (window.__swUpdateAvailable) {
+        handleUpdateAvailable();
+    }
 }
 
 function attachControls() {
