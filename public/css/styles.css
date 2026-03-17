@@ -818,6 +818,10 @@ main {
         align-items: flex-start;
     }
 
+    body.mobile-map-view #floating-search-container {
+        bottom: 152px;
+    }
+
     #floating-zone-container.hidden,
     #mobile-map-filters.hidden {
         display: none !important;

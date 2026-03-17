@@ -181,6 +181,7 @@ function closeFloatingPanels(exceptId = null) {
 }
 
 function updateResponsiveControls() {
+    const body = document.body;
     const floatingViewBtn = document.getElementById('floating-view-btn');
     const floatingZoneContainer = document.getElementById('floating-zone-container');
     const mobileMapFilters = document.getElementById('mobile-map-filters');
@@ -188,6 +189,10 @@ function updateResponsiveControls() {
 
     const mobile = !isDesktop();
     const showingMap = mapMode === 'mapa';
+
+    if (body) {
+        body.classList.toggle('mobile-map-view', mobile && showingMap);
+    }
 
     floatingViewBtn.textContent = showingMap ? 'DIAGR.' : 'MAPA';
     floatingViewBtn.setAttribute('aria-label', showingMap ? 'Cambiar a vista diagrama' : 'Cambiar a vista mapa');
