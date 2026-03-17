@@ -45,7 +45,7 @@
         <h2>Estadísticas</h2>
         <button type="button" class="stats-item is-active" data-filter="all">Total pozos: <span id="count-total">0</span></button>
         <button type="button" class="stats-item" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos: <span id="count-active">0</span></button>
-        <button type="button" class="stats-item" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Inactivos por servicio: <span id="count-inactive-service">0</span></button>
+        <button type="button" class="stats-item" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio: <span id="count-inactive-service">0</span></button>
         <button type="button" class="stats-item" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio: <span id="count-in-service">0</span></button>
         <button type="button" class="stats-item" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico: <span id="count-diagnostic">0</span></button>
         <button type="button" class="stats-item" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos: <span id="count-candidate">0</span></button>
@@ -66,7 +66,7 @@
             <label>Estado<br>
                 <select id="form-estado">
                     <option value="activo">Activo</option>
-                    <option value="inactivo-servicio">Inactivo por servicio</option>
+                    <option value="inactivo-servicio">En espera de servicio</option>
                     <option value="en-servicio">En servicio</option>
                     <option value="diagnostico">En diagnóstico</option>
                     <option value="candidato">Candidato</option>
@@ -74,6 +74,7 @@
                 </select>
             </label>
             <label id="form-diferido-cause-wrapper" class="hidden">Causa diferido<br><input type="text" id="form-diferido-cause" placeholder="Ej: arenamiento"></label>
+            <label>Nota<br><input type="text" id="form-nota" placeholder="Ej: espera RIG-351 / en diagnostico por bomba"></label>
             <label>Cabezal<br>
                 <select id="form-cabezal">
                     <option value="">Ninguno</option>
@@ -256,7 +257,7 @@
         <button id="floating-legend-btn" class="floating-legend-btn" aria-label="Mostrar leyenda">i</button>
         <div id="floating-legend-box" class="floating-legend-box hidden" role="button" tabindex="0" aria-label="Ocultar leyenda">
             <div class="legend-item"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</div>
-            <div class="legend-item"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Inactivos por servicio</div>
+            <div class="legend-item"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio</div>
             <div class="legend-item"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio</div>
             <div class="legend-item"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico</div>
             <div class="legend-item"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</div>

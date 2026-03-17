@@ -67,7 +67,7 @@ const STATUS = {
 
 function normalizeEstado(estado) {
     const value = (estado || '').toString().trim().toLowerCase();
-    if (value === 'inactivo' || value === 'inactivo por servicio') return STATUS.INACTIVO_SERVICIO;
+    if (value === 'inactivo' || value === 'inactivo por servicio' || value === 'en espera de servicio' || value === 'espera de servicio') return STATUS.INACTIVO_SERVICIO;
     if (value === 'revision' || value === 'revisión' || value === 'en revision' || value === 'en revisión' || value === 'diagnostico' || value === 'diagnóstico') {
         return STATUS.DIAGNOSTICO;
     }
@@ -83,7 +83,8 @@ function normalizePozo(pozo) {
     const hasServicio = !!pozo.taladro;
     return {
         ...pozo,
-        estado: hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado)
+        estado: hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado),
+        nota: (pozo.nota || '').toString().trim() || null
     };
 }
 
@@ -720,7 +721,7 @@ function createMarker(p) {
 function popupContent(p) {
     const estadoLabelMap = {
         [STATUS.ACTIVO]: 'Activo',
-        [STATUS.INACTIVO_SERVICIO]: 'Inactivo por servicio',
+        [STATUS.INACTIVO_SERVICIO]: 'En espera de servicio',
         [STATUS.EN_SERVICIO]: 'En servicio',
         [STATUS.DIAGNOSTICO]: 'En diagnostico',
         [STATUS.CANDIDATO]: 'Candidato',
@@ -734,6 +735,7 @@ function popupContent(p) {
     if (p.variador) content += `<br>Variador: ${p.variador}`;
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
+    if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
     // Solo mostrar botones CRUD en desktop autenticado
     if (isDesktop() && isAuthenticated) {
@@ -761,6 +763,7 @@ function openForm(lat = null, lng = null, id = null) {
         const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
         document.getElementById('form-estado').value = normalizedEstado;
         document.getElementById('form-diferido-cause').value = normalizedEstado === STATUS.DIFERIDO ? (p.causaDiferido || '') : '';
+        document.getElementById('form-nota').value = p.nota || '';
         togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
@@ -773,6 +776,7 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-lat').value = lat;
         document.getElementById('form-lng').value = lng;
         document.getElementById('form-diferido-cause').value = '';
+        document.getElementById('form-nota').value = '';
         togglePozoDiferidoCause();
     }
 }
@@ -784,6 +788,7 @@ function closeForm() {
     document.getElementById('form-title').textContent = 'Nuevo Pozo';
     document.getElementById('form-id').disabled = false;
     document.getElementById('form-diferido-cause').value = '';
+    document.getElementById('form-nota').value = '';
     togglePozoDiferidoCause();
     editId = null;
 }
@@ -948,6 +953,7 @@ async function savePozo(e) {
     const previousPozo = editId ? pozoData.find(p => p.id === editId) : null;
     const formEstado = normalizeEstado(document.getElementById('form-estado').value);
     const formCausaDiferido = document.getElementById('form-diferido-cause').value.trim();
+    const formNota = document.getElementById('form-nota').value.trim();
     const pozo = {
         id: document.getElementById('form-id').value.trim().toUpperCase(),
         zona: document.getElementById('zone-select').value,
@@ -959,6 +965,7 @@ async function savePozo(e) {
         cabezal: document.getElementById('form-cabezal').value || null,
         variador: document.getElementById('form-variador').value || null,
         potencial: document.getElementById('form-potencial').value || null,
+        nota: formNota || null,
         taladro: previousPozo ? previousPozo.taladro : null,
         causaDiferido: formEstado === STATUS.DIFERIDO ? formCausaDiferido : null
     };
