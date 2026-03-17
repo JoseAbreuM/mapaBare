@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=10">
+    <link rel="stylesheet" href="css/styles.css?v=11">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -254,7 +254,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=13"></script>
+    <script src="js/main.js?v=14"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
@@ -277,6 +277,20 @@
                 <option value="bare-este">Bare Este</option>
             </select>
         </div>
+    </div>
+
+    <div id="floating-view-container">
+        <button id="floating-view-btn" class="floating-view-btn" type="button" aria-label="Cambiar a vista mapa">MAPA</button>
+    </div>
+
+    <div id="mobile-map-filters" class="mobile-map-filters hidden" aria-label="Filtrar pozos por categoría">
+        <button type="button" class="stats-item mobile-filter-chip is-active" data-filter="all">Todos</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Espera</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>Servicio</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>Diagnóstico</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferidos</button>
     </div>
 
     <!-- Leyenda flotante para móvil -->

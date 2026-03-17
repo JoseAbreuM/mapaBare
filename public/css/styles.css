@@ -245,6 +245,11 @@ body {
     display: none;
 }
 
+#floating-view-container,
+#mobile-map-filters {
+    display: none;
+}
+
 .floating-legend-btn {
     width: 42px;
     height: 42px;
@@ -344,6 +349,51 @@ body {
     color: #dbe1ff;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     cursor: pointer;
+}
+
+.mobile-map-filters {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 92px;
+    z-index: 10006;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.1rem 0.05rem 0.2rem;
+    scrollbar-width: none;
+}
+
+.mobile-map-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-filter-chip {
+    width: auto;
+    min-width: max-content;
+    margin: 0;
+    border-radius: 999px;
+    padding: 0.62rem 0.88rem;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+}
+
+.mobile-filter-chip .status-dot {
+    margin-right: 0.38rem;
+}
+
+.floating-view-btn {
+    min-width: 82px;
+    height: 48px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(12, 16, 34, 0.92);
+    color: #f5f7ff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
 }
 
 main {
@@ -691,10 +741,21 @@ main {
         display: none; /* Oculto por defecto */
     }
 
+    #floating-view-container {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        z-index: 10000;
+        display: flex !important;
+    }
+
     /* Hide mobile floating controls on desktop */
     @media (min-width: 769px) {
         #floating-search-container,
-        #floating-zone-container {
+        #floating-zone-container,
+        #floating-view-container,
+        #mobile-map-filters {
             display: none !important;
         }
     }
@@ -757,6 +818,15 @@ main {
         align-items: flex-start;
     }
 
+    #floating-zone-container.hidden,
+    #mobile-map-filters.hidden {
+        display: none !important;
+    }
+
+    .mobile-map-filters {
+        display: flex !important;
+    }
+
     .update-toast {
         left: 12px;
         right: 12px;
@@ -766,7 +836,17 @@ main {
 
     .update-fab {
         right: 12px;
-        bottom: 84px;
+        bottom: 150px;
+    }
+
+    .floating-legend-box {
+        left: auto;
+        right: 12px;
+        max-width: calc(100vw - 24px);
+    }
+
+    .leaflet-top.leaflet-left {
+        top: 6px;
     }
 /* Estilos para los iconos de taladros */
 .contenedor-icono-taladro {

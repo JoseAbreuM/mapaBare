@@ -20,7 +20,8 @@ let searchId = null;
 let editId = null;
 let currentStatsFilter = 'all';
 let pendingServiceAssignment = null;
-const APP_VERSION = 'v1.7';
+const APP_VERSION = 'v1.8';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v19';
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
     { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
@@ -153,6 +154,83 @@ function getDiagramCoords(pozo) {
     if (isDiagramCoords(pozo.coordsDiagrama)) return pozo.coordsDiagrama;
     if (isDiagramCoords(pozo.coords)) return pozo.coords;
     return null;
+}
+
+function getSelectedZone() {
+    const zoneSelect = document.getElementById('zone-select');
+    return zoneSelect ? zoneSelect.value : 'bare-tradicional';
+}
+
+function renderActiveMarkers() {
+    renderMarkers(getSelectedZone());
+}
+
+function closeFloatingPanels(exceptId = null) {
+    ['floating-search-input', 'floating-zone-input', 'floating-legend-box'].forEach(id => {
+        if (id === exceptId) return;
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.add('hidden');
+        }
+    });
+
+    const legendButton = document.getElementById('floating-legend-btn');
+    if (legendButton) {
+        legendButton.classList.toggle('is-hidden', exceptId === 'floating-legend-box');
+    }
+}
+
+function updateResponsiveControls() {
+    const floatingViewBtn = document.getElementById('floating-view-btn');
+    const floatingZoneContainer = document.getElementById('floating-zone-container');
+    const mobileMapFilters = document.getElementById('mobile-map-filters');
+    if (!floatingViewBtn || !floatingZoneContainer || !mobileMapFilters) return;
+
+    const mobile = !isDesktop();
+    const showingMap = mapMode === 'mapa';
+
+    floatingViewBtn.textContent = showingMap ? 'DIAGR.' : 'MAPA';
+    floatingViewBtn.setAttribute('aria-label', showingMap ? 'Cambiar a vista diagrama' : 'Cambiar a vista mapa');
+
+    floatingZoneContainer.classList.toggle('hidden', !mobile || showingMap);
+    mobileMapFilters.classList.toggle('hidden', !mobile || !showingMap);
+}
+
+function lonToTileX(lng, zoom) {
+    return Math.floor(((lng + 180) / 360) * Math.pow(2, zoom));
+}
+
+function latToTileY(lat, zoom) {
+    const latRad = (lat * Math.PI) / 180;
+    return Math.floor(
+        ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * Math.pow(2, zoom)
+    );
+}
+
+function buildBareTileUrls(zoomLevels = [12, 13]) {
+    const urls = [];
+    zoomLevels.forEach(zoom => {
+        const minX = lonToTileX(BARE_MAP_BOUNDS.minLng, zoom);
+        const maxX = lonToTileX(BARE_MAP_BOUNDS.maxLng, zoom);
+        const minY = latToTileY(BARE_MAP_BOUNDS.maxLat, zoom);
+        const maxY = latToTileY(BARE_MAP_BOUNDS.minLat, zoom);
+
+        for (let x = minX; x <= maxX; x++) {
+            for (let y = minY; y <= maxY; y++) {
+                urls.push(`https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`);
+            }
+        }
+    });
+    return urls;
+}
+
+async function warmBareMapTiles() {
+    if (!navigator.onLine || typeof fetch !== 'function') return;
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection && connection.saveData) return;
+
+    const tileUrls = buildBareTileUrls();
+    await Promise.allSettled(tileUrls.map(url => fetch(url, { mode: 'no-cors' })));
 }
 
 function isInsideBareMap(coords) {
@@ -540,7 +618,7 @@ async function init() {
     await applyViewMode(mapMode, true);
 
     // Render inicial usando lo que ya esté en memoria local/remota
-    renderMarkers(document.getElementById('zone-select').value);
+    renderActiveMarkers();
     updateDatalist();
     updateStats();
 
@@ -562,7 +640,7 @@ async function init() {
                 if (isDirty) return; // evita pisar cambios locales pendientes
                 pozoData = (doc.data().pozos || []).map(normalizePozo);
                 await localforage.setItem(POZO_DATA_KEY, pozoData);
-                renderMarkers(document.getElementById('zone-select').value);
+                renderActiveMarkers();
                 updateDatalist();
                 updateStats();
             }
@@ -573,7 +651,8 @@ async function init() {
     window.addEventListener('online', syncData);
     window.addEventListener('resize', () => {
         updateAuthUi();
-        renderMarkers(document.getElementById('zone-select').value);
+        updateResponsiveControls();
+        renderActiveMarkers();
     });
 
         // Precalentar cache para que la app instalada abra offline de forma robusta.
@@ -586,11 +665,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=10',
+            '/css/styles.css?v=11',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=11',
+            '/js/main.js?v=14',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -601,12 +680,17 @@ async function init() {
             '/assets/mapas/bare6-1.jpg',
             '/assets/mapas/bare6-2.jpg',
             '/assets/mapas/trilla-asfaltada.jpg',
+            '/assets/mapas/Prueba1.gpx',
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
         try {
-            const cache = await caches.open('pozos-cache-v18');
+            const cache = await caches.open(OFFLINE_CACHE_NAME);
             await Promise.allSettled(resources.map(url => cache.add(url)));
+            const scheduleWarmTiles = window.requestIdleCallback
+                ? () => window.requestIdleCallback(() => { warmBareMapTiles().catch(() => {}); }, { timeout: 2500 })
+                : () => window.setTimeout(() => { warmBareMapTiles().catch(() => {}); }, 1200);
+            scheduleWarmTiles();
         } catch (e) {
             console.log('No se pudo completar warmup de cache offline', e);
         }
@@ -641,7 +725,7 @@ async function syncData() {
         if (docSnap.exists) {
             pozoData = (docSnap.data().pozos || []).map(normalizePozo);
             await localforage.setItem(POZO_DATA_KEY, pozoData);
-            renderMarkers(document.getElementById('zone-select').value);
+            renderActiveMarkers();
             updateDatalist();
             updateStats();
         }
@@ -666,9 +750,11 @@ async function applyViewMode(mode, skipPersist = false) {
     if (!skipPersist) {
         await localforage.setItem(MAP_MODE_KEY, mapMode);
     }
-
-    currentStatsFilter = 'all';
+    if (!isDesktop() && mapMode !== 'mapa') {
+        currentStatsFilter = 'all';
+    }
     updateStatsFilterUi();
+    updateResponsiveControls();
 
     if (modeChanged) {
         ensureMapForMode();
@@ -678,7 +764,7 @@ async function applyViewMode(mode, skipPersist = false) {
     }
 
     if (mapMode === 'diagram') {
-        const zone = document.getElementById('zone-select').value;
+        const zone = getSelectedZone();
         await loadZone(zone, true);
         renderMarkers(zone);
         return;
@@ -878,8 +964,6 @@ function renderMarkers(zone) {
 }
 
 function matchesCurrentFilter(pozo) {
-    if (!isDesktop()) return true;
-    if (mapMode === 'mapa') return true;
     if (currentStatsFilter === 'all') return true;
     if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
     return normalizeEstado(pozo.estado) === currentStatsFilter;
@@ -1367,12 +1451,13 @@ function updateStatsFilterUi() {
     document.querySelectorAll('.stats-item').forEach(btn => {
         btn.classList.toggle('is-active', btn.dataset.filter === currentStatsFilter);
     });
+    updateResponsiveControls();
 }
 
 function applyStatsFilter(filter) {
     currentStatsFilter = filter;
     updateStatsFilterUi();
-    renderMarkers(document.getElementById('zone-select').value);
+    renderActiveMarkers();
 }
 
 async function runSearchById(rawId, clearMobileInput = false) {
@@ -1570,12 +1655,9 @@ function attachControls() {
     // Botón flotante de búsqueda para móvil
     document.getElementById('floating-search-btn').addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-search-input');
-        inputDiv.classList.toggle('hidden');
-        // Cerrar zona si está abierta
-        document.getElementById('floating-zone-input').classList.add('hidden');
-        // Cerrar leyenda si está abierta
-        document.getElementById('floating-legend-box').classList.add('hidden');
-        document.getElementById('floating-legend-btn').classList.remove('is-hidden');
+        const shouldShow = inputDiv.classList.contains('hidden');
+        closeFloatingPanels(shouldShow ? 'floating-search-input' : null);
+        inputDiv.classList.toggle('hidden', !shouldShow);
     });
 
     document.getElementById('mobile-search-btn').addEventListener('click', async () => {
@@ -1595,13 +1677,18 @@ function attachControls() {
     // Botón flotante de zona para móvil
     document.getElementById('floating-zone-btn').addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-zone-input');
-        inputDiv.classList.toggle('hidden');
-        // Cerrar búsqueda si está abierta
-        document.getElementById('floating-search-input').classList.add('hidden');
-        // Cerrar leyenda si está abierta
-        document.getElementById('floating-legend-box').classList.add('hidden');
-        document.getElementById('floating-legend-btn').classList.remove('is-hidden');
+        const shouldShow = inputDiv.classList.contains('hidden');
+        closeFloatingPanels(shouldShow ? 'floating-zone-input' : null);
+        inputDiv.classList.toggle('hidden', !shouldShow);
     });
+
+    const floatingViewBtn = document.getElementById('floating-view-btn');
+    if (floatingViewBtn) {
+        floatingViewBtn.addEventListener('click', async () => {
+            closeFloatingPanels();
+            await applyViewMode(mapMode === 'mapa' ? 'diagram' : 'mapa');
+        });
+    }
 
     const floatingLegendBtn = document.getElementById('floating-legend-btn');
     const floatingLegendBox = document.getElementById('floating-legend-box');
@@ -1609,11 +1696,8 @@ function attachControls() {
     floatingLegendBtn.addEventListener('click', () => {
         const shouldShow = floatingLegendBox.classList.contains('hidden');
         if (shouldShow) {
+            closeFloatingPanels('floating-legend-box');
             floatingLegendBox.classList.remove('hidden');
-            floatingLegendBtn.classList.add('is-hidden');
-            // Si se abre la leyenda, cerramos otros paneles flotantes.
-            document.getElementById('floating-search-input').classList.add('hidden');
-            document.getElementById('floating-zone-input').classList.add('hidden');
             return;
         }
         floatingLegendBox.classList.add('hidden');
@@ -1642,15 +1726,14 @@ function attachControls() {
         document.getElementById('floating-zone-input').classList.add('hidden');
     });
 
-    // Filtro por estadísticas solo en desktop
     document.querySelectorAll('.stats-item').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (!isDesktop()) return;
             applyStatsFilter(btn.dataset.filter || 'all');
         });
     });
 
     updateStatsFilterUi();
+    updateResponsiveControls();
 }
 
 // para depuración
