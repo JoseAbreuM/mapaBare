@@ -15,7 +15,7 @@ let searchId = null;
 let editId = null;
 let currentStatsFilter = 'all';
 let pendingServiceAssignment = null;
-const APP_VERSION = 'v1.2';
+const APP_VERSION = 'v1.3';
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
     { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
@@ -472,11 +472,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=7',
+            '/css/styles.css?v=8',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=8',
+            '/js/main.js?v=9',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -491,7 +491,7 @@ async function init() {
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
         try {
-            const cache = await caches.open('pozos-cache-v13');
+            const cache = await caches.open('pozos-cache-v14');
             await Promise.allSettled(resources.map(url => cache.add(url)));
         } catch (e) {
             console.log('No se pudo completar warmup de cache offline', e);
