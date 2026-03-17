@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=8">
+    <link rel="stylesheet" href="css/styles.css?v=10">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -19,6 +19,11 @@
 <body>
     <header class="app-header">
         <div class="controls">
+            <select id="view-mode-select" class="desktop-only">
+                <option value="diagram">Vista diagrama</option>
+                <option value="mapa">Vista MAPA</option>
+            </select>
+
             <input id="search-input" class="desktop-only" list="pozos-list" placeholder="Buscar pozo o servicio..." autocomplete="off">
             <datalist id="pozos-list"></datalist>
 
@@ -35,6 +40,7 @@
                 <span class="label">Modo edición</span>
             </label>
             <button id="assign-taladro-btn">Asignar Servicio</button>
+            <button id="assign-existing-pozo-btn" class="auth-btn">Asignar Pozo Ya Creado</button>
             <span id="auth-user-label" class="auth-user-label hidden"></span>
             <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
             <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
@@ -110,6 +116,7 @@
                 </select>
             </label>
             <label>Potencial (barriles)<br><input type="number" id="form-potencial" min="0" step="0.01"></label>
+            <label>Fecha de ultimo servicio<br><input type="date" id="form-fecha-ultimo-servicio"></label>
             <div class="form-actions">
                 <button type="submit">Guardar</button>
                 <button type="button" id="form-cancel">Cancelar</button>
@@ -135,6 +142,26 @@
             <div class="form-actions">
                 <button type="submit">Asignar</button>
                 <button type="button" id="assign-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- formulario asignar pozo ya creado al diagrama -->
+    <div id="assign-existing-form-container" class="form-container hidden">
+        <form id="assign-existing-form">
+            <h3>Asignar Pozo Ya Creado</h3>
+            <label>Pozo ID<br><input type="text" id="assign-existing-pozo-id" required></label>
+            <label>Vista diagrama<br>
+                <select id="assign-existing-zone-select">
+                    <option value="bare-tradicional">BARE tradicional</option>
+                    <option value="bare-6">BARE 6</option>
+                    <option value="bare-6-norte">BARE 6-Norte</option>
+                    <option value="bare-este">Bare Este</option>
+                </select>
+            </label>
+            <div class="form-actions">
+                <button type="submit">Asignar</button>
+                <button type="button" id="assign-existing-cancel">Cancelar</button>
             </div>
         </form>
     </div>
@@ -227,7 +254,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=9"></script>
+    <script src="js/main.js?v=13"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->

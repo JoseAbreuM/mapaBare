@@ -1,14 +1,48 @@
-const CACHE_NAME = 'pozos-cache-v14';
+const CACHE_NAME = 'pozos-cache-v18';
+const BARE_TILE_BOUNDS = {
+    minLat: 8.45,
+    maxLat: 8.62,
+    minLng: -64.15,
+    maxLng: -63.93
+};
+
+function tileToLon(x, z) {
+    return (x / Math.pow(2, z)) * 360 - 180;
+}
+
+function tileToLat(y, z) {
+    const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
+    return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+}
+
+function tileIntersectsBareBounds(url) {
+    const match = url.pathname.match(/\/(\d+)\/(\d+)\/(\d+)\.png$/);
+    if (!match) return true;
+
+    const z = Number(match[1]);
+    const x = Number(match[2]);
+    const y = Number(match[3]);
+    if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y)) return true;
+
+    const west = tileToLon(x, z);
+    const east = tileToLon(x + 1, z);
+    const north = tileToLat(y, z);
+    const south = tileToLat(y + 1, z);
+
+    const lngOverlap = east >= BARE_TILE_BOUNDS.minLng && west <= BARE_TILE_BOUNDS.maxLng;
+    const latOverlap = north >= BARE_TILE_BOUNDS.minLat && south <= BARE_TILE_BOUNDS.maxLat;
+    return lngOverlap && latOverlap;
+}
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
-    '/css/styles.css?v=8',
+    '/css/styles.css?v=10',
     '/css/leaflet.css',
     // incluimos las rutas con query string para que coincidan exactamente
     '/js/leaflet.js?v=3',
     '/js/localforage.min.js?v=3',
     '/js/lucide.min.js?v=3',
-    '/js/main.js?v=9',
+    '/js/main.js?v=13',
     '/js/sw-register.js?v=4',
     '/js/firebase-init.js?v=3',
     '/js/pozos-data.js?v=1',
@@ -63,6 +97,10 @@ self.addEventListener('fetch', event => {
 
     // Cachear tiles del mapa
     if (url.hostname.includes('tile.openstreetmap.org')) {
+        if (!tileIntersectsBareBounds(url)) {
+            event.respondWith(fetch(event.request));
+            return;
+        }
         event.respondWith(
             // ignorar parámetros de búsqueda para que ej. main.js?v=3 coincida
             caches.match(event.request, {ignoreSearch: true}).then(cached => {

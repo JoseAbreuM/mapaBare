@@ -2,6 +2,11 @@
 
 let map;
 let currentOverlay;
+let mapMode = 'diagram';
+let osmLayer = null;
+let mapaLayers = [];
+let mapBounds = null;
+let currentDiagramZone = null;
 const zones = {
     'bare-tradicional': 'assets/mapas/bare-tradicional.jpg',
     'bare-6': 'assets/mapas/bare6-1.jpg',
@@ -15,7 +20,7 @@ let searchId = null;
 let editId = null;
 let currentStatsFilter = 'all';
 let pendingServiceAssignment = null;
-const APP_VERSION = 'v1.3';
+const APP_VERSION = 'v1.7';
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
     { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
@@ -43,6 +48,7 @@ const SERVICE_SEARCH_CONFIG = [
     }
 ];
 const POZO_DATA_KEY = 'pozoData';
+const MAP_MODE_KEY = 'mapMode';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
 const AUTH_CONFIG_KEY = 'authConfig';
 const AUTH_SESSION_KEY = 'authSession';
@@ -65,6 +71,13 @@ const STATUS = {
     DIFERIDO: 'diferido'
 };
 
+const BARE_MAP_BOUNDS = {
+    minLat: 8.45,
+    maxLat: 8.62,
+    minLng: -64.15,
+    maxLng: -63.93
+};
+
 function normalizeEstado(estado) {
     const value = (estado || '').toString().trim().toLowerCase();
     if (value === 'inactivo' || value === 'inactivo por servicio' || value === 'en espera de servicio' || value === 'espera de servicio') return STATUS.INACTIVO_SERVICIO;
@@ -81,10 +94,24 @@ function normalizeEstado(estado) {
 
 function normalizePozo(pozo) {
     const hasServicio = !!pozo.taladro;
+    const normalizedZone = (pozo.zona || '').toString().trim().toLowerCase();
+    const knownZone = Object.prototype.hasOwnProperty.call(zones, normalizedZone);
+    const coordsMapa = isGeoCoords(pozo.coordsMapa)
+        ? pozo.coordsMapa
+        : (isGeoCoords(pozo.coords) ? pozo.coords : null);
+    const coordsDiagrama = isDiagramCoords(pozo.coordsDiagrama)
+        ? pozo.coordsDiagrama
+        : (isDiagramCoords(pozo.coords) ? pozo.coords : null);
     return {
         ...pozo,
+        zona: knownZone ? normalizedZone : 'sin-asignar',
         estado: hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado),
-        nota: (pozo.nota || '').toString().trim() || null
+        coordsMapa,
+        coordsDiagrama,
+        coords: coordsMapa || coordsDiagrama || pozo.coords,
+        nota: (pozo.nota || '').toString().trim() || null,
+        fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
+        vistaMapa: pozo.vistaMapa !== false
     };
 }
 
@@ -99,6 +126,83 @@ function normalizeText(value) {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim();
+}
+
+function isGeoCoords(coords) {
+    if (!Array.isArray(coords) || coords.length !== 2) return false;
+    const lat = Number(coords[0]);
+    const lng = Number(coords[1]);
+    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+
+function isDiagramCoords(coords) {
+    return Array.isArray(coords)
+        && coords.length === 2
+        && Number.isFinite(Number(coords[0]))
+        && Number.isFinite(Number(coords[1]))
+        && !isGeoCoords(coords);
+}
+
+function getMapaCoords(pozo) {
+    if (isGeoCoords(pozo.coordsMapa)) return pozo.coordsMapa;
+    if (isGeoCoords(pozo.coords)) return pozo.coords;
+    return null;
+}
+
+function getDiagramCoords(pozo) {
+    if (isDiagramCoords(pozo.coordsDiagrama)) return pozo.coordsDiagrama;
+    if (isDiagramCoords(pozo.coords)) return pozo.coords;
+    return null;
+}
+
+function isInsideBareMap(coords) {
+    if (!isGeoCoords(coords)) return false;
+    const lat = Number(coords[0]);
+    const lng = Number(coords[1]);
+    return lat >= BARE_MAP_BOUNDS.minLat && lat <= BARE_MAP_BOUNDS.maxLat && lng >= BARE_MAP_BOUNDS.minLng && lng <= BARE_MAP_BOUNDS.maxLng;
+}
+
+function pozoNumericKey(value) {
+    const compact = (value || '').toString().toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^MFB/, '');
+    const digits = compact.match(/\d+/g);
+    if (!digits || !digits.length) return compact;
+    return String(Number(digits.join('')));
+}
+
+function findPozosByInput(rawInput) {
+    const typed = (rawInput || '').toString().trim().toUpperCase();
+    if (!typed) return [];
+    const exact = pozoData.filter(pozo => (pozo.id || '').toString().toUpperCase() === typed);
+    if (exact.length) return exact;
+
+    const key = pozoNumericKey(typed);
+    if (!key) return [];
+    return pozoData.filter(pozo => pozoNumericKey(pozo.id) === key);
+}
+
+function ensureMapForMode() {
+    const mapContainer = document.getElementById('map');
+    if (map) {
+        map.off();
+        map.remove();
+        map = null;
+    }
+
+    if (mapMode === 'diagram') {
+        map = L.map(mapContainer, {
+            crs: L.CRS.Simple,
+            minZoom: -2,
+            maxZoom: 4,
+            zoomSnap: 0.25,
+            zoomDelta: 0.25
+        });
+        return;
+    }
+
+    map = L.map(mapContainer, {
+        minZoom: 11,
+        maxZoom: 18
+    });
 }
 
 function buildServiceAliasSet() {
@@ -275,6 +379,7 @@ function updateAuthUi() {
     const userLabel = document.getElementById('auth-user-label');
     const editSwitch = document.querySelector('.switch');
     const assignButton = document.getElementById('assign-taladro-btn');
+    const assignExistingButton = document.getElementById('assign-existing-pozo-btn');
 
     if (isDesktop()) {
         if (isAuthenticated && authenticatedUser) {
@@ -284,6 +389,7 @@ function updateAuthUi() {
             userLabel.textContent = authenticatedUser.nombre;
             editSwitch.classList.remove('hidden');
             assignButton.classList.remove('hidden');
+            assignExistingButton.classList.remove('hidden');
         } else {
             loginBtn.classList.remove('hidden');
             logoutBtn.classList.add('hidden');
@@ -291,9 +397,11 @@ function updateAuthUi() {
             userLabel.textContent = '';
             editSwitch.classList.add('hidden');
             assignButton.classList.add('hidden');
+            assignExistingButton.classList.add('hidden');
             document.getElementById('edit-mode').checked = false;
             closeForm();
             closeAssignForm();
+            closeAssignExistingForm();
             pendingServiceAssignment = null;
             closeServiceVerification();
         }
@@ -305,6 +413,7 @@ function updateAuthUi() {
     userLabel.classList.add('hidden');
     editSwitch.classList.add('hidden');
     assignButton.classList.add('hidden');
+    assignExistingButton.classList.add('hidden');
     document.getElementById('edit-mode').checked = false;
 }
 
@@ -423,7 +532,12 @@ async function init() {
     }
 
     await setupMap();
+    const savedMode = await localforage.getItem(MAP_MODE_KEY);
+    if (savedMode === 'mapa') {
+        mapMode = 'mapa';
+    }
     attachControls();
+    await applyViewMode(mapMode, true);
 
     // Render inicial usando lo que ya esté en memoria local/remota
     renderMarkers(document.getElementById('zone-select').value);
@@ -472,11 +586,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=8',
+            '/css/styles.css?v=10',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=9',
+            '/js/main.js?v=11',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -491,7 +605,7 @@ async function init() {
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
         try {
-            const cache = await caches.open('pozos-cache-v14');
+            const cache = await caches.open('pozos-cache-v18');
             await Promise.allSettled(resources.map(url => cache.add(url)));
         } catch (e) {
             console.log('No se pudo completar warmup de cache offline', e);
@@ -537,19 +651,146 @@ async function syncData() {
 }
 
 async function setupMap() {
-    map = L.map('map', {
-        crs: L.CRS.Simple,
-        minZoom: -2
-    });
-
-    await loadZone(document.getElementById('zone-select').value);
-    renderMarkers(document.getElementById('zone-select').value);
-
+    ensureMapForMode();
     map.on('click', onMapClick);
 }
 
-function loadZone(zone) {
+async function applyViewMode(mode, skipPersist = false) {
+    const nextMode = mode === 'mapa' ? 'mapa' : 'diagram';
+    const modeChanged = nextMode !== mapMode;
+    mapMode = nextMode;
+    const select = document.getElementById('view-mode-select');
+    if (select) {
+        select.value = mapMode;
+    }
+    if (!skipPersist) {
+        await localforage.setItem(MAP_MODE_KEY, mapMode);
+    }
+
+    currentStatsFilter = 'all';
+    updateStatsFilterUi();
+
+    if (modeChanged) {
+        ensureMapForMode();
+        map.on('click', onMapClick);
+        markers = {};
+        currentOverlay = null;
+    }
+
+    if (mapMode === 'diagram') {
+        const zone = document.getElementById('zone-select').value;
+        await loadZone(zone, true);
+        renderMarkers(zone);
+        return;
+    }
+
+    await loadRealMap();
+    renderMarkers('mapa');
+}
+
+function clearMapaLayers() {
+    mapaLayers.forEach(layer => {
+        if (map.hasLayer(layer)) {
+            map.removeLayer(layer);
+        }
+    });
+    mapaLayers = [];
+}
+
+function clearDiagramOverlay() {
+    if (currentOverlay && map.hasLayer(currentOverlay)) {
+        map.removeLayer(currentOverlay);
+    }
+    currentOverlay = null;
+}
+
+async function loadRealMap() {
+    clearDiagramOverlay();
+
+    if (!osmLayer) {
+        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors'
+        });
+    }
+    if (!map.hasLayer(osmLayer)) {
+        osmLayer.addTo(map);
+    }
+
+    const bounds = L.latLngBounds(
+        [BARE_MAP_BOUNDS.minLat, BARE_MAP_BOUNDS.minLng],
+        [BARE_MAP_BOUNDS.maxLat, BARE_MAP_BOUNDS.maxLng]
+    );
+    map.setMaxBounds(bounds.pad(0.2));
+
+    if (!mapaLayers.length) {
+        await loadGpxLayers();
+    }
+
+    if (mapBounds) {
+        map.fitBounds(mapBounds, { padding: [24, 24] });
+    } else {
+        map.fitBounds(bounds, { padding: [24, 24] });
+    }
+}
+
+async function loadGpxLayers() {
+    try {
+        const response = await fetch('assets/mapas/Prueba1.gpx');
+        if (!response.ok) {
+            console.warn('No se pudo cargar GPX para vista MAPA');
+            return;
+        }
+        const xmlText = await response.text();
+        const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
+        const bounds = L.latLngBounds([]);
+
+        const trkpts = Array.from(xmlDoc.getElementsByTagName('trkpt'));
+        if (trkpts.length) {
+            const latlngs = trkpts
+                .map(node => {
+                    const lat = Number(node.getAttribute('lat'));
+                    const lng = Number(node.getAttribute('lon'));
+                    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                    return [lat, lng];
+                })
+                .filter(Boolean);
+            if (latlngs.length) {
+                const routeLayer = L.polyline(latlngs, {
+                    color: '#ff9d00',
+                    weight: 3,
+                    opacity: 0.85
+                });
+                routeLayer.addTo(map);
+                mapaLayers.push(routeLayer);
+                bounds.extend(routeLayer.getBounds());
+            }
+        }
+
+        // Los waypoints del GPX se omiten para evitar ruido visual en la capa de pozos.
+
+        if (bounds.isValid()) {
+            mapBounds = bounds;
+        }
+    } catch (e) {
+        console.log('Error cargando GPX en vista MAPA', e);
+    }
+}
+
+function loadZone(zone, forceReload = false) {
     return new Promise((resolve) => {
+        if (mapMode !== 'diagram') {
+            resolve();
+            return;
+        }
+        if (!forceReload && currentDiagramZone === zone && currentOverlay) {
+            resolve();
+            return;
+        }
+        if (osmLayer && map.hasLayer(osmLayer)) {
+            map.removeLayer(osmLayer);
+        }
+        clearMapaLayers();
         if (currentOverlay) {
             map.removeLayer(currentOverlay);
         }
@@ -565,8 +806,9 @@ function loadZone(zone) {
             const h = img.height;
             const bounds = [[0, 0], [h, w]];
             currentOverlay = L.imageOverlay(url, bounds).addTo(map);
-            map.setMaxBounds(bounds);
+            map.setMaxBounds([[0 - h * 0.15, 0 - w * 0.15], [h * 1.15, w * 1.15]]);
             map.fitBounds(bounds);
+            currentDiagramZone = zone;
             resolve();
         };
     });
@@ -578,13 +820,21 @@ function updateDatalist(filter = '') {
     list.innerHTML = '';
 
     const pozoMatches = pozoData
-        .filter(p => !term || p.id.toUpperCase().includes((filter || '').toUpperCase()))
+        .filter(p => {
+            if (!term) return true;
+            const inputKey = pozoNumericKey(filter || '');
+            return pozoNumericKey(p.id) === inputKey;
+        })
         .slice(0, 20);
 
+    const seenValues = new Set();
     pozoMatches.forEach(p => {
+        const numeric = pozoNumericKey(p.id);
+        if (!numeric || seenValues.has(numeric)) return;
+        seenValues.add(numeric);
         const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.label = `Pozo (${p.zona})`;
+        opt.value = numeric;
+        opt.label = `Pozo ${numeric} (${p.id})`;
         list.appendChild(opt);
     });
 
@@ -609,10 +859,19 @@ function renderMarkers(zone) {
     markers = {};
 
     pozoData
-        .filter(p => p.zona === zone)
+        .filter(p => {
+            if (mapMode === 'mapa') {
+                const coords = getMapaCoords(p);
+                return !!coords && isInsideBareMap(coords) && p.vistaMapa !== false;
+            }
+            const coords = getDiagramCoords(p);
+            return !!coords && p.zona === zone && p.zona !== 'sin-asignar';
+        })
         .filter(matchesCurrentFilter)
         .forEach(p => {
-        const marker = createMarker(p);
+        const markerCoords = mapMode === 'mapa' ? getMapaCoords(p) : getDiagramCoords(p);
+        if (!markerCoords) return;
+        const marker = createMarker(p, markerCoords);
         marker.addTo(map);
         markers[p.id] = marker;
         });
@@ -620,6 +879,7 @@ function renderMarkers(zone) {
 
 function matchesCurrentFilter(pozo) {
     if (!isDesktop()) return true;
+    if (mapMode === 'mapa') return true;
     if (currentStatsFilter === 'all') return true;
     if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
     return normalizeEstado(pozo.estado) === currentStatsFilter;
@@ -674,13 +934,15 @@ function crearIconoWT() {
     });
 }
 
-function createMarker(p) {
+function createMarker(p, markerCoords) {
     const normalizedEstado = normalizeEstado(p.estado);
     const color =
         normalizedEstado === STATUS.ACTIVO
             ? '#43a047'
             : normalizedEstado === STATUS.INACTIVO_SERVICIO
             ? '#1e88e5'
+            : normalizedEstado === STATUS.DIAGNOSTICO
+            ? '#f9a825'
             : normalizedEstado === STATUS.CANDIDATO
             ? '#e53935'
             : normalizedEstado === STATUS.DIFERIDO
@@ -703,10 +965,10 @@ function createMarker(p) {
             const config = servicioConfig[p.taladro] || { color: '#000000', numero: null, borde: '#000000', numeroColor: '#ffffff' };
             icon = crearIconoServicio(config.color, config.numero, config.borde, config.numeroColor);
         }
-        marker = L.marker(p.coords, { icon });
+        marker = L.marker(markerCoords, { icon });
     } else {
         // Hacer los marcadores de pozos más sutiles
-        marker = L.circleMarker(p.coords, {
+        marker = L.circleMarker(markerCoords, {
             radius: 4,
             color: color,
             fillColor: color,
@@ -735,6 +997,7 @@ function popupContent(p) {
     if (p.variador) content += `<br>Variador: ${p.variador}`;
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
+    if (p.fechaUltimoServicio) content += `<br>Fecha de ultimo servicio: ${p.fechaUltimoServicio}`;
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
     // Solo mostrar botones CRUD en desktop autenticado
@@ -745,6 +1008,7 @@ function popupContent(p) {
 }
 
 function onMapClick(e) {
+    if (mapMode !== 'diagram') return;
     if (!document.getElementById('edit-mode').checked) return;
     if (!requireCrudAuth()) return;
     const { lat, lng } = e.latlng;
@@ -764,10 +1028,15 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-estado').value = normalizedEstado;
         document.getElementById('form-diferido-cause').value = normalizedEstado === STATUS.DIFERIDO ? (p.causaDiferido || '') : '';
         document.getElementById('form-nota').value = p.nota || '';
+        const zoneSelect = document.getElementById('zone-select');
+        if (p.zona && Object.prototype.hasOwnProperty.call(zones, p.zona)) {
+            zoneSelect.value = p.zona;
+        }
         togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
         document.getElementById('form-potencial').value = p.potencial || '';
+        document.getElementById('form-fecha-ultimo-servicio').value = p.fechaUltimoServicio || '';
         // no setear coords para edición
     } else {
         editId = null;
@@ -777,6 +1046,7 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-lng').value = lng;
         document.getElementById('form-diferido-cause').value = '';
         document.getElementById('form-nota').value = '';
+        document.getElementById('form-fecha-ultimo-servicio').value = '';
         togglePozoDiferidoCause();
     }
 }
@@ -789,6 +1059,7 @@ function closeForm() {
     document.getElementById('form-id').disabled = false;
     document.getElementById('form-diferido-cause').value = '';
     document.getElementById('form-nota').value = '';
+    document.getElementById('form-fecha-ultimo-servicio').value = '';
     togglePozoDiferidoCause();
     editId = null;
 }
@@ -816,9 +1087,10 @@ function closeAssignForm() {
 async function assignTaladro(e) {
     e.preventDefault();
     if (!requireCrudAuth()) return;
-    const pozoId = document.getElementById('assign-pozo-id').value.trim().toUpperCase();
+    const pozoId = document.getElementById('assign-pozo-id').value.trim();
     const taladro = document.getElementById('assign-taladro-select').value;
-    const p = pozoData.find(pozo => pozo.id === pozoId);
+    const matches = findPozosByInput(pozoId);
+    const p = matches.length ? matches[0] : null;
     if (!p) {
         alert('Pozo no encontrado');
         return;
@@ -923,6 +1195,49 @@ async function persistPozosAndRefresh() {
     updateStats();
 }
 
+function openAssignExistingForm() {
+    if (!requireCrudAuth()) return;
+    document.getElementById('assign-existing-form-container').classList.remove('hidden');
+}
+
+function closeAssignExistingForm() {
+    document.getElementById('assign-existing-form-container').classList.add('hidden');
+    document.getElementById('assign-existing-form').reset();
+}
+
+async function assignExistingPozoToDiagram(e) {
+    e.preventDefault();
+    if (!requireCrudAuth()) return;
+
+    const pozoId = document.getElementById('assign-existing-pozo-id').value.trim();
+    const targetZone = document.getElementById('assign-existing-zone-select').value;
+    const matches = findPozosByInput(pozoId);
+    const pozo = matches.length ? matches[0] : null;
+
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+    if (!Object.prototype.hasOwnProperty.call(zones, targetZone)) {
+        alert('Zona inválida');
+        return;
+    }
+
+    pozo.zona = targetZone;
+    if (pozo.vistaMapa === undefined) {
+        pozo.vistaMapa = true;
+    }
+
+    await persistPozosAndRefresh();
+    document.getElementById('zone-select').value = targetZone;
+    document.getElementById('mobile-zone-select').value = targetZone;
+    if (mapMode === 'diagram') {
+        await loadZone(targetZone);
+        renderMarkers(targetZone);
+    }
+    closeAssignExistingForm();
+}
+
 // funciones globales para popup
 window.editPozo = function(id) {
     if (!requireCrudAuth()) return;
@@ -961,10 +1276,16 @@ async function savePozo(e) {
             parseFloat(document.getElementById('form-lat').value),
             parseFloat(document.getElementById('form-lng').value)
         ],
+        coordsDiagrama: previousPozo ? (previousPozo.coordsDiagrama || null) : [
+            parseFloat(document.getElementById('form-lat').value),
+            parseFloat(document.getElementById('form-lng').value)
+        ],
+        coordsMapa: previousPozo ? (previousPozo.coordsMapa || (isGeoCoords(previousPozo.coords) ? previousPozo.coords : null)) : null,
         estado: formEstado,
         cabezal: document.getElementById('form-cabezal').value || null,
         variador: document.getElementById('form-variador').value || null,
         potencial: document.getElementById('form-potencial').value || null,
+        fechaUltimoServicio: document.getElementById('form-fecha-ultimo-servicio').value || null,
         nota: formNota || null,
         taladro: previousPozo ? previousPozo.taladro : null,
         causaDiferido: formEstado === STATUS.DIFERIDO ? formCausaDiferido : null
@@ -1064,7 +1385,13 @@ async function runSearchById(rawId, clearMobileInput = false) {
 
     let targetPozo = null;
     if (!isServiceHint) {
-        targetPozo = pozoData.find(pozo => pozo.id === typedValue) || null;
+        const matches = findPozosByInput(typedValue);
+        if (matches.length > 1) {
+            const currentZone = document.getElementById('zone-select').value;
+            targetPozo = matches.find(pozo => pozo.zona === currentZone) || matches[0];
+        } else {
+            targetPozo = matches[0] || null;
+        }
     }
 
     if (!targetPozo) {
@@ -1082,14 +1409,21 @@ async function runSearchById(rawId, clearMobileInput = false) {
     }
 
     searchId = targetPozo.id;
-    document.getElementById('zone-select').value = targetPozo.zona;
-    document.getElementById('mobile-zone-select').value = targetPozo.zona;
-
-    await loadZone(targetPozo.zona);
-    renderMarkers(targetPozo.zona);
+    if (mapMode === 'diagram') {
+        document.getElementById('zone-select').value = targetPozo.zona;
+        document.getElementById('mobile-zone-select').value = targetPozo.zona;
+        await loadZone(targetPozo.zona);
+        renderMarkers(targetPozo.zona);
+    } else {
+        await loadRealMap();
+        renderMarkers('mapa');
+    }
 
     if (markers[searchId]) {
-        map.flyTo(targetPozo.coords, Math.max(map.getZoom(), 2));
+        const targetCoords = mapMode === 'mapa' ? getMapaCoords(targetPozo) : getDiagramCoords(targetPozo);
+        if (targetCoords) {
+            map.flyTo(targetCoords, Math.max(map.getZoom(), 2));
+        }
         markers[searchId].openPopup();
     }
 
@@ -1177,9 +1511,17 @@ function setupUpdateUi() {
 
 function attachControls() {
     document.getElementById('zone-select').addEventListener('change', async e => {
+        if (mapMode !== 'diagram') return;
         await loadZone(e.target.value);
         renderMarkers(e.target.value);
     });
+
+    const viewModeSelect = document.getElementById('view-mode-select');
+    if (viewModeSelect) {
+        viewModeSelect.addEventListener('change', async (e) => {
+            await applyViewMode(e.target.value);
+        });
+    }
 
     const search = document.getElementById('search-input');
     search.addEventListener('input', e => {
@@ -1208,6 +1550,9 @@ function attachControls() {
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
+    document.getElementById('assign-existing-pozo-btn').addEventListener('click', openAssignExistingForm);
+    document.getElementById('assign-existing-form').addEventListener('submit', assignExistingPozoToDiagram);
+    document.getElementById('assign-existing-cancel').addEventListener('click', closeAssignExistingForm);
     document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
     document.getElementById('verification-cancel').addEventListener('click', () => {
         pendingServiceAssignment = null;
@@ -1289,6 +1634,7 @@ function attachControls() {
     });
 
     document.getElementById('mobile-zone-select').addEventListener('change', async (e) => {
+        if (mapMode !== 'diagram') return;
         const zona = e.target.value;
         document.getElementById('zone-select').value = zona;
         await loadZone(zona);

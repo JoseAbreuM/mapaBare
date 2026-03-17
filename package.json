@@ -4,7 +4,16 @@
   "description": "",
   "main": "sw.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "import:pozos:excel": "node scripts/import-pozos-from-excel.js",
+    "import:pozos:excel:sa": "node scripts/import-pozos-from-excel.js --service-account",
+    "dedupe:pozos": "node scripts/dedupe-pozos.js",
+    "dedupe:pozos:sa": "node scripts/dedupe-pozos.js --service-account",
+    "dedupe:pozos:dry:sa": "node scripts/dedupe-pozos.js --dry-run --service-account",
+    "reconcile:pozos": "node scripts/reconcile-pozos-data.js",
+    "reconcile:pozos:dry": "node scripts/reconcile-pozos-data.js --dry-run",
+    "restore:diagram:coords": "node scripts/restore-diagram-coords.js",
+    "restore:diagram:coords:dry": "node scripts/restore-diagram-coords.js --dry-run"
   },
   "repository": {
     "type": "git",
@@ -20,6 +29,8 @@
   "homepage": "https://github.com/JoseAbreuM/mapaBare#readme",
   "dependencies": {
     "canvas": "^3.2.1",
-    "firebase": "^12.10.0"
+    "firebase": "^12.10.0",
+    "firebase-admin": "^13.7.0",
+    "xlsx": "^0.18.5"
   }
 }

@@ -237,6 +237,10 @@ body {
     background: #7f8c8d;
 }
 
+.status-dot-mapa {
+    background: #8e44ad;
+}
+
 #floating-legend-container {
     display: none;
 }
