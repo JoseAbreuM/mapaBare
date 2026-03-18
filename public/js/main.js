@@ -21,8 +21,9 @@ let editId = null;
 let currentStatsFilter = 'all';
 let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
-const APP_VERSION = 'v1.11';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v20';
+let pendingDiagramAssignCoords = null;
+const APP_VERSION = 'v1.12';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v22';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx'];
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
@@ -289,6 +290,88 @@ function findPozosByInput(rawInput) {
     return pozoData.filter(pozo => pozoNumericKey(pozo.id) === key);
 }
 
+function resolvePozoFromInput(rawInput, preferredZone = null) {
+    const typed = (rawInput || '').toString().trim();
+    if (!typed) return null;
+
+    const matches = findPozosByInput(typed);
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) {
+        const normalizedTyped = normalizeText(typed);
+        const exact = matches.find(pozo => normalizeText(pozo.id) === normalizedTyped);
+        if (exact) return exact;
+        if (preferredZone) {
+            const byZone = matches.find(pozo => pozo.zona === preferredZone);
+            if (byZone) return byZone;
+        }
+        return matches[0];
+    }
+
+    const key = pozoNumericKey(typed);
+    if (!key) return null;
+    const fallbackMatches = pozoData.filter(pozo => {
+        const pozoKey = pozoNumericKey(pozo.id);
+        return pozoKey === key || pozoKey.endsWith(key) || key.endsWith(pozoKey);
+    });
+    if (!fallbackMatches.length) return null;
+    if (preferredZone) {
+        const byZone = fallbackMatches.find(pozo => pozo.zona === preferredZone);
+        if (byZone) return byZone;
+    }
+    return fallbackMatches[0];
+}
+
+function isAssignedToDiagram(pozo) {
+    return !!getDiagramCoords(pozo) && !!pozo.zona && pozo.zona !== 'sin-asignar';
+}
+
+function getAssignablePozosForDiagram() {
+    return pozoData
+        .filter(pozo => {
+            const mapCoords = getMapaCoords(pozo);
+            return !!mapCoords && pozo.vistaMapa !== false && !isAssignedToDiagram(pozo);
+        })
+        .sort((a, b) => pozoNumericKey(a.id).localeCompare(pozoNumericKey(b.id), undefined, { numeric: true }));
+}
+
+function closeAssignDiagramForm() {
+    const container = document.getElementById('assign-diagram-form-container');
+    const form = document.getElementById('assign-diagram-form');
+    if (container) container.classList.add('hidden');
+    if (form) form.reset();
+    pendingDiagramAssignCoords = null;
+}
+
+function openAssignDiagramForm(lat, lng) {
+    const select = document.getElementById('assign-diagram-pozo-select');
+    const pointLabel = document.getElementById('assign-diagram-point-label');
+    const remaining = document.getElementById('assign-diagram-remaining');
+    if (!select || !pointLabel || !remaining) return;
+
+    const assignable = getAssignablePozosForDiagram();
+    select.innerHTML = '';
+    if (!assignable.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No hay pozos pendientes por asignar';
+        select.appendChild(opt);
+        select.disabled = true;
+    } else {
+        assignable.forEach(pozo => {
+            const opt = document.createElement('option');
+            opt.value = pozo.id;
+            opt.textContent = `${pozo.id} (${pozo.zona || 'sin zona'})`;
+            select.appendChild(opt);
+        });
+        select.disabled = false;
+    }
+
+    pointLabel.textContent = `Punto seleccionado: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    remaining.textContent = `Pendientes por asignar al diagrama: ${assignable.length}`;
+    pendingDiagramAssignCoords = [lat, lng];
+    document.getElementById('assign-diagram-form-container').classList.remove('hidden');
+}
+
 function ensureMapForMode() {
     const mapContainer = document.getElementById('map');
     if (map) {
@@ -488,7 +571,8 @@ function updateAuthUi() {
     const userLabel = document.getElementById('auth-user-label');
     const editSwitch = document.querySelector('.switch');
     const assignButton = document.getElementById('assign-taladro-btn');
-    const assignExistingButton = document.getElementById('assign-existing-pozo-btn');
+    const assignExistingToggle = document.getElementById('assign-existing-toggle');
+    const assignExistingMode = document.getElementById('assign-existing-mode');
 
     if (isDesktop()) {
         if (isAuthenticated && authenticatedUser) {
@@ -498,7 +582,7 @@ function updateAuthUi() {
             userLabel.textContent = authenticatedUser.nombre;
             editSwitch.classList.remove('hidden');
             assignButton.classList.remove('hidden');
-            assignExistingButton.classList.remove('hidden');
+            assignExistingToggle.classList.remove('hidden');
         } else {
             loginBtn.classList.remove('hidden');
             logoutBtn.classList.add('hidden');
@@ -506,11 +590,12 @@ function updateAuthUi() {
             userLabel.textContent = '';
             editSwitch.classList.add('hidden');
             assignButton.classList.add('hidden');
-            assignExistingButton.classList.add('hidden');
+            assignExistingToggle.classList.add('hidden');
             document.getElementById('edit-mode').checked = false;
+            if (assignExistingMode) assignExistingMode.checked = false;
             closeForm();
             closeAssignForm();
-            closeAssignExistingForm();
+            closeAssignDiagramForm();
             pendingServiceAssignment = null;
             closeServiceVerification();
         }
@@ -522,8 +607,10 @@ function updateAuthUi() {
     userLabel.classList.add('hidden');
     editSwitch.classList.add('hidden');
     assignButton.classList.add('hidden');
-    assignExistingButton.classList.add('hidden');
+    assignExistingToggle.classList.add('hidden');
     document.getElementById('edit-mode').checked = false;
+    if (assignExistingMode) assignExistingMode.checked = false;
+    closeAssignDiagramForm();
 }
 
 async function initAuth() {
@@ -700,7 +787,7 @@ async function init() {
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=17',
+            '/js/main.js?v=18',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -1140,6 +1227,17 @@ function popupContent(p) {
 
 function onMapClick(e) {
     if (mapMode !== 'diagram') return;
+    const assignMode = document.getElementById('assign-existing-mode');
+    if (assignMode && assignMode.checked) {
+        if (!requireCrudAuth()) {
+            assignMode.checked = false;
+            closeAssignDiagramForm();
+            return;
+        }
+        const { lat, lng } = e.latlng;
+        openAssignDiagramForm(lat, lng);
+        return;
+    }
     if (!document.getElementById('edit-mode').checked) return;
     if (!requireCrudAuth()) return;
     const { lat, lng } = e.latlng;
@@ -1220,15 +1318,14 @@ async function assignTaladro(e) {
     if (!requireCrudAuth()) return;
     const pozoId = document.getElementById('assign-pozo-id').value.trim();
     const taladro = document.getElementById('assign-taladro-select').value;
-    const matches = findPozosByInput(pozoId);
-    const p = matches.length ? matches[0] : null;
+    const p = resolvePozoFromInput(pozoId, getSelectedZone());
     if (!p) {
         alert('Pozo no encontrado');
         return;
     }
-    const previousPozo = pozoData.find(pozo => pozo.taladro === taladro && pozo.id !== pozoId);
+    const previousPozo = pozoData.find(pozo => pozo.taladro === taladro && pozo.id !== p.id);
     if (previousPozo) {
-        pendingServiceAssignment = { pozoId, taladro, previousPozoId: previousPozo.id };
+        pendingServiceAssignment = { pozoId: p.id, taladro, previousPozoId: previousPozo.id };
         openServiceVerification(previousPozo.id);
         return;
     }
@@ -1329,24 +1426,18 @@ async function persistPozosAndRefresh() {
     updateStats();
 }
 
-function openAssignExistingForm() {
-    if (!requireCrudAuth()) return;
-    document.getElementById('assign-existing-form-container').classList.remove('hidden');
-}
-
-function closeAssignExistingForm() {
-    document.getElementById('assign-existing-form-container').classList.add('hidden');
-    document.getElementById('assign-existing-form').reset();
-}
-
-async function assignExistingPozoToDiagram(e) {
+async function submitAssignDiagramForm(e) {
     e.preventDefault();
     if (!requireCrudAuth()) return;
+    if (!pendingDiagramAssignCoords) {
+        closeAssignDiagramForm();
+        return;
+    }
 
-    const pozoId = document.getElementById('assign-existing-pozo-id').value.trim();
-    const targetZone = document.getElementById('assign-existing-zone-select').value;
-    const matches = findPozosByInput(pozoId);
-    const pozo = matches.length ? matches[0] : null;
+    const select = document.getElementById('assign-diagram-pozo-select');
+    const selectedPozoId = (select && select.value) ? select.value : '';
+    const targetZone = getSelectedZone();
+    const pozo = pozoData.find(p => p.id === selectedPozoId) || null;
 
     if (!pozo) {
         alert('Pozo no encontrado');
@@ -1358,9 +1449,11 @@ async function assignExistingPozoToDiagram(e) {
     }
 
     pozo.zona = targetZone;
+    pozo.coordsDiagrama = [pendingDiagramAssignCoords[0], pendingDiagramAssignCoords[1]];
     if (pozo.vistaMapa === undefined) {
         pozo.vistaMapa = true;
     }
+    Object.assign(pozo, normalizePozo(pozo));
 
     await persistPozosAndRefresh();
     document.getElementById('zone-select').value = targetZone;
@@ -1369,7 +1462,7 @@ async function assignExistingPozoToDiagram(e) {
         await loadZone(targetZone);
         renderMarkers(targetZone);
     }
-    closeAssignExistingForm();
+    closeAssignDiagramForm();
 }
 
 // funciones globales para popup
@@ -1719,9 +1812,23 @@ function attachControls() {
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
-    document.getElementById('assign-existing-pozo-btn').addEventListener('click', openAssignExistingForm);
-    document.getElementById('assign-existing-form').addEventListener('submit', assignExistingPozoToDiagram);
-    document.getElementById('assign-existing-cancel').addEventListener('click', closeAssignExistingForm);
+    const assignExistingMode = document.getElementById('assign-existing-mode');
+    if (assignExistingMode) {
+        assignExistingMode.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                if (!requireCrudAuth()) {
+                    e.target.checked = false;
+                    return;
+                }
+                document.getElementById('edit-mode').checked = false;
+            }
+            if (!e.target.checked) {
+                closeAssignDiagramForm();
+            }
+        });
+    }
+    document.getElementById('assign-diagram-form').addEventListener('submit', submitAssignDiagramForm);
+    document.getElementById('assign-diagram-cancel').addEventListener('click', closeAssignDiagramForm);
     document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
     document.getElementById('verification-cancel').addEventListener('click', () => {
         pendingServiceAssignment = null;

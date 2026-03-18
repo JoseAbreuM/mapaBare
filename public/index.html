@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=12">
+    <link rel="stylesheet" href="css/styles.css?v=13">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -40,7 +40,11 @@
                 <span class="label">Modo edición</span>
             </label>
             <button id="assign-taladro-btn">Asignar Servicio</button>
-            <button id="assign-existing-pozo-btn" class="auth-btn">Asignar Pozo Ya Creado</button>
+            <label id="assign-existing-toggle" class="switch hidden">
+                <input type="checkbox" id="assign-existing-mode">
+                <span class="slider"></span>
+                <span class="label">Modo asignación</span>
+            </label>
             <span id="auth-user-label" class="auth-user-label hidden"></span>
             <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
             <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
@@ -152,22 +156,18 @@
         </form>
     </div>
 
-    <!-- formulario asignar pozo ya creado al diagrama -->
-    <div id="assign-existing-form-container" class="form-container hidden">
-        <form id="assign-existing-form">
+    <!-- formulario asignar pozo ya creado al diagrama (modo asignación por click) -->
+    <div id="assign-diagram-form-container" class="form-container hidden">
+        <form id="assign-diagram-form">
             <h3>Asignar Pozo Ya Creado</h3>
-            <label>Pozo ID<br><input type="text" id="assign-existing-pozo-id" required></label>
-            <label>Vista diagrama<br>
-                <select id="assign-existing-zone-select">
-                    <option value="bare-tradicional">BARE tradicional</option>
-                    <option value="bare-6">BARE 6</option>
-                    <option value="bare-6-norte">BARE 6-Norte</option>
-                    <option value="bare-este">Bare Este</option>
-                </select>
+            <p id="assign-diagram-point-label" class="verification-subtitle"></p>
+            <label>Pozo disponible<br>
+                <select id="assign-diagram-pozo-select" required></select>
             </label>
+            <p id="assign-diagram-remaining" class="verification-subtitle"></p>
             <div class="form-actions">
-                <button type="submit">Asignar</button>
-                <button type="button" id="assign-existing-cancel">Cancelar</button>
+                <button type="submit">Asignar al punto</button>
+                <button type="button" id="assign-diagram-cancel">Cancelar</button>
             </div>
         </form>
     </div>
@@ -260,7 +260,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=17"></script>
+    <script src="js/main.js?v=18"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
