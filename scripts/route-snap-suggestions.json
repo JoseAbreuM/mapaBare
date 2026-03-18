@@ -1,0 +1,4639 @@
+{
+  "generatedAt": "2026-03-17T23:48:24.763Z",
+  "gpxFiles": [
+    "Prueba1.gpx",
+    "2do.gpx"
+  ],
+  "stats": {
+    "wells": 738,
+    "thresholdMeters": 500,
+    "p50": 422,
+    "p75": 1335,
+    "p90": 2862,
+    "p95": 10092,
+    "p99": 11534,
+    "max": 13605
+  },
+  "suggestions": [
+    {
+      "id": 468,
+      "key": "468",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5547028,
+        -64.078805
+      ],
+      "suggested": [
+        8.55884239,
+        -64.07701292
+      ],
+      "routeDistanceM": 501
+    },
+    {
+      "id": 286,
+      "key": "286",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6401444,
+        -64.047628
+      ],
+      "suggested": [
+        8.63562354,
+        -64.04752504
+      ],
+      "routeDistanceM": 503
+    },
+    {
+      "id": 220,
+      "key": "220",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6401444,
+        -64.047994
+      ],
+      "suggested": [
+        8.63561488,
+        -64.04784437
+      ],
+      "routeDistanceM": 504
+    },
+    {
+      "id": 241,
+      "key": "241",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6401417,
+        -64.048169
+      ],
+      "suggested": [
+        8.63561488,
+        -64.04784437
+      ],
+      "routeDistanceM": 505
+    },
+    {
+      "id": 517,
+      "key": "517",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5612767,
+        -64.101982
+      ],
+      "suggested": [
+        8.55922379,
+        -64.10611512
+      ],
+      "routeDistanceM": 509
+    },
+    {
+      "id": 213,
+      "key": "213",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6405194,
+        -64.054153
+      ],
+      "suggested": [
+        8.64038707,
+        -64.05879576
+      ],
+      "routeDistanceM": 511
+    },
+    {
+      "id": 735,
+      "key": "735",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5766575,
+        -64.0168899
+      ],
+      "suggested": [
+        8.57223,
+        -64.015631
+      ],
+      "routeDistanceM": 511
+    },
+    {
+      "id": 811,
+      "key": "811",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5659273,
+        -64.1108297
+      ],
+      "suggested": [
+        8.56409551,
+        -64.10653824
+      ],
+      "routeDistanceM": 514
+    },
+    {
+      "id": 24,
+      "key": "24",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6311108,
+        -64.040513
+      ],
+      "suggested": [
+        8.63573538,
+        -64.04054996
+      ],
+      "routeDistanceM": 514
+    },
+    {
+      "id": 583,
+      "key": "583",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5781599,
+        -64.1182791
+      ],
+      "suggested": [
+        8.57354146,
+        -64.11857976
+      ],
+      "routeDistanceM": 515
+    },
+    {
+      "id": 374,
+      "key": "374",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5741325,
+        -64.106178
+      ],
+      "suggested": [
+        8.57002035,
+        -64.10832951
+      ],
+      "routeDistanceM": 515
+    },
+    {
+      "id": 930,
+      "key": "930",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5485544,
+        -64.0325106
+      ],
+      "suggested": [
+        8.551445,
+        -64.036187
+      ],
+      "routeDistanceM": 516
+    },
+    {
+      "id": 507,
+      "key": "507",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5614164,
+        -64.101911
+      ],
+      "suggested": [
+        8.55922379,
+        -64.10611512
+      ],
+      "routeDistanceM": 523
+    },
+    {
+      "id": 396,
+      "key": "396",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5461264,
+        -64.050496
+      ],
+      "suggested": [
+        8.548984,
+        -64.046665
+      ],
+      "routeDistanceM": 528
+    },
+    {
+      "id": 235,
+      "key": "235",
+      "zona": "BARE OESTE",
+      "current": [
+        8.64045,
+        -64.047719
+      ],
+      "suggested": [
+        8.63562354,
+        -64.04752504
+      ],
+      "routeDistanceM": 537
+    },
+    {
+      "id": 237,
+      "key": "237",
+      "zona": "BARE OESTE",
+      "current": [
+        8.64045,
+        -64.047903
+      ],
+      "suggested": [
+        8.63561709,
+        -64.04774953
+      ],
+      "routeDistanceM": 538
+    },
+    {
+      "id": 239,
+      "key": "239",
+      "zona": "BARE OESTE",
+      "current": [
+        8.64045,
+        -64.048078
+      ],
+      "suggested": [
+        8.63561488,
+        -64.04784437
+      ],
+      "routeDistanceM": 538
+    },
+    {
+      "id": 280,
+      "key": "280",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6405475,
+        -64.053892
+      ],
+      "suggested": [
+        8.64038707,
+        -64.05879576
+      ],
+      "routeDistanceM": 539
+    },
+    {
+      "id": 6,
+      "key": "6",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5922056,
+        -64.122711
+      ],
+      "suggested": [
+        8.58961683,
+        -64.11854629
+      ],
+      "routeDistanceM": 541
+    },
+    {
+      "id": 602,
+      "key": "602",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5785217,
+        -64.1182807
+      ],
+      "suggested": [
+        8.58319275,
+        -64.11686427
+      ],
+      "routeDistanceM": 542
+    },
+    {
+      "id": 388,
+      "key": "388",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5405289,
+        -64.077174
+      ],
+      "suggested": [
+        8.53620938,
+        -64.07949316
+      ],
+      "routeDistanceM": 544
+    },
+    {
+      "id": 696,
+      "key": "696",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5770193,
+        -64.0168909
+      ],
+      "suggested": [
+        8.57223,
+        -64.015631
+      ],
+      "routeDistanceM": 550
+    },
+    {
+      "id": 467,
+      "key": "467",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5736053,
+        -64.104171
+      ],
+      "suggested": [
+        8.56912651,
+        -64.10639696
+      ],
+      "routeDistanceM": 555
+    },
+    {
+      "id": 495,
+      "key": "495",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5244642,
+        -64.075314
+      ],
+      "suggested": [
+        8.52398366,
+        -64.08038224
+      ],
+      "routeDistanceM": 560
+    },
+    {
+      "id": 419,
+      "key": "419",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5456864,
+        -64.050521
+      ],
+      "suggested": [
+        8.548984,
+        -64.046665
+      ],
+      "routeDistanceM": 561
+    },
+    {
+      "id": 971,
+      "key": "971",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5822627,
+        -64.1285774
+      ],
+      "suggested": [
+        8.58190616,
+        -64.12347649
+      ],
+      "routeDistanceM": 562
+    },
+    {
+      "id": 827,
+      "key": "827",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5551954,
+        -64.10989
+      ],
+      "suggested": [
+        8.5563698,
+        -64.10490728
+      ],
+      "routeDistanceM": 563
+    },
+    {
+      "id": 441,
+      "key": "441",
+      "zona": "BARE OESTE",
+      "current": [
+        8.524825,
+        -64.075315
+      ],
+      "suggested": [
+        8.52398366,
+        -64.08038224
+      ],
+      "routeDistanceM": 565
+    },
+    {
+      "id": 826,
+      "key": "826",
+      "zona": "BARE OESTE",
+      "current": [
+        8.555123,
+        -64.1098897
+      ],
+      "suggested": [
+        8.5563698,
+        -64.10490728
+      ],
+      "routeDistanceM": 565
+    },
+    {
+      "id": 808,
+      "key": "808",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5780536,
+        -64.1143175
+      ],
+      "suggested": [
+        8.57311967,
+        -64.1155821
+      ],
+      "routeDistanceM": 566
+    },
+    {
+      "id": 46,
+      "key": "46",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6457653,
+        -64.096755
+      ],
+      "suggested": [
+        8.64575403,
+        -64.10192269
+      ],
+      "routeDistanceM": 568
+    },
+    {
+      "id": 436,
+      "key": "436",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5250969,
+        -64.075313
+      ],
+      "suggested": [
+        8.52398366,
+        -64.08038224
+      ],
+      "routeDistanceM": 571
+    },
+    {
+      "id": 807,
+      "key": "807",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5781259,
+        -64.1143178
+      ],
+      "suggested": [
+        8.57311967,
+        -64.1155821
+      ],
+      "routeDistanceM": 574
+    },
+    {
+      "id": 400,
+      "key": "400",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5253575,
+        -64.07532
+      ],
+      "suggested": [
+        8.52398366,
+        -64.08038224
+      ],
+      "routeDistanceM": 577
+    },
+    {
+      "id": 413,
+      "key": "413",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5493728,
+        -64.052056
+      ],
+      "suggested": [
+        8.549661,
+        -64.046745
+      ],
+      "routeDistanceM": 585
+    },
+    {
+      "id": 417,
+      "key": "417",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5490994,
+        -64.052041
+      ],
+      "suggested": [
+        8.549661,
+        -64.046745
+      ],
+      "routeDistanceM": 586
+    },
+    {
+      "id": 547,
+      "key": "547",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5608758,
+        -64.10039
+      ],
+      "suggested": [
+        8.56589729,
+        -64.09868557
+      ],
+      "routeDistanceM": 589
+    },
+    {
+      "id": 790,
+      "key": "790",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6409209,
+        -64.0476878
+      ],
+      "suggested": [
+        8.63562354,
+        -64.04752504
+      ],
+      "routeDistanceM": 589
+    },
+    {
+      "id": 461,
+      "key": "461",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5739767,
+        -64.10418
+      ],
+      "suggested": [
+        8.56912651,
+        -64.10639696
+      ],
+      "routeDistanceM": 592
+    },
+    {
+      "id": 681,
+      "key": "681",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5529782,
+        -64.0696282
+      ],
+      "suggested": [
+        8.54770973,
+        -64.07042289
+      ],
+      "routeDistanceM": 592
+    },
+    {
+      "id": 370,
+      "key": "370",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5529947,
+        -64.069581
+      ],
+      "suggested": [
+        8.54770973,
+        -64.07042289
+      ],
+      "routeDistanceM": 595
+    },
+    {
+      "id": 486,
+      "key": "486",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5452006,
+        -64.050532
+      ],
+      "suggested": [
+        8.548984,
+        -64.046665
+      ],
+      "routeDistanceM": 598
+    },
+    {
+      "id": 74,
+      "key": "74",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6720722,
+        -64.056992
+      ],
+      "suggested": [
+        8.6667236,
+        -64.05759568
+      ],
+      "routeDistanceM": 598
+    },
+    {
+      "id": 403,
+      "key": "403",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5256369,
+        -64.075142
+      ],
+      "suggested": [
+        8.52398366,
+        -64.08038224
+      ],
+      "routeDistanceM": 605
+    },
+    {
+      "id": 772,
+      "key": "772",
+      "zona": "BARE OESTE",
+      "current": [
+        8.553199,
+        -64.0707725
+      ],
+      "suggested": [
+        8.54770973,
+        -64.07042289
+      ],
+      "routeDistanceM": 612
+    },
+    {
+      "id": 594,
+      "key": "594",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5720567,
+        -64.0918361
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 612
+    },
+    {
+      "id": 57,
+      "key": "57",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6720319,
+        -64.071163
+      ],
+      "suggested": [
+        8.66653022,
+        -64.07096875
+      ],
+      "routeDistanceM": 612
+    },
+    {
+      "id": 561,
+      "key": "561",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5679031,
+        -64.1182663
+      ],
+      "suggested": [
+        8.573368,
+        -64.117314
+      ],
+      "routeDistanceM": 617
+    },
+    {
+      "id": 557,
+      "key": "557",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5540974,
+        -64.053674
+      ],
+      "suggested": [
+        8.558607,
+        -64.057052
+      ],
+      "routeDistanceM": 624
+    },
+    {
+      "id": 329,
+      "key": "329",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5724017,
+        -64.09182
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 633
+    },
+    {
+      "id": 368,
+      "key": "368",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5533525,
+        -64.069574
+      ],
+      "suggested": [
+        8.54770973,
+        -64.07042289
+      ],
+      "routeDistanceM": 634
+    },
+    {
+      "id": 84,
+      "key": "84",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6724956,
+        -64.046719
+      ],
+      "suggested": [
+        8.6667813,
+        -64.04681885
+      ],
+      "routeDistanceM": 635
+    },
+    {
+      "id": 136,
+      "key": "136",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6428806,
+        -64.035528
+      ],
+      "suggested": [
+        8.63720438,
+        -64.03432327
+      ],
+      "routeDistanceM": 645
+    },
+    {
+      "id": 328,
+      "key": "328",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5726239,
+        -64.091821
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 646
+    },
+    {
+      "id": 59,
+      "key": "59",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6723364,
+        -64.066349
+      ],
+      "suggested": [
+        8.66648545,
+        -64.06637535
+      ],
+      "routeDistanceM": 651
+    },
+    {
+      "id": 965,
+      "key": "965",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5676496,
+        -64.1188352
+      ],
+      "suggested": [
+        8.573512,
+        -64.118907
+      ],
+      "routeDistanceM": 652
+    },
+    {
+      "id": 429,
+      "key": "429",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5537158,
+        -64.053704
+      ],
+      "suggested": [
+        8.558586,
+        -64.057081
+      ],
+      "routeDistanceM": 657
+    },
+    {
+      "id": 448,
+      "key": "448",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5675208,
+        -64.11828
+      ],
+      "suggested": [
+        8.573368,
+        -64.117314
+      ],
+      "routeDistanceM": 659
+    },
+    {
+      "id": 326,
+      "key": "326",
+      "zona": "BARE OESTE",
+      "current": [
+        8.57285,
+        -64.09182
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 660
+    },
+    {
+      "id": 100,
+      "key": "100",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6724375,
+        -64.076161
+      ],
+      "suggested": [
+        8.66647655,
+        -64.07595635
+      ],
+      "routeDistanceM": 663
+    },
+    {
+      "id": 364,
+      "key": "364",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5537164,
+        -64.069575
+      ],
+      "suggested": [
+        8.552509,
+        -64.063608
+      ],
+      "routeDistanceM": 670
+    },
+    {
+      "id": 111,
+      "key": "111",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5730814,
+        -64.091819
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 676
+    },
+    {
+      "id": 175,
+      "key": "175",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5540858,
+        -64.069575
+      ],
+      "suggested": [
+        8.552547,
+        -64.0636
+      ],
+      "routeDistanceM": 679
+    },
+    {
+      "id": 493,
+      "key": "493",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5534481,
+        -64.094884
+      ],
+      "suggested": [
+        8.55618752,
+        -64.08921939
+      ],
+      "routeDistanceM": 693
+    },
+    {
+      "id": 610,
+      "key": "610",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5391816,
+        -64.0467906
+      ],
+      "suggested": [
+        8.542756,
+        -64.041609
+      ],
+      "routeDistanceM": 695
+    },
+    {
+      "id": 397,
+      "key": "397",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5387486,
+        -64.046791
+      ],
+      "suggested": [
+        8.542756,
+        -64.041609
+      ],
+      "routeDistanceM": 723
+    },
+    {
+      "id": 902,
+      "key": "902",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5292646,
+        -64.1325196
+      ],
+      "suggested": [
+        8.529647,
+        -64.125944
+      ],
+      "routeDistanceM": 724
+    },
+    {
+      "id": 789,
+      "key": "789",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5291483,
+        -64.1325272
+      ],
+      "suggested": [
+        8.529647,
+        -64.125944
+      ],
+      "routeDistanceM": 726
+    },
+    {
+      "id": 23,
+      "key": "23",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6292875,
+        -64.058924
+      ],
+      "suggested": [
+        8.63585438,
+        -64.05837183
+      ],
+      "routeDistanceM": 733
+    },
+    {
+      "id": 741,
+      "key": "741",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5581457,
+        -64.047372
+      ],
+      "suggested": [
+        8.561107,
+        -64.041278
+      ],
+      "routeDistanceM": 747
+    },
+    {
+      "id": 488,
+      "key": "488",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5696214,
+        -64.089914
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 748
+    },
+    {
+      "id": 150,
+      "key": "150",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6732472,
+        -64.063711
+      ],
+      "suggested": [
+        8.66651003,
+        -64.06370854
+      ],
+      "routeDistanceM": 749
+    },
+    {
+      "id": 465,
+      "key": "465",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5700389,
+        -64.089931
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 749
+    },
+    {
+      "id": 740,
+      "key": "740",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5580734,
+        -64.0473718
+      ],
+      "suggested": [
+        8.561107,
+        -64.041278
+      ],
+      "routeDistanceM": 750
+    },
+    {
+      "id": 460,
+      "key": "460",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5703533,
+        -64.089928
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 754
+    },
+    {
+      "id": 739,
+      "key": "739",
+      "zona": "BARE ESTE",
+      "current": [
+        8.558001,
+        -64.0473716
+      ],
+      "suggested": [
+        8.561107,
+        -64.041278
+      ],
+      "routeDistanceM": 754
+    },
+    {
+      "id": 79,
+      "key": "79",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6736719,
+        -64.041992
+      ],
+      "suggested": [
+        8.66686199,
+        -64.04185795
+      ],
+      "routeDistanceM": 757
+    },
+    {
+      "id": 738,
+      "key": "738",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5579287,
+        -64.0473714
+      ],
+      "suggested": [
+        8.561107,
+        -64.041278
+      ],
+      "routeDistanceM": 758
+    },
+    {
+      "id": 489,
+      "key": "489",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5382724,
+        -64.0468015
+      ],
+      "suggested": [
+        8.542756,
+        -64.041609
+      ],
+      "routeDistanceM": 758
+    },
+    {
+      "id": 829,
+      "key": "829",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5750739,
+        -64.0221482
+      ],
+      "suggested": [
+        8.572039,
+        -64.015971
+      ],
+      "routeDistanceM": 758
+    },
+    {
+      "id": 458,
+      "key": "458",
+      "zona": "BARE OESTE",
+      "current": [
+        8.570715,
+        -64.08994
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 759
+    },
+    {
+      "id": 454,
+      "key": "454",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5711258,
+        -64.089946
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 768
+    },
+    {
+      "id": 246,
+      "key": "246",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6426972,
+        -64.04025
+      ],
+      "suggested": [
+        8.63575783,
+        -64.03985768
+      ],
+      "routeDistanceM": 773
+    },
+    {
+      "id": 219,
+      "key": "219",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6426972,
+        -64.040433
+      ],
+      "suggested": [
+        8.63574592,
+        -64.04042112
+      ],
+      "routeDistanceM": 773
+    },
+    {
+      "id": 250,
+      "key": "250",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6426972,
+        -64.0408
+      ],
+      "suggested": [
+        8.63574331,
+        -64.04068488
+      ],
+      "routeDistanceM": 773
+    },
+    {
+      "id": 70,
+      "key": "70",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6263028,
+        -64.094939
+      ],
+      "suggested": [
+        8.62724151,
+        -64.10195607
+      ],
+      "routeDistanceM": 778
+    },
+    {
+      "id": 546,
+      "key": "546",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5378214,
+        -64.046792
+      ],
+      "suggested": [
+        8.542756,
+        -64.041609
+      ],
+      "routeDistanceM": 791
+    },
+    {
+      "id": 244,
+      "key": "244",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6430028,
+        -64.040342
+      ],
+      "suggested": [
+        8.63574592,
+        -64.04042112
+      ],
+      "routeDistanceM": 807
+    },
+    {
+      "id": 130,
+      "key": "130",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6350967,
+        -64.094551
+      ],
+      "suggested": [
+        8.63524949,
+        -64.10194726
+      ],
+      "routeDistanceM": 813
+    },
+    {
+      "id": 8,
+      "key": "8",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6738917,
+        -64.073547
+      ],
+      "suggested": [
+        8.66649858,
+        -64.07340284
+      ],
+      "routeDistanceM": 822
+    },
+    {
+      "id": 919,
+      "key": "919",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5585452,
+        -63.9778327
+      ],
+      "suggested": [
+        8.55694085,
+        -63.97050435
+      ],
+      "routeDistanceM": 825
+    },
+    {
+      "id": 118,
+      "key": "118",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6279453,
+        -64.047742
+      ],
+      "suggested": [
+        8.63559317,
+        -64.04815311
+      ],
+      "routeDistanceM": 852
+    },
+    {
+      "id": 333,
+      "key": "333",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5728814,
+        -64.085999
+      ],
+      "suggested": [
+        8.57255584,
+        -64.07819041
+      ],
+      "routeDistanceM": 859
+    },
+    {
+      "id": 334,
+      "key": "334",
+      "zona": "BARE OESTE",
+      "current": [
+        8.572625,
+        -64.086026
+      ],
+      "suggested": [
+        8.57255584,
+        -64.07819041
+      ],
+      "routeDistanceM": 862
+    },
+    {
+      "id": 463,
+      "key": "463",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5765656,
+        -64.090471
+      ],
+      "suggested": [
+        8.58331244,
+        -64.08659477
+      ],
+      "routeDistanceM": 863
+    },
+    {
+      "id": 332,
+      "key": "332",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5730778,
+        -64.086023
+      ],
+      "suggested": [
+        8.57255584,
+        -64.07819041
+      ],
+      "routeDistanceM": 863
+    },
+    {
+      "id": 330,
+      "key": "330",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5733078,
+        -64.086033
+      ],
+      "suggested": [
+        8.57272334,
+        -64.07817647
+      ],
+      "routeDistanceM": 866
+    },
+    {
+      "id": 327,
+      "key": "327",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5735317,
+        -64.086027
+      ],
+      "suggested": [
+        8.57272334,
+        -64.07817647
+      ],
+      "routeDistanceM": 868
+    },
+    {
+      "id": 809,
+      "key": "809",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5725699,
+        -64.0411071
+      ],
+      "suggested": [
+        8.572224,
+        -64.033186
+      ],
+      "routeDistanceM": 872
+    },
+    {
+      "id": 810,
+      "key": "810",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5726422,
+        -64.0411073
+      ],
+      "suggested": [
+        8.572224,
+        -64.033186
+      ],
+      "routeDistanceM": 872
+    },
+    {
+      "id": 428,
+      "key": "428",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5253786,
+        -64.063955
+      ],
+      "suggested": [
+        8.53222052,
+        -64.06835523
+      ],
+      "routeDistanceM": 902
+    },
+    {
+      "id": 858,
+      "key": "858",
+      "zona": "BARE ESTE",
+      "current": [
+        8.536352,
+        -64.0128453
+      ],
+      "suggested": [
+        8.535412,
+        -64.021003
+      ],
+      "routeDistanceM": 903
+    },
+    {
+      "id": 270,
+      "key": "270",
+      "zona": "BARE OESTE",
+      "current": [
+        8.645395,
+        -64.033479
+      ],
+      "suggested": [
+        8.63983089,
+        -64.02748903
+      ],
+      "routeDistanceM": 904
+    },
+    {
+      "id": 272,
+      "key": "272",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6454017,
+        -64.033839
+      ],
+      "suggested": [
+        8.63720438,
+        -64.03432327
+      ],
+      "routeDistanceM": 913
+    },
+    {
+      "id": 271,
+      "key": "271",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6453967,
+        -64.033661
+      ],
+      "suggested": [
+        8.63720438,
+        -64.03432327
+      ],
+      "routeDistanceM": 914
+    },
+    {
+      "id": 445,
+      "key": "445",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5250428,
+        -64.06395
+      ],
+      "suggested": [
+        8.53222052,
+        -64.06835523
+      ],
+      "routeDistanceM": 934
+    },
+    {
+      "id": 520,
+      "key": "520",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6272086,
+        -64.047557
+      ],
+      "suggested": [
+        8.63559317,
+        -64.04815311
+      ],
+      "routeDistanceM": 935
+    },
+    {
+      "id": 732,
+      "key": "732",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5712133,
+        -64.0070006
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 940
+    },
+    {
+      "id": 331,
+      "key": "331",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5757528,
+        -64.090585
+      ],
+      "suggested": [
+        8.58331244,
+        -64.08659477
+      ],
+      "routeDistanceM": 948
+    },
+    {
+      "id": 366,
+      "key": "366",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5754844,
+        -64.090559
+      ],
+      "suggested": [
+        8.5694095,
+        -64.09671624
+      ],
+      "routeDistanceM": 956
+    },
+    {
+      "id": 737,
+      "key": "737",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5262852,
+        -64.0395447
+      ],
+      "suggested": [
+        8.524812,
+        -64.048308
+      ],
+      "routeDistanceM": 977
+    },
+    {
+      "id": 823,
+      "key": "823",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5367591,
+        -64.0023437
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 982
+    },
+    {
+      "id": 742,
+      "key": "742",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5266469,
+        -64.0395457
+      ],
+      "suggested": [
+        8.524993,
+        -64.048338
+      ],
+      "routeDistanceM": 984
+    },
+    {
+      "id": 814,
+      "key": "814",
+      "zona": "BARE ESTE",
+      "current": [
+        8.530662,
+        -63.9958046
+      ],
+      "suggested": [
+        8.52800429,
+        -64.00444568
+      ],
+      "routeDistanceM": 995
+    },
+    {
+      "id": 815,
+      "key": "815",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5307318,
+        -63.9958048
+      ],
+      "suggested": [
+        8.52800429,
+        -64.00444568
+      ],
+      "routeDistanceM": 997
+    },
+    {
+      "id": 816,
+      "key": "816",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5308067,
+        -63.995805
+      ],
+      "suggested": [
+        8.52800429,
+        -64.00444568
+      ],
+      "routeDistanceM": 1000
+    },
+    {
+      "id": 542,
+      "key": "542",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5273672,
+        -64.039546
+      ],
+      "suggested": [
+        8.526252,
+        -64.048589
+      ],
+      "routeDistanceM": 1002
+    },
+    {
+      "id": 916,
+      "key": "916",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5551583,
+        -63.9795536
+      ],
+      "suggested": [
+        8.55658421,
+        -63.97048161
+      ],
+      "routeDistanceM": 1010
+    },
+    {
+      "id": 922,
+      "key": "922",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6481449,
+        -64.0016733
+      ],
+      "suggested": [
+        8.65211268,
+        -64.01014756
+      ],
+      "routeDistanceM": 1031
+    },
+    {
+      "id": 969,
+      "key": "969",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5681779,
+        -64.0063491
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1040
+    },
+    {
+      "id": 543,
+      "key": "543",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6305217,
+        -64.066342
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 1041
+    },
+    {
+      "id": 736,
+      "key": "736",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5684292,
+        -64.0063244
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1043
+    },
+    {
+      "id": 684,
+      "key": "684",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5688364,
+        -64.0063258
+      ],
+      "suggested": [
+        8.568473,
+        -64.015814
+      ],
+      "routeDistanceM": 1044
+    },
+    {
+      "id": 58,
+      "key": "58",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6759486,
+        -64.063074
+      ],
+      "suggested": [
+        8.66654887,
+        -64.06255573
+      ],
+      "routeDistanceM": 1047
+    },
+    {
+      "id": 693,
+      "key": "693",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5726542,
+        -64.0058451
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 1061
+    },
+    {
+      "id": 156,
+      "key": "156",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6455747,
+        -64.04321
+      ],
+      "suggested": [
+        8.63570048,
+        -64.04319876
+      ],
+      "routeDistanceM": 1098
+    },
+    {
+      "id": 65,
+      "key": "65",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6766506,
+        -64.048716
+      ],
+      "suggested": [
+        8.6667714,
+        -64.04847327
+      ],
+      "routeDistanceM": 1099
+    },
+    {
+      "id": 61,
+      "key": "61",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6767764,
+        -64.058332
+      ],
+      "suggested": [
+        8.66672546,
+        -64.05770316
+      ],
+      "routeDistanceM": 1120
+    },
+    {
+      "id": 940,
+      "key": "940",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6298992,
+        -64.0916155
+      ],
+      "suggested": [
+        8.62981641,
+        -64.101926
+      ],
+      "routeDistanceM": 1134
+    },
+    {
+      "id": 688,
+      "key": "688",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5647676,
+        -64.0058604
+      ],
+      "suggested": [
+        8.568029,
+        -64.015858
+      ],
+      "routeDistanceM": 1158
+    },
+    {
+      "id": 873,
+      "key": "873",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5643416,
+        -64.0058705
+      ],
+      "suggested": [
+        8.568029,
+        -64.015858
+      ],
+      "routeDistanceM": 1172
+    },
+    {
+      "id": 960,
+      "key": "960",
+      "zona": "BARE ESTE",
+      "current": [
+        8.564072,
+        -64.0058695
+      ],
+      "suggested": [
+        8.568029,
+        -64.015858
+      ],
+      "routeDistanceM": 1183
+    },
+    {
+      "id": 894,
+      "key": "894",
+      "zona": "BARE ESTE",
+      "current": [
+        8.537898,
+        -63.9998675
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 1196
+    },
+    {
+      "id": 129,
+      "key": "129",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6214556,
+        -64.092186
+      ],
+      "suggested": [
+        8.62586286,
+        -64.10234271
+      ],
+      "routeDistanceM": 1219
+    },
+    {
+      "id": 897,
+      "key": "897",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5383499,
+        -63.9998688
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 1242
+    },
+    {
+      "id": 766,
+      "key": "766",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5620022,
+        -64.0061311
+      ],
+      "suggested": [
+        8.567938,
+        -64.015908
+      ],
+      "routeDistanceM": 1261
+    },
+    {
+      "id": 767,
+      "key": "767",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5620022,
+        -64.0061311
+      ],
+      "suggested": [
+        8.567938,
+        -64.015908
+      ],
+      "routeDistanceM": 1261
+    },
+    {
+      "id": 677,
+      "key": "677",
+      "zona": "BARE ESTE",
+      "current": [
+        8.561712,
+        -64.0063033
+      ],
+      "suggested": [
+        8.567938,
+        -64.015908
+      ],
+      "routeDistanceM": 1263
+    },
+    {
+      "id": 655,
+      "key": "655",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5283274,
+        -64.137847
+      ],
+      "suggested": [
+        8.528508,
+        -64.125933
+      ],
+      "routeDistanceM": 1310
+    },
+    {
+      "id": 646,
+      "key": "646",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5282821,
+        -64.1378832
+      ],
+      "suggested": [
+        8.528508,
+        -64.125933
+      ],
+      "routeDistanceM": 1314
+    },
+    {
+      "id": 752,
+      "key": "752",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5276944,
+        -64.1378907
+      ],
+      "suggested": [
+        8.528032,
+        -64.12592
+      ],
+      "routeDistanceM": 1317
+    },
+    {
+      "id": 753,
+      "key": "753",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5276944,
+        -64.1378907
+      ],
+      "suggested": [
+        8.528032,
+        -64.12592
+      ],
+      "routeDistanceM": 1317
+    },
+    {
+      "id": 426,
+      "key": "426",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5732625,
+        -64.138167
+      ],
+      "suggested": [
+        8.573228,
+        -64.126057
+      ],
+      "routeDistanceM": 1332
+    },
+    {
+      "id": 591,
+      "key": "591",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5736434,
+        -64.1381634
+      ],
+      "suggested": [
+        8.573228,
+        -64.126057
+      ],
+      "routeDistanceM": 1332
+    },
+    {
+      "id": 585,
+      "key": "585",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5740237,
+        -64.1381608
+      ],
+      "suggested": [
+        8.573228,
+        -64.126057
+      ],
+      "routeDistanceM": 1334
+    },
+    {
+      "id": 575,
+      "key": "575",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5744031,
+        -64.1381384
+      ],
+      "suggested": [
+        8.573228,
+        -64.126057
+      ],
+      "routeDistanceM": 1335
+    },
+    {
+      "id": 604,
+      "key": "604",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5747649,
+        -64.1381406
+      ],
+      "suggested": [
+        8.573423,
+        -64.126038
+      ],
+      "routeDistanceM": 1339
+    },
+    {
+      "id": 744,
+      "key": "744",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5606806,
+        -64.1393241
+      ],
+      "suggested": [
+        8.560134,
+        -64.126839
+      ],
+      "routeDistanceM": 1374
+    },
+    {
+      "id": 745,
+      "key": "745",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5607485,
+        -64.139321
+      ],
+      "suggested": [
+        8.560134,
+        -64.126839
+      ],
+      "routeDistanceM": 1374
+    },
+    {
+      "id": 746,
+      "key": "746",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5608253,
+        -64.1393245
+      ],
+      "suggested": [
+        8.560134,
+        -64.126839
+      ],
+      "routeDistanceM": 1375
+    },
+    {
+      "id": 676,
+      "key": "676",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5588831,
+        -64.0071445
+      ],
+      "suggested": [
+        8.567873,
+        -64.015967
+      ],
+      "routeDistanceM": 1393
+    },
+    {
+      "id": 747,
+      "key": "747",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5310973,
+        -63.9921179
+      ],
+      "suggested": [
+        8.52800429,
+        -64.00444568
+      ],
+      "routeDistanceM": 1399
+    },
+    {
+      "id": 748,
+      "key": "748",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5311696,
+        -63.9921181
+      ],
+      "suggested": [
+        8.52800429,
+        -64.00444568
+      ],
+      "routeDistanceM": 1401
+    },
+    {
+      "id": 749,
+      "key": "749",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5312419,
+        -63.9921182
+      ],
+      "suggested": [
+        8.52800429,
+        -64.00444568
+      ],
+      "routeDistanceM": 1403
+    },
+    {
+      "id": 947,
+      "key": "947",
+      "zona": "BARE OESTE",
+      "current": [
+        8.650561,
+        -64.0349236
+      ],
+      "suggested": [
+        8.63983089,
+        -64.02748903
+      ],
+      "routeDistanceM": 1446
+    },
+    {
+      "id": 952,
+      "key": "952",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6498728,
+        -64.038737
+      ],
+      "suggested": [
+        8.63720438,
+        -64.03432327
+      ],
+      "routeDistanceM": 1490
+    },
+    {
+      "id": 605,
+      "key": "605",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5876491,
+        -64.1358789
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 1495
+    },
+    {
+      "id": 551,
+      "key": "551",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6264422,
+        -64.068554
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 1520
+    },
+    {
+      "id": 608,
+      "key": "608",
+      "zona": "BARE OESTE",
+      "current": [
+        8.567375,
+        -64.1401813
+      ],
+      "suggested": [
+        8.568084,
+        -64.126032
+      ],
+      "routeDistanceM": 1558
+    },
+    {
+      "id": 870,
+      "key": "870",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5557343,
+        -64.0078294
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1576
+    },
+    {
+      "id": 868,
+      "key": "868",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5514301,
+        -64.0084423
+      ],
+      "suggested": [
+        8.547438,
+        -64.022345
+      ],
+      "routeDistanceM": 1592
+    },
+    {
+      "id": 406,
+      "key": "406",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6251844,
+        -64.06856
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 1621
+    },
+    {
+      "id": 665,
+      "key": "665",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5427998,
+        -64.0025613
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 1638
+    },
+    {
+      "id": 510,
+      "key": "510",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6228647,
+        -64.087337
+      ],
+      "suggested": [
+        8.62666824,
+        -64.10205587
+      ],
+      "routeDistanceM": 1673
+    },
+    {
+      "id": 14,
+      "key": "14",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5568417,
+        -64.141739
+      ],
+      "suggested": [
+        8.559938,
+        -64.126838
+      ],
+      "routeDistanceM": 1674
+    },
+    {
+      "id": 675,
+      "key": "675",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5639662,
+        -64.0011613
+      ],
+      "suggested": [
+        8.568029,
+        -64.015858
+      ],
+      "routeDistanceM": 1678
+    },
+    {
+      "id": 877,
+      "key": "877",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5561014,
+        -64.0061839
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1686
+    },
+    {
+      "id": 649,
+      "key": "649",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5286331,
+        -64.1415181
+      ],
+      "suggested": [
+        8.528741,
+        -64.125937
+      ],
+      "routeDistanceM": 1713
+    },
+    {
+      "id": 97,
+      "key": "97",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6219583,
+        -64.087203
+      ],
+      "suggested": [
+        8.62626826,
+        -64.10216973
+      ],
+      "routeDistanceM": 1714
+    },
+    {
+      "id": 813,
+      "key": "813",
+      "zona": "BARE OESTE",
+      "current": [
+        8.525015,
+        -64.1415068
+      ],
+      "suggested": [
+        8.524857,
+        -64.125923
+      ],
+      "routeDistanceM": 1714
+    },
+    {
+      "id": 38,
+      "key": "38",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6820656,
+        -64.064815
+      ],
+      "suggested": [
+        8.66650239,
+        -64.06440638
+      ],
+      "routeDistanceM": 1731
+    },
+    {
+      "id": 700,
+      "key": "700",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5461172,
+        -64.006621
+      ],
+      "suggested": [
+        8.547438,
+        -64.022345
+      ],
+      "routeDistanceM": 1735
+    },
+    {
+      "id": 817,
+      "key": "817",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5453653,
+        -64.0066402
+      ],
+      "suggested": [
+        8.545682,
+        -64.022451
+      ],
+      "routeDistanceM": 1739
+    },
+    {
+      "id": 709,
+      "key": "709",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5457555,
+        -64.0066201
+      ],
+      "suggested": [
+        8.547438,
+        -64.022345
+      ],
+      "routeDistanceM": 1739
+    },
+    {
+      "id": 667,
+      "key": "667",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5472399,
+        -64.006269
+      ],
+      "suggested": [
+        8.547438,
+        -64.022345
+      ],
+      "routeDistanceM": 1768
+    },
+    {
+      "id": 765,
+      "key": "765",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5548367,
+        -64.0061526
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1779
+    },
+    {
+      "id": 764,
+      "key": "764",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5547643,
+        -64.0061524
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1785
+    },
+    {
+      "id": 763,
+      "key": "763",
+      "zona": "BARE ESTE",
+      "current": [
+        8.554692,
+        -64.0061522
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1790
+    },
+    {
+      "id": 762,
+      "key": "762",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5546196,
+        -64.006152
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1795
+    },
+    {
+      "id": 666,
+      "key": "666",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5544753,
+        -64.0061517
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1806
+    },
+    {
+      "id": 534,
+      "key": "534",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6195731,
+        -64.058386
+      ],
+      "suggested": [
+        8.63583215,
+        -64.05779361
+      ],
+      "routeDistanceM": 1809
+    },
+    {
+      "id": 831,
+      "key": "831",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5540409,
+        -64.0061752
+      ],
+      "suggested": [
+        8.565529,
+        -64.01819
+      ],
+      "routeDistanceM": 1838
+    },
+    {
+      "id": 864,
+      "key": "864",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5655086,
+        -63.9992305
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 1848
+    },
+    {
+      "id": 863,
+      "key": "863",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5654363,
+        -63.9992303
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 1849
+    },
+    {
+      "id": 862,
+      "key": "862",
+      "zona": "BARE OESTE",
+      "current": [
+        8.565364,
+        -63.9992301
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 1851
+    },
+    {
+      "id": 933,
+      "key": "933",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5651849,
+        -63.9992305
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 1854
+    },
+    {
+      "id": 835,
+      "key": "835",
+      "zona": "BARE OESTE",
+      "current": [
+        8.623065,
+        -64.0853529
+      ],
+      "suggested": [
+        8.62666824,
+        -64.10205587
+      ],
+      "routeDistanceM": 1879
+    },
+    {
+      "id": 158,
+      "key": "158",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6188061,
+        -64.035939
+      ],
+      "suggested": [
+        8.63577596,
+        -64.03607082
+      ],
+      "routeDistanceM": 1887
+    },
+    {
+      "id": 432,
+      "key": "432",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6225914,
+        -64.08535
+      ],
+      "suggested": [
+        8.62666824,
+        -64.10205587
+      ],
+      "routeDistanceM": 1892
+    },
+    {
+      "id": 409,
+      "key": "409",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6278511,
+        -64.074118
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 1927
+    },
+    {
+      "id": 40,
+      "key": "40",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6274875,
+        -64.074114
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 1946
+    },
+    {
+      "id": 883,
+      "key": "883",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5583964,
+        -64.0009867
+      ],
+      "suggested": [
+        8.567938,
+        -64.015908
+      ],
+      "routeDistanceM": 1954
+    },
+    {
+      "id": 915,
+      "key": "915",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5684577,
+        -63.9978739
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1972
+    },
+    {
+      "id": 707,
+      "key": "707",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5682615,
+        -63.9978471
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1975
+    },
+    {
+      "id": 705,
+      "key": "705",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5681168,
+        -63.9978468
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1975
+    },
+    {
+      "id": 704,
+      "key": "704",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5680445,
+        -63.9978466
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1975
+    },
+    {
+      "id": 703,
+      "key": "703",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5679721,
+        -63.9978464
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1976
+    },
+    {
+      "id": 702,
+      "key": "702",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5678998,
+        -63.9978462
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1976
+    },
+    {
+      "id": 701,
+      "key": "701",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5678274,
+        -63.997846
+      ],
+      "suggested": [
+        8.568311,
+        -64.015811
+      ],
+      "routeDistanceM": 1976
+    },
+    {
+      "id": 962,
+      "key": "962",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5714181,
+        -64.1441707
+      ],
+      "suggested": [
+        8.571527,
+        -64.126071
+      ],
+      "routeDistanceM": 1990
+    },
+    {
+      "id": 131,
+      "key": "131",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6174617,
+        -64.043159
+      ],
+      "suggested": [
+        8.63567342,
+        -64.04394778
+      ],
+      "routeDistanceM": 2027
+    },
+    {
+      "id": 849,
+      "key": "849",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5980065,
+        -64.018889
+      ],
+      "suggested": [
+        8.5868,
+        -64.034002
+      ],
+      "routeDistanceM": 2077
+    },
+    {
+      "id": 844,
+      "key": "844",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5456896,
+        -63.9972974
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 2103
+    },
+    {
+      "id": 895,
+      "key": "895",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5538683,
+        -63.9894164
+      ],
+      "suggested": [
+        8.55658421,
+        -63.97048161
+      ],
+      "routeDistanceM": 2104
+    },
+    {
+      "id": 891,
+      "key": "891",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5537327,
+        -63.989416
+      ],
+      "suggested": [
+        8.55658421,
+        -63.97048161
+      ],
+      "routeDistanceM": 2106
+    },
+    {
+      "id": 846,
+      "key": "846",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5984587,
+        -64.0188902
+      ],
+      "suggested": [
+        8.5868,
+        -64.034002
+      ],
+      "routeDistanceM": 2107
+    },
+    {
+      "id": 946,
+      "key": "946",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6163834,
+        -64.0489595
+      ],
+      "suggested": [
+        8.6355465,
+        -64.04964539
+      ],
+      "routeDistanceM": 2132
+    },
+    {
+      "id": 900,
+      "key": "900",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5988203,
+        -64.0188914
+      ],
+      "suggested": [
+        8.5868,
+        -64.034002
+      ],
+      "routeDistanceM": 2132
+    },
+    {
+      "id": 47,
+      "key": "47",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6312833,
+        -64.082403
+      ],
+      "suggested": [
+        8.63108021,
+        -64.10193501
+      ],
+      "routeDistanceM": 2147
+    },
+    {
+      "id": 945,
+      "key": "945",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6162026,
+        -64.048959
+      ],
+      "suggested": [
+        8.6355465,
+        -64.04964539
+      ],
+      "routeDistanceM": 2152
+    },
+    {
+      "id": 479,
+      "key": "479",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6308772,
+        -64.082314
+      ],
+      "suggested": [
+        8.63086758,
+        -64.10193317
+      ],
+      "routeDistanceM": 2157
+    },
+    {
+      "id": 890,
+      "key": "890",
+      "zona": "BARE ESTE",
+      "current": [
+        8.565761,
+        -63.996251
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 2169
+    },
+    {
+      "id": 888,
+      "key": "888",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5656164,
+        -63.9962542
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 2170
+    },
+    {
+      "id": 878,
+      "key": "878",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5580798,
+        -63.9902338
+      ],
+      "suggested": [
+        8.55694085,
+        -63.97050435
+      ],
+      "routeDistanceM": 2173
+    },
+    {
+      "id": 879,
+      "key": "879",
+      "zona": "BARE ESTE",
+      "current": [
+        8.558152,
+        -63.990234
+      ],
+      "suggested": [
+        8.55694085,
+        -63.97050435
+      ],
+      "routeDistanceM": 2174
+    },
+    {
+      "id": 885,
+      "key": "885",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5582968,
+        -63.9902343
+      ],
+      "suggested": [
+        8.55694085,
+        -63.97050435
+      ],
+      "routeDistanceM": 2175
+    },
+    {
+      "id": 928,
+      "key": "928",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6130838,
+        -64.068187
+      ],
+      "suggested": [
+        8.59355533,
+        -64.07035752
+      ],
+      "routeDistanceM": 2185
+    },
+    {
+      "id": 533,
+      "key": "533",
+      "zona": "BARE OESTE",
+      "current": [
+        8.61741,
+        -64.065917
+      ],
+      "suggested": [
+        8.63587811,
+        -64.05852291
+      ],
+      "routeDistanceM": 2209
+    },
+    {
+      "id": 411,
+      "key": "411",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6133756,
+        -64.067546
+      ],
+      "suggested": [
+        8.59355533,
+        -64.07035752
+      ],
+      "routeDistanceM": 2225
+    },
+    {
+      "id": 830,
+      "key": "830",
+      "zona": "BARE ESTE",
+      "current": [
+        8.540981,
+        -63.9888431
+      ],
+      "suggested": [
+        8.52808908,
+        -64.00449299
+      ],
+      "routeDistanceM": 2240
+    },
+    {
+      "id": 898,
+      "key": "898",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5287458,
+        -64.1463165
+      ],
+      "suggested": [
+        8.528741,
+        -64.125937
+      ],
+      "routeDistanceM": 2241
+    },
+    {
+      "id": 531,
+      "key": "531",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6170022,
+        -64.06593
+      ],
+      "suggested": [
+        8.63587811,
+        -64.05852291
+      ],
+      "routeDistanceM": 2251
+    },
+    {
+      "id": 135,
+      "key": "135",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6136917,
+        -64.067558
+      ],
+      "suggested": [
+        8.59355533,
+        -64.07035752
+      ],
+      "routeDistanceM": 2260
+    },
+    {
+      "id": 690,
+      "key": "690",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5461843,
+        -63.9945728
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 2282
+    },
+    {
+      "id": 689,
+      "key": "689",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5463651,
+        -63.9945733
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 2300
+    },
+    {
+      "id": 566,
+      "key": "566",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5797246,
+        -64.1460132
+      ],
+      "suggested": [
+        8.573958,
+        -64.125902
+      ],
+      "routeDistanceM": 2302
+    },
+    {
+      "id": 918,
+      "key": "918",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6116501,
+        -64.0031669
+      ],
+      "suggested": [
+        8.63105085,
+        -64.0104927
+      ],
+      "routeDistanceM": 2303
+    },
+    {
+      "id": 559,
+      "key": "559",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5801117,
+        -64.1459694
+      ],
+      "suggested": [
+        8.573958,
+        -64.125902
+      ],
+      "routeDistanceM": 2310
+    },
+    {
+      "id": 832,
+      "key": "832",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5441954,
+        -63.9910253
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 2321
+    },
+    {
+      "id": 711,
+      "key": "711",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5466189,
+        -63.9945746
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 2325
+    },
+    {
+      "id": 712,
+      "key": "712",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5466907,
+        -63.9945741
+      ],
+      "suggested": [
+        8.52820964,
+        -64.00459591
+      ],
+      "routeDistanceM": 2332
+    },
+    {
+      "id": 726,
+      "key": "726",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5394312,
+        -63.9866428
+      ],
+      "suggested": [
+        8.52808908,
+        -64.00449299
+      ],
+      "routeDistanceM": 2333
+    },
+    {
+      "id": 692,
+      "key": "692",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5397935,
+        -63.9864166
+      ],
+      "suggested": [
+        8.52477649,
+        -63.97141518
+      ],
+      "routeDistanceM": 2347
+    },
+    {
+      "id": 133,
+      "key": "133",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6122744,
+        -64.056004
+      ],
+      "suggested": [
+        8.59152712,
+        -64.0602166
+      ],
+      "routeDistanceM": 2353
+    },
+    {
+      "id": 408,
+      "key": "408",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6140331,
+        -64.064114
+      ],
+      "suggested": [
+        8.59314929,
+        -64.06775555
+      ],
+      "routeDistanceM": 2356
+    },
+    {
+      "id": 44,
+      "key": "44",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6185536,
+        -64.071137
+      ],
+      "suggested": [
+        8.63587811,
+        -64.05852291
+      ],
+      "routeDistanceM": 2374
+    },
+    {
+      "id": 958,
+      "key": "958",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5425709,
+        -63.9868582
+      ],
+      "suggested": [
+        8.55647817,
+        -63.97043542
+      ],
+      "routeDistanceM": 2377
+    },
+    {
+      "id": 901,
+      "key": "901",
+      "zona": "BARE OESTE",
+      "current": [
+        8.622433,
+        -64.0755902
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 2396
+    },
+    {
+      "id": 889,
+      "key": "889",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5656941,
+        -63.9941468
+      ],
+      "suggested": [
+        8.568162,
+        -64.015823
+      ],
+      "routeDistanceM": 2399
+    },
+    {
+      "id": 906,
+      "key": "906",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6218909,
+        -64.0755889
+      ],
+      "suggested": [
+        8.63595942,
+        -64.05862841
+      ],
+      "routeDistanceM": 2434
+    },
+    {
+      "id": 923,
+      "key": "923",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6153881,
+        -64.0681915
+      ],
+      "suggested": [
+        8.59355533,
+        -64.07035752
+      ],
+      "routeDistanceM": 2439
+    },
+    {
+      "id": 961,
+      "key": "961",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6098306,
+        -64.034276
+      ],
+      "suggested": [
+        8.587723,
+        -64.037937
+      ],
+      "routeDistanceM": 2491
+    },
+    {
+      "id": 964,
+      "key": "964",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6100111,
+        -64.0342764
+      ],
+      "suggested": [
+        8.587723,
+        -64.037937
+      ],
+      "routeDistanceM": 2511
+    },
+    {
+      "id": 714,
+      "key": "714",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5562752,
+        -63.9939905
+      ],
+      "suggested": [
+        8.55683159,
+        -63.97050788
+      ],
+      "routeDistanceM": 2583
+    },
+    {
+      "id": 713,
+      "key": "713",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5562029,
+        -63.9939903
+      ],
+      "suggested": [
+        8.55683159,
+        -63.97050788
+      ],
+      "routeDistanceM": 2583
+    },
+    {
+      "id": 886,
+      "key": "886",
+      "zona": "BARE ESTE",
+      "current": [
+        8.5517759,
+        -63.9941605
+      ],
+      "suggested": [
+        8.55658421,
+        -63.97048161
+      ],
+      "routeDistanceM": 2658
+    },
+    {
+      "id": 909,
+      "key": "909",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6109196,
+        -64.029635
+      ],
+      "suggested": [
+        8.63490882,
+        -64.02992797
+      ],
+      "routeDistanceM": 2668
+    },
+    {
+      "id": 800,
+      "key": "800",
+      "zona": "BARE OESTE",
+      "current": [
+        8.595522,
+        -64.0073315
+      ],
+      "suggested": [
+        8.572254,
+        -64.015513
+      ],
+      "routeDistanceM": 2739
+    },
+    {
+      "id": 801,
+      "key": "801",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5955944,
+        -64.0073317
+      ],
+      "suggested": [
+        8.572254,
+        -64.015513
+      ],
+      "routeDistanceM": 2747
+    },
+    {
+      "id": 802,
+      "key": "802",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5956668,
+        -64.0073319
+      ],
+      "suggested": [
+        8.572254,
+        -64.015513
+      ],
+      "routeDistanceM": 2754
+    },
+    {
+      "id": 803,
+      "key": "803",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5957391,
+        -64.007332
+      ],
+      "suggested": [
+        8.572254,
+        -64.015513
+      ],
+      "routeDistanceM": 2762
+    },
+    {
+      "id": 881,
+      "key": "881",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6059049,
+        -64.0097894
+      ],
+      "suggested": [
+        8.63105085,
+        -64.0104927
+      ],
+      "routeDistanceM": 2797
+    },
+    {
+      "id": 880,
+      "key": "880",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5962393,
+        -64.0073339
+      ],
+      "suggested": [
+        8.572254,
+        -64.015513
+      ],
+      "routeDistanceM": 2815
+    },
+    {
+      "id": 51,
+      "key": "51",
+      "zona": "BARE OESTE",
+      "current": [
+        8.58585,
+        -64.148872
+      ],
+      "suggested": [
+        8.58201274,
+        -64.12346783
+      ],
+      "routeDistanceM": 2826
+    },
+    {
+      "id": 528,
+      "key": "528",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5420911,
+        -64.151775
+      ],
+      "suggested": [
+        8.541603,
+        -64.125979
+      ],
+      "routeDistanceM": 2837
+    },
+    {
+      "id": 882,
+      "key": "882",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5966915,
+        -64.0073351
+      ],
+      "suggested": [
+        8.572254,
+        -64.015513
+      ],
+      "routeDistanceM": 2862
+    },
+    {
+      "id": 821,
+      "key": "821",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6022521,
+        -63.9858702
+      ],
+      "suggested": [
+        8.60919705,
+        -63.96080007
+      ],
+      "routeDistanceM": 2862
+    },
+    {
+      "id": 791,
+      "key": "791",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5943038,
+        -63.99956
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 3014
+    },
+    {
+      "id": 795,
+      "key": "795",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5944485,
+        -63.9995603
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 3027
+    },
+    {
+      "id": 796,
+      "key": "796",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5945969,
+        -63.9995607
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 3040
+    },
+    {
+      "id": 797,
+      "key": "797",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5946656,
+        -63.9995609
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 3047
+    },
+    {
+      "id": 798,
+      "key": "798",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5947379,
+        -63.9995611
+      ],
+      "suggested": [
+        8.572245,
+        -64.015488
+      ],
+      "routeDistanceM": 3053
+    },
+    {
+      "id": 904,
+      "key": "904",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6048416,
+        -64.0009491
+      ],
+      "suggested": [
+        8.63105085,
+        -64.0104927
+      ],
+      "routeDistanceM": 3097
+    },
+    {
+      "id": 837,
+      "key": "837",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6048451,
+        -64.0008139
+      ],
+      "suggested": [
+        8.63105085,
+        -64.0104927
+      ],
+      "routeDistanceM": 3102
+    },
+    {
+      "id": 903,
+      "key": "903",
+      "zona": "BARE OESTE",
+      "current": [
+        8.582452,
+        -63.9840181
+      ],
+      "suggested": [
+        8.55784583,
+        -63.96958447
+      ],
+      "routeDistanceM": 3163
+    },
+    {
+      "id": 905,
+      "key": "905",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5825876,
+        -63.9840186
+      ],
+      "suggested": [
+        8.55784583,
+        -63.96958447
+      ],
+      "routeDistanceM": 3176
+    },
+    {
+      "id": 782,
+      "key": "782",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5858018,
+        -63.9855901
+      ],
+      "suggested": [
+        8.59994019,
+        -63.95716556
+      ],
+      "routeDistanceM": 3498
+    },
+    {
+      "id": 781,
+      "key": "781",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5857295,
+        -63.9855899
+      ],
+      "suggested": [
+        8.59994019,
+        -63.95716556
+      ],
+      "routeDistanceM": 3502
+    },
+    {
+      "id": 780,
+      "key": "780",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5856572,
+        -63.9855898
+      ],
+      "suggested": [
+        8.59965137,
+        -63.95701933
+      ],
+      "routeDistanceM": 3506
+    },
+    {
+      "id": 778,
+      "key": "778",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5855848,
+        -63.9855896
+      ],
+      "suggested": [
+        8.59965137,
+        -63.95701933
+      ],
+      "routeDistanceM": 3509
+    },
+    {
+      "id": 959,
+      "key": "959",
+      "zona": "BARE OESTE",
+      "current": [
+        8.585468,
+        -63.9856155
+      ],
+      "suggested": [
+        8.59965137,
+        -63.95701933
+      ],
+      "routeDistanceM": 3517
+    },
+    {
+      "id": 52,
+      "key": "52",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5438861,
+        -64.15999
+      ],
+      "suggested": [
+        8.543646,
+        -64.125971
+      ],
+      "routeDistanceM": 3741
+    },
+    {
+      "id": 630,
+      "key": "630",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6116676,
+        -64.1575761
+      ],
+      "suggested": [
+        8.59915621,
+        -64.11536369
+      ],
+      "routeDistanceM": 4845
+    },
+    {
+      "id": 21,
+      "key": "21",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6120247,
+        -64.163424
+      ],
+      "suggested": [
+        8.59827537,
+        -64.11562018
+      ],
+      "routeDistanceM": 5474
+    },
+    {
+      "id": 289,
+      "key": "289",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6120192,
+        -64.163567
+      ],
+      "suggested": [
+        8.59827537,
+        -64.11562018
+      ],
+      "routeDistanceM": 5488
+    },
+    {
+      "id": 631,
+      "key": "631",
+      "zona": "BARE OESTE",
+      "current": [
+        8.61127,
+        -64.1690221
+      ],
+      "suggested": [
+        8.58298089,
+        -64.12303997
+      ],
+      "routeDistanceM": 5954
+    },
+    {
+      "id": 288,
+      "key": "288",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6220389,
+        -64.176725
+      ],
+      "suggested": [
+        8.6041893,
+        -64.11387858
+      ],
+      "routeDistanceM": 7189
+    },
+    {
+      "id": 579,
+      "key": "579",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6232888,
+        -64.17673
+      ],
+      "suggested": [
+        8.60496944,
+        -64.11365221
+      ],
+      "routeDistanceM": 7228
+    },
+    {
+      "id": 574,
+      "key": "574",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6236504,
+        -64.176731
+      ],
+      "suggested": [
+        8.60517378,
+        -64.11359182
+      ],
+      "routeDistanceM": 7239
+    },
+    {
+      "id": 564,
+      "key": "564",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6240121,
+        -64.1767321
+      ],
+      "suggested": [
+        8.6062123,
+        -64.11328551
+      ],
+      "routeDistanceM": 7251
+    },
+    {
+      "id": 290,
+      "key": "290",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6257125,
+        -64.188074
+      ],
+      "suggested": [
+        8.60456435,
+        -64.11377064
+      ],
+      "routeDistanceM": 8501
+    },
+    {
+      "id": 567,
+      "key": "567",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6189911,
+        -64.1963194
+      ],
+      "suggested": [
+        8.58260318,
+        -64.12325678
+      ],
+      "routeDistanceM": 8994
+    },
+    {
+      "id": 125,
+      "key": "125",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6113175,
+        -64.202173
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 9242
+    },
+    {
+      "id": 32,
+      "key": "32",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6750489,
+        -64.186714
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9371
+    },
+    {
+      "id": 48,
+      "key": "48",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5380186,
+        -64.211473
+      ],
+      "suggested": [
+        8.538201,
+        -64.12597
+      ],
+      "routeDistanceM": 9402
+    },
+    {
+      "id": 145,
+      "key": "145",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6803872,
+        -64.189536
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9760
+    },
+    {
+      "id": 63,
+      "key": "63",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6780389,
+        -64.190017
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9772
+    },
+    {
+      "id": 60,
+      "key": "60",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6747833,
+        -64.191292
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9868
+    },
+    {
+      "id": 204,
+      "key": "204",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6699,
+        -64.192458
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9956
+    },
+    {
+      "id": 146,
+      "key": "146",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6821989,
+        -64.191264
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9982
+    },
+    {
+      "id": 529,
+      "key": "529",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6720944,
+        -64.192708
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 9998
+    },
+    {
+      "id": 558,
+      "key": "558",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6132747,
+        -64.2095463
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 10078
+    },
+    {
+      "id": 151,
+      "key": "151",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6766806,
+        -64.193008
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10079
+    },
+    {
+      "id": 407,
+      "key": "407",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6136511,
+        -64.209538
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 10092
+    },
+    {
+      "id": 26,
+      "key": "26",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6139422,
+        -64.209536
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 10103
+    },
+    {
+      "id": 144,
+      "key": "144",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6790306,
+        -64.193731
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10192
+    },
+    {
+      "id": 127,
+      "key": "127",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6094356,
+        -64.212067
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 10205
+    },
+    {
+      "id": 420,
+      "key": "420",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6097747,
+        -64.21201
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 10210
+    },
+    {
+      "id": 556,
+      "key": "556",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6102053,
+        -64.2120046
+      ],
+      "suggested": [
+        8.58224094,
+        -64.12342167
+      ],
+      "routeDistanceM": 10224
+    },
+    {
+      "id": 206,
+      "key": "206",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6705306,
+        -64.195089
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10249
+    },
+    {
+      "id": 560,
+      "key": "560",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6207322,
+        -64.2082398
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 10260
+    },
+    {
+      "id": 167,
+      "key": "167",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6213764,
+        -64.208229
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 10289
+    },
+    {
+      "id": 120,
+      "key": "120",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5440883,
+        -64.220454
+      ],
+      "suggested": [
+        8.542819,
+        -64.125982
+      ],
+      "routeDistanceM": 10389
+    },
+    {
+      "id": 207,
+      "key": "207",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6679083,
+        -64.196469
+      ],
+      "suggested": [
+        8.66568418,
+        -64.10198239
+      ],
+      "routeDistanceM": 10389
+    },
+    {
+      "id": 66,
+      "key": "66",
+      "zona": "BARE OESTE",
+      "current": [
+        8.67695,
+        -64.195822
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10390
+    },
+    {
+      "id": 143,
+      "key": "143",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6795722,
+        -64.196464
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10498
+    },
+    {
+      "id": 126,
+      "key": "126",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6180094,
+        -64.212618
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 10582
+    },
+    {
+      "id": 209,
+      "key": "209",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6667306,
+        -64.198906
+      ],
+      "suggested": [
+        8.66568418,
+        -64.10198239
+      ],
+      "routeDistanceM": 10655
+    },
+    {
+      "id": 93,
+      "key": "93",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6753194,
+        -64.198547
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10668
+    },
+    {
+      "id": 72,
+      "key": "72",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6802028,
+        -64.199094
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10794
+    },
+    {
+      "id": 166,
+      "key": "166",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6727061,
+        -64.199984
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10801
+    },
+    {
+      "id": 521,
+      "key": "521",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6671236,
+        -64.201613
+      ],
+      "suggested": [
+        8.66568418,
+        -64.10198239
+      ],
+      "routeDistanceM": 10953
+    },
+    {
+      "id": 37,
+      "key": "37",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6860486,
+        -64.199911
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 10997
+    },
+    {
+      "id": 16,
+      "key": "16",
+      "zona": "BARE OESTE",
+      "current": [
+        8.54924,
+        -64.226374
+      ],
+      "suggested": [
+        8.559938,
+        -64.126838
+      ],
+      "routeDistanceM": 11009
+    },
+    {
+      "id": 596,
+      "key": "596",
+      "zona": "BARE OESTE",
+      "current": [
+        8.5880719,
+        -64.225184
+      ],
+      "suggested": [
+        8.573423,
+        -64.126038
+      ],
+      "routeDistanceM": 11022
+    },
+    {
+      "id": 75,
+      "key": "75",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6782111,
+        -64.201636
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 11041
+    },
+    {
+      "id": 149,
+      "key": "149",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6803944,
+        -64.201793
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 11091
+    },
+    {
+      "id": 170,
+      "key": "170",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6736106,
+        -64.203157
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 11156
+    },
+    {
+      "id": 595,
+      "key": "595",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6228533,
+        -64.2163187
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 11167
+    },
+    {
+      "id": 592,
+      "key": "592",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6232151,
+        -64.2163198
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 11183
+    },
+    {
+      "id": 148,
+      "key": "148",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6805717,
+        -64.204704
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 11410
+    },
+    {
+      "id": 147,
+      "key": "147",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6779517,
+        -64.206163
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 11532
+    },
+    {
+      "id": 139,
+      "key": "139",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6669028,
+        -64.2069
+      ],
+      "suggested": [
+        8.66568418,
+        -64.10198239
+      ],
+      "routeDistanceM": 11534
+    },
+    {
+      "id": 134,
+      "key": "134",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6697972,
+        -64.207625
+      ],
+      "suggested": [
+        8.66568418,
+        -64.10198239
+      ],
+      "routeDistanceM": 11622
+    },
+    {
+      "id": 137,
+      "key": "137",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6757819,
+        -64.208955
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 11811
+    },
+    {
+      "id": 174,
+      "key": "174",
+      "zona": "BARE OESTE",
+      "current": [
+        8.673875,
+        -64.21089
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 12006
+    },
+    {
+      "id": 160,
+      "key": "160",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6676458,
+        -64.214933
+      ],
+      "suggested": [
+        8.66568418,
+        -64.10198239
+      ],
+      "routeDistanceM": 12418
+    },
+    {
+      "id": 169,
+      "key": "169",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6785811,
+        -64.217614
+      ],
+      "suggested": [
+        8.66583175,
+        -64.10197656
+      ],
+      "routeDistanceM": 12790
+    },
+    {
+      "id": 304,
+      "key": "304",
+      "zona": "BARE OESTE",
+      "current": [
+        8.631565,
+        -64.230343
+      ],
+      "suggested": [
+        8.58235779,
+        -64.12337491
+      ],
+      "routeDistanceM": 12971
+    },
+    {
+      "id": 50,
+      "key": "50",
+      "zona": "BARE OESTE",
+      "current": [
+        8.6353117,
+        -64.234935
+      ],
+      "suggested": [
+        8.58260318,
+        -64.12325678
+      ],
+      "routeDistanceM": 13605
+    }
+  ]
+}

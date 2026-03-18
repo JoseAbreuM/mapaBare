@@ -175,6 +175,18 @@ body {
     color: var(--accent);
 }
 
+.stats-subtitle {
+    margin: 0.55rem 0 0.45rem;
+    font-size: 0.9rem;
+    color: #bfc5ff;
+}
+
+.stats-divider {
+    border: 0;
+    border-top: 1px solid rgba(125, 136, 255, 0.3);
+    margin: 0.5rem 0 0.3rem;
+}
+
 .stats-item {
     width: 100%;
     text-align: left;
@@ -239,6 +251,28 @@ body {
 
 .status-dot-mapa {
     background: #8e44ad;
+}
+
+.category-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.45rem;
+    vertical-align: middle;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.category-dot-1 {
+    background: #2ecc71;
+}
+
+.category-dot-2 {
+    background: #f1c40f;
+}
+
+.category-dot-3 {
+    background: #e74c3c;
 }
 
 #floating-legend-container {
@@ -355,7 +389,7 @@ body {
     position: fixed;
     left: 12px;
     right: 12px;
-    bottom: 92px;
+    bottom: 102px;
     z-index: 10006;
     display: flex;
     gap: 0.5rem;

@@ -19,9 +19,11 @@ let markers = {};
 let searchId = null;
 let editId = null;
 let currentStatsFilter = 'all';
+let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
-const APP_VERSION = 'v1.8';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v19';
+const APP_VERSION = 'v1.11';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v20';
+const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx'];
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
     { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
@@ -73,10 +75,10 @@ const STATUS = {
 };
 
 const BARE_MAP_BOUNDS = {
-    minLat: 8.45,
-    maxLat: 8.62,
-    minLng: -64.15,
-    maxLng: -63.93
+    minLat: 8.5,
+    maxLat: 8.7,
+    minLng: -64.25,
+    maxLng: -63.95
 };
 
 function normalizeEstado(estado) {
@@ -93,8 +95,31 @@ function normalizeEstado(estado) {
     return STATUS.ACTIVO;
 }
 
+function normalizeCategoria(pozo, normalizedEstado) {
+    const rawCategoria = Number(pozo.categoria);
+    const hasCategoria = Number.isFinite(rawCategoria);
+    const estado = normalizedEstado || normalizeEstado(pozo.estado);
+
+    if (estado === STATUS.ACTIVO) return 1;
+    if (estado === STATUS.CANDIDATO || estado === STATUS.DIFERIDO) return 3;
+
+    if (estado === STATUS.EN_SERVICIO) {
+        return hasCategoria && rawCategoria === 3 ? 3 : 2;
+    }
+
+    if (estado === STATUS.INACTIVO_SERVICIO || estado === STATUS.DIAGNOSTICO) {
+        if (hasCategoria && (rawCategoria === 2 || rawCategoria === 3)) {
+            return rawCategoria;
+        }
+        return 2;
+    }
+
+    return hasCategoria ? rawCategoria : 2;
+}
+
 function normalizePozo(pozo) {
     const hasServicio = !!pozo.taladro;
+    const normalizedEstado = hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado);
     const normalizedZone = (pozo.zona || '').toString().trim().toLowerCase();
     const knownZone = Object.prototype.hasOwnProperty.call(zones, normalizedZone);
     const coordsMapa = isGeoCoords(pozo.coordsMapa)
@@ -106,13 +131,14 @@ function normalizePozo(pozo) {
     return {
         ...pozo,
         zona: knownZone ? normalizedZone : 'sin-asignar',
-        estado: hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado),
+        estado: normalizedEstado,
         coordsMapa,
         coordsDiagrama,
         coords: coordsMapa || coordsDiagrama || pozo.coords,
         nota: (pozo.nota || '').toString().trim() || null,
         fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
-        vistaMapa: pozo.vistaMapa !== false
+        vistaMapa: pozo.vistaMapa !== false,
+        categoria: normalizeCategoria(pozo, normalizedEstado)
     };
 }
 
@@ -670,11 +696,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=11',
+            '/css/styles.css?v=12',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=14',
+            '/js/main.js?v=17',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -686,6 +712,7 @@ async function init() {
             '/assets/mapas/bare6-2.jpg',
             '/assets/mapas/trilla-asfaltada.jpg',
             '/assets/mapas/Prueba1.gpx',
+            '/assets/mapas/2do.gpx',
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
@@ -757,6 +784,7 @@ async function applyViewMode(mode, skipPersist = false) {
     }
     if (!isDesktop() && mapMode !== 'mapa') {
         currentStatsFilter = 'all';
+        currentCategoryFilter = 'all';
     }
     updateStatsFilterUi();
     updateResponsiveControls();
@@ -826,45 +854,46 @@ async function loadRealMap() {
 }
 
 async function loadGpxLayers() {
+    const bounds = L.latLngBounds([]);
     try {
-        const response = await fetch('assets/mapas/Prueba1.gpx');
-        if (!response.ok) {
-            console.warn('No se pudo cargar GPX para vista MAPA');
-            return;
-        }
-        const xmlText = await response.text();
-        const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
-        const bounds = L.latLngBounds([]);
-
-        const trkpts = Array.from(xmlDoc.getElementsByTagName('trkpt'));
-        if (trkpts.length) {
-            const latlngs = trkpts
-                .map(node => {
-                    const lat = Number(node.getAttribute('lat'));
-                    const lng = Number(node.getAttribute('lon'));
-                    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-                    return [lat, lng];
-                })
-                .filter(Boolean);
-            if (latlngs.length) {
-                const routeLayer = L.polyline(latlngs, {
-                    color: '#ff9d00',
-                    weight: 3,
-                    opacity: 0.85
-                });
-                routeLayer.addTo(map);
-                mapaLayers.push(routeLayer);
-                bounds.extend(routeLayer.getBounds());
+        for (let i = 0; i < MAP_ROUTE_FILES.length; i++) {
+            const file = MAP_ROUTE_FILES[i];
+            const response = await fetch(file);
+            if (!response.ok) {
+                console.warn(`No se pudo cargar GPX para vista MAPA: ${file}`);
+                continue;
             }
-        }
+            const xmlText = await response.text();
+            const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
 
-        // Los waypoints del GPX se omiten para evitar ruido visual en la capa de pozos.
-
-        if (bounds.isValid()) {
-            mapBounds = bounds;
+            const trkpts = Array.from(xmlDoc.getElementsByTagName('trkpt'));
+            if (trkpts.length) {
+                const latlngs = trkpts
+                    .map(node => {
+                        const lat = Number(node.getAttribute('lat'));
+                        const lng = Number(node.getAttribute('lon'));
+                        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                        return [lat, lng];
+                    })
+                    .filter(Boolean);
+                if (latlngs.length) {
+                    const routeLayer = L.polyline(latlngs, {
+                        color: i === 0 ? '#ff9d00' : '#00c4ff',
+                        weight: 3,
+                        opacity: 0.85
+                    });
+                    routeLayer.addTo(map);
+                    mapaLayers.push(routeLayer);
+                    bounds.extend(routeLayer.getBounds());
+                }
+            }
         }
     } catch (e) {
         console.log('Error cargando GPX en vista MAPA', e);
+    }
+
+    if (bounds.isValid()) {
+        mapBounds = bounds;
     }
 }
 
@@ -959,6 +988,7 @@ function renderMarkers(zone) {
             return !!coords && p.zona === zone && p.zona !== 'sin-asignar';
         })
         .filter(matchesCurrentFilter)
+        .filter(matchesCurrentCategoryFilter)
         .forEach(p => {
         const markerCoords = mapMode === 'mapa' ? getMapaCoords(p) : getDiagramCoords(p);
         if (!markerCoords) return;
@@ -972,6 +1002,16 @@ function matchesCurrentFilter(pozo) {
     if (currentStatsFilter === 'all') return true;
     if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
     return normalizeEstado(pozo.estado) === currentStatsFilter;
+}
+
+function matchesCurrentCategoryFilter(pozo) {
+    if (currentCategoryFilter === 'all') return true;
+    const value = Number(pozo.categoria);
+    if (Number.isFinite(value)) {
+        return String(value) === currentCategoryFilter;
+    }
+    const derived = normalizeCategoria(pozo, pozo.taladro ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado));
+    return String(derived) === currentCategoryFilter;
 }
 
 // Función para crear el icono de servicio con color personalizado, número opcional y borde
@@ -1079,9 +1119,11 @@ function popupContent(p) {
         [STATUS.DIFERIDO]: 'Diferido'
     };
     const estadoLabel = estadoLabelMap[normalizeEstado(p.estado)] || p.estado;
+    const categoriaValue = Number.isFinite(Number(p.categoria)) ? Number(p.categoria) : 'N/A';
     let content = `<strong>${p.id}</strong><br>
     Zona: ${p.zona}<br>
-    Estado: ${estadoLabel}`;
+    Estado: ${estadoLabel}<br>
+    Categoria: ${categoriaValue}`;
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
@@ -1194,6 +1236,7 @@ async function assignTaladro(e) {
     p.taladro = taladro;
     p.estado = STATUS.EN_SERVICIO;
     p.causaDiferido = null;
+    Object.assign(p, normalizePozo(p));
 
     await persistPozosAndRefresh();
     closeAssignForm();
@@ -1247,11 +1290,13 @@ async function submitServiceVerification(e) {
         previousPozo.taladro = null;
         previousPozo.estado = selectedEstado;
         previousPozo.causaDiferido = selectedEstado === STATUS.DIFERIDO ? cause : null;
+        Object.assign(previousPozo, normalizePozo(previousPozo));
     }
 
     currentPozo.taladro = taladro;
     currentPozo.estado = STATUS.EN_SERVICIO;
     currentPozo.causaDiferido = null;
+    Object.assign(currentPozo, normalizePozo(currentPozo));
 
     pendingServiceAssignment = null;
     await persistPozosAndRefresh();
@@ -1399,11 +1444,13 @@ async function savePozo(e) {
         alert('ID ya existe');
         return;
     }
+    const normalizedPozo = normalizePozo(pozo);
+
     if (editId) {
         const index = pozoData.findIndex(p => p.id === editId);
-        pozoData[index] = pozo;
+        pozoData[index] = normalizedPozo;
     } else {
-        pozoData.push(pozo);
+        pozoData.push(normalizedPozo);
     }
     // Guardar en local siempre
     await localforage.setItem(POZO_DATA_KEY, pozoData);
@@ -1412,12 +1459,12 @@ async function savePozo(e) {
     if (navigator.onLine && isDbReady()) {
         await syncData();
     }
-    loadZone(pozo.zona);
-    renderMarkers(pozo.zona);
-    document.getElementById('zone-select').value = pozo.zona;
+    loadZone(normalizedPozo.zona);
+    renderMarkers(normalizedPozo.zona);
+    document.getElementById('zone-select').value = normalizedPozo.zona;
     updateDatalist();
     updateStats();
-    console.log('Pozo guardado:', pozo);
+    console.log('Pozo guardado:', normalizedPozo);
     closeForm();
 }
 
@@ -1429,7 +1476,10 @@ function updateStats() {
         'en-servicio': 0,
         diagnostico: 0,
         candidato: 0,
-        diferido: 0
+        diferido: 0,
+        categoria1: 0,
+        categoria2: 0,
+        categoria3: 0
     };
 
     pozoData.forEach(p => {
@@ -1441,6 +1491,11 @@ function updateStats() {
         if (Object.prototype.hasOwnProperty.call(counts, normalizedEstado)) {
             counts[normalizedEstado]++;
         }
+
+        const categoria = Number(p.categoria);
+        if (categoria === 1) counts.categoria1++;
+        if (categoria === 2) counts.categoria2++;
+        if (categoria === 3) counts.categoria3++;
     });
 
     document.getElementById('count-total').textContent = counts.total;
@@ -1450,17 +1505,32 @@ function updateStats() {
     document.getElementById('count-diagnostic').textContent = counts.diagnostico;
     document.getElementById('count-candidate').textContent = counts.candidato;
     document.getElementById('count-deferred').textContent = counts.diferido;
+    const countCategory1 = document.getElementById('count-category-1');
+    const countCategory2 = document.getElementById('count-category-2');
+    const countCategory3 = document.getElementById('count-category-3');
+    if (countCategory1) countCategory1.textContent = counts.categoria1;
+    if (countCategory2) countCategory2.textContent = counts.categoria2;
+    if (countCategory3) countCategory3.textContent = counts.categoria3;
 }
 
 function updateStatsFilterUi() {
-    document.querySelectorAll('.stats-item').forEach(btn => {
+    document.querySelectorAll('[data-filter-type="status"]').forEach(btn => {
         btn.classList.toggle('is-active', btn.dataset.filter === currentStatsFilter);
+    });
+    document.querySelectorAll('[data-filter-type="category"]').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.category === currentCategoryFilter);
     });
     updateResponsiveControls();
 }
 
 function applyStatsFilter(filter) {
     currentStatsFilter = filter;
+    updateStatsFilterUi();
+    renderActiveMarkers();
+}
+
+function applyCategoryFilter(filter) {
+    currentCategoryFilter = filter;
     updateStatsFilterUi();
     renderActiveMarkers();
 }
@@ -1499,6 +1569,14 @@ async function runSearchById(rawId, clearMobileInput = false) {
     }
 
     searchId = targetPozo.id;
+    if (currentStatsFilter !== 'all' && !matchesCurrentFilter(targetPozo)) {
+        currentStatsFilter = 'all';
+        updateStatsFilterUi();
+    }
+    if (currentCategoryFilter !== 'all' && !matchesCurrentCategoryFilter(targetPozo)) {
+        currentCategoryFilter = 'all';
+        updateStatsFilterUi();
+    }
     if (mapMode === 'diagram') {
         document.getElementById('zone-select').value = targetPozo.zona;
         document.getElementById('mobile-zone-select').value = targetPozo.zona;
@@ -1512,7 +1590,8 @@ async function runSearchById(rawId, clearMobileInput = false) {
     if (markers[searchId]) {
         const targetCoords = mapMode === 'mapa' ? getMapaCoords(targetPozo) : getDiagramCoords(targetPozo);
         if (targetCoords) {
-            map.flyTo(targetCoords, Math.max(map.getZoom(), 2));
+            const targetZoom = mapMode === 'mapa' ? Math.max(map.getZoom(), 15) : Math.max(map.getZoom(), 2);
+            map.flyTo(targetCoords, targetZoom);
         }
         markers[searchId].openPopup();
     }
@@ -1731,9 +1810,15 @@ function attachControls() {
         document.getElementById('floating-zone-input').classList.add('hidden');
     });
 
-    document.querySelectorAll('.stats-item').forEach(btn => {
+    document.querySelectorAll('[data-filter-type="status"]').forEach(btn => {
         btn.addEventListener('click', () => {
             applyStatsFilter(btn.dataset.filter || 'all');
+        });
+    });
+
+    document.querySelectorAll('[data-filter-type="category"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            applyCategoryFilter(btn.dataset.category || 'all');
         });
     });
 

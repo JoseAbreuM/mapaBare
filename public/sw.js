@@ -1,9 +1,9 @@
-const CACHE_NAME = 'pozos-cache-v19';
+const CACHE_NAME = 'pozos-cache-v22';
 const BARE_TILE_BOUNDS = {
-    minLat: 8.45,
-    maxLat: 8.62,
-    minLng: -64.15,
-    maxLng: -63.93
+    minLat: 8.5,
+    maxLat: 8.7,
+    minLng: -64.25,
+    maxLng: -63.95
 };
 
 function tileToLon(x, z) {
@@ -36,13 +36,13 @@ function tileIntersectsBareBounds(url) {
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
-    '/css/styles.css?v=11',
+    '/css/styles.css?v=12',
     '/css/leaflet.css',
     // incluimos las rutas con query string para que coincidan exactamente
     '/js/leaflet.js?v=3',
     '/js/localforage.min.js?v=3',
     '/js/lucide.min.js?v=3',
-    '/js/main.js?v=14',
+    '/js/main.js?v=17',
     '/js/sw-register.js?v=4',
     '/js/firebase-init.js?v=3',
     '/js/pozos-data.js?v=1',
@@ -54,6 +54,7 @@ const FILES_TO_CACHE = [
     '/assets/mapas/bare6-2.jpg',
     '/assets/mapas/trilla-asfaltada.jpg',
     '/assets/mapas/Prueba1.gpx',
+    '/assets/mapas/2do.gpx',
     'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
     'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
 ];

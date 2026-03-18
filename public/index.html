@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=11">
+    <link rel="stylesheet" href="css/styles.css?v=12">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -49,13 +49,19 @@
 
     <aside id="stats-panel" class="stats-panel">
         <h2>Estadísticas</h2>
-        <button type="button" class="stats-item is-active" data-filter="all">Total pozos: <span id="count-total">0</span></button>
-        <button type="button" class="stats-item" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos: <span id="count-active">0</span></button>
-        <button type="button" class="stats-item" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio: <span id="count-inactive-service">0</span></button>
-        <button type="button" class="stats-item" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio: <span id="count-in-service">0</span></button>
-        <button type="button" class="stats-item" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico: <span id="count-diagnostic">0</span></button>
-        <button type="button" class="stats-item" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos: <span id="count-candidate">0</span></button>
-        <button type="button" class="stats-item" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido: <span id="count-deferred">0</span></button>
+        <button type="button" class="stats-item is-active" data-filter-type="status" data-filter="all">Total pozos: <span id="count-total">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="status" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos: <span id="count-active">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="status" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio: <span id="count-inactive-service">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="status" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio: <span id="count-in-service">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="status" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico: <span id="count-diagnostic">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="status" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos: <span id="count-candidate">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="status" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido: <span id="count-deferred">0</span></button>
+        <hr class="stats-divider">
+        <h3 class="stats-subtitle">Categorías</h3>
+        <button type="button" class="stats-item is-active" data-filter-type="category" data-category="all">Todas categorías</button>
+        <button type="button" class="stats-item" data-filter-type="category" data-category="1"><span class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1: <span id="count-category-1">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="category" data-category="2"><span class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2: <span id="count-category-2">0</span></button>
+        <button type="button" class="stats-item" data-filter-type="category" data-category="3"><span class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3: <span id="count-category-3">0</span></button>
     </aside>
 
     <main>
@@ -254,7 +260,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=14"></script>
+    <script src="js/main.js?v=17"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
@@ -283,14 +289,14 @@
         <button id="floating-view-btn" class="floating-view-btn" type="button" aria-label="Cambiar a vista mapa">MAPA</button>
     </div>
 
-    <div id="mobile-map-filters" class="mobile-map-filters hidden" aria-label="Filtrar pozos por categoría">
-        <button type="button" class="stats-item mobile-filter-chip is-active" data-filter="all">Todos</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Espera</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>Servicio</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>Diagnóstico</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferidos</button>
+    <div id="mobile-map-filters" class="mobile-map-filters hidden" aria-label="Filtrar pozos por estado">
+        <button type="button" class="stats-item mobile-filter-chip is-active" data-filter-type="status" data-filter="all">Todos</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Espera</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>Servicio</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>Diagnóstico</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</button>
+        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferidos</button>
     </div>
 
     <!-- Leyenda flotante para móvil -->

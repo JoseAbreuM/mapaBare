@@ -1,0 +1,75 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "BARE OESTE",
+        "source": "bbox-from-excel",
+        "wells": 585
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -64.238435,
+              8.5193803
+            ],
+            [
+              -63.9760536,
+              8.5193803
+            ],
+            [
+              -63.9760536,
+              8.6895486
+            ],
+            [
+              -64.238435,
+              8.6895486
+            ],
+            [
+              -64.238435,
+              8.5193803
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "BARE ESTE",
+        "source": "bbox-from-excel",
+        "wells": 153
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -64.1360272,
+              8.5202706
+            ],
+            [
+              -63.9743327,
+              8.5202706
+            ],
+            [
+              -63.9743327,
+              8.588909200000002
+            ],
+            [
+              -64.1360272,
+              8.588909200000002
+            ],
+            [
+              -64.1360272,
+              8.5202706
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
