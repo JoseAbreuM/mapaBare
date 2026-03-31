@@ -122,7 +122,10 @@ function normalizePozo(pozo) {
     const hasServicio = !!pozo.taladro;
     const normalizedEstado = hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado);
     const normalizedZone = (pozo.zona || '').toString().trim().toLowerCase();
-    const knownZone = Object.prototype.hasOwnProperty.call(zones, normalizedZone);
+    const normalizedDiagram = (pozo.diagrama || '').toString().trim().toLowerCase();
+    const knownDiagram = Object.prototype.hasOwnProperty.call(zones, normalizedDiagram);
+    const legacyDiagram = getLegacyDiagramFromZona(pozo);
+    const diagram = knownDiagram ? normalizedDiagram : (legacyDiagram || 'sin-asignar');
     const coordsMapa = isGeoCoords(pozo.coordsMapa)
         ? pozo.coordsMapa
         : (isGeoCoords(pozo.coords) ? pozo.coords : null);
@@ -131,7 +134,8 @@ function normalizePozo(pozo) {
         : (isDiagramCoords(pozo.coords) ? pozo.coords : null);
     return {
         ...pozo,
-        zona: knownZone ? normalizedZone : 'sin-asignar',
+        zona: normalizedZone || null,
+        diagrama: diagram,
         estado: normalizedEstado,
         coordsMapa,
         coordsDiagrama,
@@ -183,13 +187,68 @@ function getDiagramCoords(pozo) {
     return null;
 }
 
-function getSelectedZone() {
+function getPozoDiagram(pozo) {
+    const currentDiagram = (pozo.diagrama || '').toString().trim().toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(zones, currentDiagram)) return currentDiagram;
+    const legacyDiagram = getLegacyDiagramFromZona(pozo);
+    if (legacyDiagram) return legacyDiagram;
+    return 'sin-asignar';
+}
+
+function getLegacyDiagramFromZona(pozo) {
+    const legacyZone = (pozo.zona || '').toString().trim().toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(zones, legacyZone)) return null;
+
+    const hasMapCoords = isGeoCoords(pozo.coordsMapa) || isGeoCoords(pozo.coords);
+    const hasDiagramCoords = isDiagramCoords(pozo.coordsDiagrama) || isDiagramCoords(pozo.coords);
+
+    // Fallback solo para registros legacy de diagrama (sin coordenadas de mapa).
+    if (hasDiagramCoords && !hasMapCoords) {
+        return legacyZone;
+    }
+    return null;
+}
+
+function getSelectedDiagram() {
     const zoneSelect = document.getElementById('zone-select');
     return zoneSelect ? zoneSelect.value : 'bare-tradicional';
 }
 
+function getSelectedZone() {
+    return getSelectedDiagram();
+}
+
+function setFormZonaValue(value) {
+    const zonaSelect = document.getElementById('form-zona');
+    if (!zonaSelect) return;
+
+    const normalizedValue = (value || '').toString().trim().toLowerCase();
+    const legacyOption = zonaSelect.querySelector('option[data-legacy-zone="true"]');
+    if (legacyOption) {
+        legacyOption.remove();
+    }
+
+    if (!normalizedValue) {
+        zonaSelect.value = '';
+        return;
+    }
+
+    const existingOption = Array.from(zonaSelect.options).find(option => option.value === normalizedValue);
+    if (existingOption) {
+        zonaSelect.value = normalizedValue;
+        return;
+    }
+
+    const option = document.createElement('option');
+    option.value = normalizedValue;
+    option.textContent = `${normalizedValue} (legacy)`;
+    option.dataset.legacyZone = 'true';
+    zonaSelect.appendChild(option);
+    zonaSelect.value = normalizedValue;
+}
+
 function renderActiveMarkers() {
-    renderMarkers(getSelectedZone());
+    renderMarkers(getSelectedDiagram());
 }
 
 function closeFloatingPanels(exceptId = null) {
@@ -301,7 +360,7 @@ function resolvePozoFromInput(rawInput, preferredZone = null) {
         const exact = matches.find(pozo => normalizeText(pozo.id) === normalizedTyped);
         if (exact) return exact;
         if (preferredZone) {
-            const byZone = matches.find(pozo => pozo.zona === preferredZone);
+            const byZone = matches.find(pozo => getPozoDiagram(pozo) === preferredZone);
             if (byZone) return byZone;
         }
         return matches[0];
@@ -315,14 +374,14 @@ function resolvePozoFromInput(rawInput, preferredZone = null) {
     });
     if (!fallbackMatches.length) return null;
     if (preferredZone) {
-        const byZone = fallbackMatches.find(pozo => pozo.zona === preferredZone);
+        const byZone = fallbackMatches.find(pozo => getPozoDiagram(pozo) === preferredZone);
         if (byZone) return byZone;
     }
     return fallbackMatches[0];
 }
 
 function isAssignedToDiagram(pozo) {
-    return !!getDiagramCoords(pozo) && !!pozo.zona && pozo.zona !== 'sin-asignar';
+    return !!getDiagramCoords(pozo) && getPozoDiagram(pozo) !== 'sin-asignar';
 }
 
 function validatePozoForServiceAssignment(pozo) {
@@ -388,7 +447,9 @@ function openAssignDiagramForm(lat, lng) {
         assignable.forEach(pozo => {
             const opt = document.createElement('option');
             opt.value = pozo.id;
-            opt.textContent = `${pozo.id} (${pozo.zona || 'sin zona'})`;
+            const diagram = getPozoDiagram(pozo);
+            const zona = pozo.zona || 'sin zona';
+            opt.textContent = `${pozo.id} (Diagrama: ${diagram === 'sin-asignar' ? 'sin asignar' : diagram} | Zona: ${zona})`;
             select.appendChild(opt);
         });
         select.disabled = false;
@@ -912,9 +973,9 @@ async function applyViewMode(mode, skipPersist = false) {
     }
 
     if (mapMode === 'diagram') {
-        const zone = getSelectedZone();
-        await loadZone(zone, true);
-        renderMarkers(zone);
+        const diagram = getSelectedDiagram();
+        await loadZone(diagram, true);
+        renderMarkers(diagram);
         return;
     }
 
@@ -1100,7 +1161,7 @@ function renderMarkers(zone) {
                 return !!coords && isInsideBareMap(coords) && p.vistaMapa !== false;
             }
             const coords = getDiagramCoords(p);
-            return !!coords && p.zona === zone && p.zona !== 'sin-asignar';
+            return !!coords && getPozoDiagram(p) === zone;
         })
         .filter(matchesCurrentFilter)
         .filter(matchesCurrentCategoryFilter)
@@ -1235,8 +1296,11 @@ function popupContent(p) {
     };
     const estadoLabel = estadoLabelMap[normalizeEstado(p.estado)] || p.estado;
     const categoriaValue = Number.isFinite(Number(p.categoria)) ? Number(p.categoria) : 'N/A';
+    const diagramLabel = getPozoDiagram(p);
+    const zonaLabel = p.zona || 'sin zona';
     let content = `<strong>${p.id}</strong><br>
-    Zona: ${p.zona}<br>
+    Diagrama: ${diagramLabel}<br>
+    Zona: ${zonaLabel}<br>
     Estado: ${estadoLabel}<br>
     Categoria: ${categoriaValue}`;
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
@@ -1284,10 +1348,12 @@ function openForm(lat = null, lng = null, id = null) {
         const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
         document.getElementById('form-estado').value = normalizedEstado;
         document.getElementById('form-diferido-cause').value = normalizedEstado === STATUS.DIFERIDO ? (p.causaDiferido || '') : '';
+        setFormZonaValue(p.zona || '');
         document.getElementById('form-nota').value = p.nota || '';
         const zoneSelect = document.getElementById('zone-select');
-        if (p.zona && Object.prototype.hasOwnProperty.call(zones, p.zona)) {
-            zoneSelect.value = p.zona;
+        const explicitDiagram = (p.diagrama || '').toString().trim().toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(zones, explicitDiagram)) {
+            zoneSelect.value = explicitDiagram;
         }
         togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
@@ -1302,6 +1368,7 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-lat').value = lat;
         document.getElementById('form-lng').value = lng;
         document.getElementById('form-diferido-cause').value = '';
+        setFormZonaValue('');
         document.getElementById('form-nota').value = '';
         document.getElementById('form-fecha-ultimo-servicio').value = '';
         togglePozoDiferidoCause();
@@ -1315,6 +1382,7 @@ function closeForm() {
     document.getElementById('form-title').textContent = 'Nuevo Pozo';
     document.getElementById('form-id').disabled = false;
     document.getElementById('form-diferido-cause').value = '';
+    setFormZonaValue('');
     document.getElementById('form-nota').value = '';
     document.getElementById('form-fecha-ultimo-servicio').value = '';
     togglePozoDiferidoCause();
@@ -1346,7 +1414,7 @@ async function assignTaladro(e) {
     if (!requireCrudAuth()) return;
     const pozoId = document.getElementById('assign-pozo-id').value.trim();
     const taladro = document.getElementById('assign-taladro-select').value;
-    const p = resolvePozoFromInput(pozoId, getSelectedZone());
+    const p = resolvePozoFromInput(pozoId, getSelectedDiagram());
     if (!p) {
         alert('Pozo no encontrado');
         return;
@@ -1463,9 +1531,9 @@ async function persistPozosAndRefresh() {
     if (navigator.onLine && isDbReady()) {
         await syncData();
     }
-    const zone = document.getElementById('zone-select').value;
-    loadZone(zone);
-    renderMarkers(zone);
+    const diagram = document.getElementById('zone-select').value;
+    loadZone(diagram);
+    renderMarkers(diagram);
     updateStats();
 }
 
@@ -1479,19 +1547,19 @@ async function submitAssignDiagramForm(e) {
 
     const select = document.getElementById('assign-diagram-pozo-select');
     const selectedPozoId = (select && select.value) ? select.value : '';
-    const targetZone = getSelectedZone();
+    const targetDiagram = getSelectedDiagram();
     const pozo = pozoData.find(p => p.id === selectedPozoId) || null;
 
     if (!pozo) {
         alert('Pozo no encontrado');
         return;
     }
-    if (!Object.prototype.hasOwnProperty.call(zones, targetZone)) {
+    if (!Object.prototype.hasOwnProperty.call(zones, targetDiagram)) {
         alert('Zona inválida');
         return;
     }
 
-    pozo.zona = targetZone;
+    pozo.diagrama = targetDiagram;
     pozo.coordsDiagrama = [pendingDiagramAssignCoords[0], pendingDiagramAssignCoords[1]];
     if (pozo.vistaMapa === undefined) {
         pozo.vistaMapa = true;
@@ -1499,11 +1567,11 @@ async function submitAssignDiagramForm(e) {
     Object.assign(pozo, normalizePozo(pozo));
 
     await persistPozosAndRefresh();
-    document.getElementById('zone-select').value = targetZone;
-    document.getElementById('mobile-zone-select').value = targetZone;
+    document.getElementById('zone-select').value = targetDiagram;
+    document.getElementById('mobile-zone-select').value = targetDiagram;
     if (mapMode === 'diagram') {
-        await loadZone(targetZone);
-        renderMarkers(targetZone);
+        await loadZone(targetDiagram);
+        renderMarkers(targetDiagram);
     }
     closeAssignDiagramForm();
 }
@@ -1525,9 +1593,9 @@ window.deletePozo = async function(id) {
     if (navigator.onLine && isDbReady()) {
         await syncData();
     }
-    const zone = document.getElementById('zone-select').value;
-    loadZone(zone);
-    renderMarkers(zone);
+    const diagram = document.getElementById('zone-select').value;
+    loadZone(diagram);
+    renderMarkers(diagram);
     updateStats();
     updateDatalist();
 };
@@ -1538,10 +1606,16 @@ async function savePozo(e) {
     const previousPozo = editId ? pozoData.find(p => p.id === editId) : null;
     const formEstado = normalizeEstado(document.getElementById('form-estado').value);
     const formCausaDiferido = document.getElementById('form-diferido-cause').value.trim();
+    const formZona = document.getElementById('form-zona').value.trim();
     const formNota = document.getElementById('form-nota').value.trim();
+    const existingDiagram = previousPozo ? (previousPozo.diagrama || '').toString().trim().toLowerCase() : '';
+    const targetDiagram = previousPozo
+        ? (Object.prototype.hasOwnProperty.call(zones, existingDiagram) ? existingDiagram : 'sin-asignar')
+        : document.getElementById('zone-select').value;
     const pozo = {
         id: document.getElementById('form-id').value.trim().toUpperCase(),
-        zona: document.getElementById('zone-select').value,
+        zona: formZona || null,
+        diagrama: targetDiagram,
         coords: previousPozo ? previousPozo.coords : [
             parseFloat(document.getElementById('form-lat').value),
             parseFloat(document.getElementById('form-lng').value)
@@ -1595,9 +1669,15 @@ async function savePozo(e) {
     if (navigator.onLine && isDbReady()) {
         await syncData();
     }
-    loadZone(normalizedPozo.zona);
-    renderMarkers(normalizedPozo.zona);
-    document.getElementById('zone-select').value = normalizedPozo.zona;
+    const savedDiagram = getPozoDiagram(normalizedPozo);
+    if (savedDiagram !== 'sin-asignar') {
+        loadZone(savedDiagram);
+        renderMarkers(savedDiagram);
+        document.getElementById('zone-select').value = savedDiagram;
+        document.getElementById('mobile-zone-select').value = savedDiagram;
+    } else {
+        renderActiveMarkers();
+    }
     updateDatalist();
     updateStats();
     console.log('Pozo guardado:', normalizedPozo);
@@ -1684,7 +1764,7 @@ async function runSearchById(rawId, clearMobileInput = false) {
         const matches = findPozosByInput(typedValue);
         if (matches.length > 1) {
             const currentZone = document.getElementById('zone-select').value;
-            targetPozo = matches.find(pozo => pozo.zona === currentZone) || matches[0];
+            targetPozo = matches.find(pozo => getPozoDiagram(pozo) === currentZone) || matches[0];
         } else {
             targetPozo = matches[0] || null;
         }
@@ -1714,10 +1794,15 @@ async function runSearchById(rawId, clearMobileInput = false) {
         updateStatsFilterUi();
     }
     if (mapMode === 'diagram') {
-        document.getElementById('zone-select').value = targetPozo.zona;
-        document.getElementById('mobile-zone-select').value = targetPozo.zona;
-        await loadZone(targetPozo.zona);
-        renderMarkers(targetPozo.zona);
+        const targetDiagram = getPozoDiagram(targetPozo);
+        if (targetDiagram !== 'sin-asignar') {
+            document.getElementById('zone-select').value = targetDiagram;
+            document.getElementById('mobile-zone-select').value = targetDiagram;
+            await loadZone(targetDiagram);
+            renderMarkers(targetDiagram);
+        } else {
+            renderActiveMarkers();
+        }
     } else {
         await loadRealMap();
         renderMarkers('mapa');
