@@ -325,6 +325,34 @@ function isAssignedToDiagram(pozo) {
     return !!getDiagramCoords(pozo) && !!pozo.zona && pozo.zona !== 'sin-asignar';
 }
 
+function validatePozoForServiceAssignment(pozo) {
+    const hasMapAssignment = !!getMapaCoords(pozo) && pozo.vistaMapa !== false;
+    const hasDiagramAssignment = isAssignedToDiagram(pozo);
+
+    if (hasMapAssignment && hasDiagramAssignment) {
+        return { isValid: true, message: '' };
+    }
+
+    if (hasMapAssignment && !hasDiagramAssignment) {
+        return {
+            isValid: false,
+            message: `El pozo ${pozo.id} esta en vista mapa, pero no esta asignado en el diagrama. Asignalo al diagrama antes de asignar el servicio.`
+        };
+    }
+
+    if (!hasMapAssignment && hasDiagramAssignment) {
+        return {
+            isValid: false,
+            message: `El pozo ${pozo.id} esta en diagrama, pero no esta creado en vista mapa. Debe existir en ambas vistas para asignar servicio.`
+        };
+    }
+
+    return {
+        isValid: false,
+        message: `El pozo ${pozo.id} no esta creado en vista mapa ni en vista diagrama. Debe existir en ambas vistas para asignar servicio.`
+    };
+}
+
 function getAssignablePozosForDiagram() {
     return pozoData
         .filter(pozo => {
@@ -1323,6 +1351,13 @@ async function assignTaladro(e) {
         alert('Pozo no encontrado');
         return;
     }
+
+    const assignmentValidation = validatePozoForServiceAssignment(p);
+    if (!assignmentValidation.isValid) {
+        alert(assignmentValidation.message);
+        return;
+    }
+
     const previousPozo = pozoData.find(pozo => pozo.taladro === taladro && pozo.id !== p.id);
     if (previousPozo) {
         pendingServiceAssignment = { pozoId: p.id, taladro, previousPozoId: previousPozo.id };
@@ -1378,6 +1413,14 @@ async function submitServiceVerification(e) {
 
     if (!currentPozo) {
         alert('Pozo destino no encontrado');
+        pendingServiceAssignment = null;
+        closeServiceVerification();
+        return;
+    }
+
+    const assignmentValidation = validatePozoForServiceAssignment(currentPozo);
+    if (!assignmentValidation.isValid) {
+        alert(assignmentValidation.message);
         pendingServiceAssignment = null;
         closeServiceVerification();
         return;
