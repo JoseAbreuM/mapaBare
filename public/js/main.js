@@ -23,7 +23,7 @@ let currentStatsFilter = 'all';
 let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
-const APP_VERSION = 'v1.14';
+const APP_VERSION = 'v1.16';
 const OFFLINE_CACHE_NAME = 'pozos-cache-v24';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx'];
 const SERVICE_SEARCH_CONFIG = [
@@ -54,6 +54,7 @@ const SERVICE_SEARCH_CONFIG = [
 ];
 const POZO_DATA_KEY = 'pozoData';
 const MAP_MODE_KEY = 'mapMode';
+const SIDEBAR_COMPACT_KEY = 'sidebarCompact';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
 const AUTH_CONFIG_KEY = 'authConfig';
 const AUTH_SESSION_KEY = 'authSession';
@@ -352,6 +353,18 @@ function updateResponsiveControls() {
 
     floatingZoneContainer.classList.toggle('hidden', !mobile || showingMap);
     mobileMapFilters.classList.toggle('hidden', !mobile || !showingMap);
+}
+
+function applySidebarMode(compact) {
+    const compactEnabled = !!compact;
+    document.body.classList.toggle('sidebar-compact', compactEnabled);
+
+    const sidebarModeBtn = document.getElementById('sidebar-mode-btn');
+    if (!sidebarModeBtn) return;
+
+    sidebarModeBtn.setAttribute('aria-pressed', compactEnabled ? 'true' : 'false');
+    sidebarModeBtn.textContent = compactEnabled ? 'Expandir' : 'Compactar';
+    sidebarModeBtn.title = compactEnabled ? 'Cambiar a modo expandido' : 'Cambiar a modo compacto';
 }
 
 function lonToTileX(lng, zoom) {
@@ -898,6 +911,8 @@ async function init() {
     if (savedMode === 'mapa') {
         mapMode = 'mapa';
     }
+    const savedSidebarCompact = await localforage.getItem(SIDEBAR_COMPACT_KEY);
+    applySidebarMode(savedSidebarCompact === true);
     attachControls();
     await applyViewMode(mapMode, true);
 
@@ -950,11 +965,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=14',
+            '/css/styles.css?v=16',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=20',
+            '/js/main.js?v=21',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -1987,6 +2002,15 @@ function setupUpdateUi() {
 }
 
 function attachControls() {
+    const sidebarModeBtn = document.getElementById('sidebar-mode-btn');
+    if (sidebarModeBtn) {
+        sidebarModeBtn.addEventListener('click', async () => {
+            const compactEnabled = !document.body.classList.contains('sidebar-compact');
+            applySidebarMode(compactEnabled);
+            await localforage.setItem(SIDEBAR_COMPACT_KEY, compactEnabled);
+        });
+    }
+
     document.getElementById('zone-select').addEventListener('change', async e => {
         if (mapMode !== 'diagram') return;
         await loadZone(e.target.value);

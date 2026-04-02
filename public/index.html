@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=14">
+    <link rel="stylesheet" href="css/styles.css?v=16">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -52,7 +52,10 @@
     </header>
 
     <aside id="stats-panel" class="stats-panel">
-        <h2>Estadísticas</h2>
+        <div class="stats-header">
+            <h2>Estadísticas</h2>
+            <button id="sidebar-mode-btn" class="sidebar-mode-btn" type="button" aria-pressed="false" title="Alternar modo compacto">Compactar</button>
+        </div>
         <button type="button" class="stats-item is-active" data-filter-type="status" data-filter="all">Total pozos: <span id="count-total">0</span></button>
         <button type="button" class="stats-item" data-filter-type="status" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos: <span id="count-active">0</span></button>
         <button type="button" class="stats-item" data-filter-type="status" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio: <span id="count-inactive-service">0</span></button>
@@ -79,7 +82,7 @@
             <input type="hidden" id="form-lat">
             <input type="hidden" id="form-lng">
             <label>ID<br><input type="text" id="form-id" required></label>
-            <label>Estado<br>
+            <label class="field-wide">Estado<br>
                 <select id="form-estado">
                     <option value="activo">Activo</option>
                     <option value="inactivo-servicio">En espera de servicio</option>
@@ -89,8 +92,8 @@
                     <option value="diferido">Diferido</option>
                 </select>
             </label>
-            <label id="form-diferido-cause-wrapper" class="hidden">Causa diferido<br><input type="text" id="form-diferido-cause" placeholder="Ej: arenamiento"></label>
-            <label>Zona de perimetro<br>
+            <label id="form-diferido-cause-wrapper" class="hidden field-wide">Causa diferido<br><input type="text" id="form-diferido-cause" placeholder="Ej: arenamiento"></label>
+            <label class="field-wide">Zona de perimetro<br>
                 <select id="form-zona">
                     <option value="">Sin zona</option>
                     <option value="la orleana">La Orleana</option>
@@ -108,7 +111,7 @@
                     <option value="rancho grande">Rancho Grande</option>
                 </select>
             </label>
-            <label>Diagrama<br>
+            <label class="field-wide">Diagrama<br>
                 <select id="form-diagrama">
                     <option value="sin-asignar">Sin asignar</option>
                     <option value="bare-tradicional">BARE tradicional</option>
@@ -152,7 +155,7 @@
                     <option value="combest">Combest</option>
                 </select>
             </label>
-            <label>Velocidad Operacional (VO)<br><input type="number" id="form-vo" min="0" step="0.01" placeholder="Ej: 1200"></label>
+            <label>VO (RPM)<br><input type="number" id="form-vo" min="0" step="0.01" placeholder="80"></label>
             <label>Potencial (barriles)<br><input type="number" id="form-potencial" min="0" step="0.01"></label>
             <label>Fecha de ultimo servicio<br><input type="date" id="form-fecha-ultimo-servicio"></label>
             <div class="form-actions field-full">
@@ -288,7 +291,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=20"></script>
+    <script src="js/main.js?v=21"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
