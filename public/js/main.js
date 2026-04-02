@@ -1407,7 +1407,7 @@ function popupContent(p) {
     }
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
-    if (p.fechaUltimoServicio) content += `<br>Fecha de ultimo servicio: ${p.fechaUltimoServicio}`;
+    if (p.fechaUltimoServicio) content += `<br>Fecha de arranque: ${p.fechaUltimoServicio}`;
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
     // Solo mostrar botones CRUD en desktop autenticado
