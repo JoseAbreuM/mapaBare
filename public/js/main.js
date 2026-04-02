@@ -25,7 +25,42 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 const APP_VERSION = 'v1.16';
 const OFFLINE_CACHE_NAME = 'pozos-cache-v24';
-const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx'];
+const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
+const MAP_ROUTE_STYLES = {
+    'Prueba1.gpx': {
+        color: '#ffb067',
+        dashArray: null,
+        weight: 2
+    },
+    '2do.gpx': {
+        color: '#73cfff',
+        dashArray: null,
+        weight: 2
+    },
+    'trillas.gpx': {
+        color: '#7ddf8a',
+        dashArray: null,
+        weight: 2.4
+    }
+};
+const MAP_STATION_DEFINITIONS = [
+    {
+        id: 'bare-9',
+        nombre: 'BARE 9',
+        aliases: ['bare 9', 'bared 9', 'bared-9'],
+        colorFondo: '#1f2a44',
+        colorBorde: '#f1c40f',
+        colorIcono: '#f1c40f'
+    },
+    {
+        id: 'bare-10',
+        nombre: 'BARE 10',
+        aliases: ['bare 10', 'bared 10', 'bared-10'],
+        colorFondo: '#123b2c',
+        colorBorde: '#2ecc71',
+        colorIcono: '#2ecc71'
+    }
+];
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
     { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
@@ -222,6 +257,18 @@ function loadImageSize(url) {
     });
 }
 
+function normalizeStationName(value) {
+    return normalizeText(value).replace(/[^a-z0-9]/g, '');
+}
+
+function getStationDefinitionByName(rawName) {
+    const normalized = normalizeStationName(rawName);
+    if (!normalized) return null;
+    return MAP_STATION_DEFINITIONS.find(def =>
+        def.aliases.some(alias => normalizeStationName(alias) === normalized)
+    ) || null;
+}
+
 async function getDiagramSizeCache() {
     if (diagramSizeCache) return diagramSizeCache;
     const entries = await Promise.all(
@@ -353,6 +400,36 @@ function updateResponsiveControls() {
 
     floatingZoneContainer.classList.toggle('hidden', !mobile || showingMap);
     mobileMapFilters.classList.toggle('hidden', !mobile || !showingMap);
+}
+
+function getRouteStyle(filePath) {
+    const fileName = (filePath || '').split('/').pop() || '';
+    return MAP_ROUTE_STYLES[fileName] || {
+        color: '#8db8ff',
+        dashArray: null,
+        weight: 2
+    };
+}
+
+function createRouteLayer(latlngs, style) {
+    const baseStyle = {
+        lineCap: 'round',
+        lineJoin: 'round'
+    };
+    const outline = L.polyline(latlngs, {
+        ...baseStyle,
+        color: '#0d1117',
+        weight: (style.weight || 2) + 1,
+        opacity: 0.2
+    });
+    const route = L.polyline(latlngs, {
+        ...baseStyle,
+        color: style.color,
+        weight: style.weight || 2,
+        opacity: 0.72,
+        dashArray: style.dashArray || null
+    });
+    return L.layerGroup([outline, route]);
 }
 
 function applySidebarMode(compact) {
@@ -982,6 +1059,8 @@ async function init() {
             '/assets/mapas/trilla-asfaltada.jpg',
             '/assets/mapas/Prueba1.gpx',
             '/assets/mapas/2do.gpx',
+            '/assets/mapas/trillas.gpx',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
             'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
         ];
@@ -1128,9 +1207,11 @@ async function loadRealMap() {
 
 async function loadGpxLayers() {
     const bounds = L.latLngBounds([]);
+    const stationsById = new Map();
     try {
         for (let i = 0; i < MAP_ROUTE_FILES.length; i++) {
             const file = MAP_ROUTE_FILES[i];
+            const routeStyle = getRouteStyle(file);
             const response = await fetch(file);
             if (!response.ok) {
                 console.warn(`No se pudo cargar GPX para vista MAPA: ${file}`);
@@ -1150,17 +1231,42 @@ async function loadGpxLayers() {
                     })
                     .filter(Boolean);
                 if (latlngs.length) {
-                    const routeLayer = L.polyline(latlngs, {
-                        color: i === 0 ? '#ff9d00' : '#00c4ff',
-                        weight: 3,
-                        opacity: 0.85
-                    });
+                    const routeLayer = createRouteLayer(latlngs, routeStyle);
                     routeLayer.addTo(map);
                     mapaLayers.push(routeLayer);
-                    bounds.extend(routeLayer.getBounds());
+                    bounds.extend(L.latLngBounds(latlngs));
                 }
             }
+
+            const waypoints = Array.from(xmlDoc.getElementsByTagName('wpt'));
+            waypoints.forEach(node => {
+                const lat = Number(node.getAttribute('lat'));
+                const lng = Number(node.getAttribute('lon'));
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                const nameNode = node.getElementsByTagName('name')[0];
+                const waypointName = nameNode ? (nameNode.textContent || '').trim() : '';
+                const stationDef = getStationDefinitionByName(waypointName);
+                if (!stationDef || stationsById.has(stationDef.id)) return;
+                stationsById.set(stationDef.id, {
+                    id: stationDef.id,
+                    nombre: stationDef.nombre,
+                    coords: [lat, lng],
+                    fuente: waypointName || file,
+                    colorFondo: stationDef.colorFondo,
+                    colorBorde: stationDef.colorBorde,
+                    colorIcono: stationDef.colorIcono
+                });
+            });
         }
+
+        MAP_STATION_DEFINITIONS.forEach(def => {
+            const station = stationsById.get(def.id);
+            if (!station) return;
+            const stationMarker = createStationMarker(station);
+            stationMarker.addTo(map);
+            mapaLayers.push(stationMarker);
+            bounds.extend(station.coords);
+        });
     } catch (e) {
         console.log('Error cargando GPX en vista MAPA', e);
     }
@@ -1379,6 +1485,21 @@ function createMarker(p, markerCoords) {
         });
     }
     marker.bindPopup(popupContent(p));
+    return marker;
+}
+
+function createStationMarker(station) {
+    const style = `--station-bg:${station.colorFondo || '#1f2a44'};--station-border:${station.colorBorde || '#f1c40f'};--station-icon:${station.colorIcono || '#f1c40f'};`;
+    const icon = L.divIcon({
+        html: `<div class="station-marker-icon" style="${style}"><i class="fa-solid fa-industry" aria-hidden="true"></i></div>`,
+        className: 'station-marker-wrapper',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -14]
+    });
+
+    const marker = L.marker(station.coords, { icon, zIndexOffset: 2000 });
+    marker.bindPopup(`<strong>Estacion ${station.nombre}</strong><br>Fuente: ${station.fuente}`);
     return marker;
 }
 

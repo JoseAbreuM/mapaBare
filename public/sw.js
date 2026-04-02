@@ -55,6 +55,8 @@ const FILES_TO_CACHE = [
     '/assets/mapas/trilla-asfaltada.jpg',
     '/assets/mapas/Prueba1.gpx',
     '/assets/mapas/2do.gpx',
+    '/assets/mapas/trillas.gpx',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
     'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
     'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
 ];
