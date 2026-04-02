@@ -124,8 +124,7 @@ function normalizePozo(pozo) {
     const normalizedZone = (pozo.zona || '').toString().trim().toLowerCase();
     const normalizedDiagram = (pozo.diagrama || '').toString().trim().toLowerCase();
     const knownDiagram = Object.prototype.hasOwnProperty.call(zones, normalizedDiagram);
-    const legacyDiagram = getLegacyDiagramFromZona(pozo);
-    const diagram = knownDiagram ? normalizedDiagram : (legacyDiagram || 'sin-asignar');
+    const diagram = knownDiagram ? normalizedDiagram : 'sin-asignar';
     const coordsMapa = isGeoCoords(pozo.coordsMapa)
         ? pozo.coordsMapa
         : (isGeoCoords(pozo.coords) ? pozo.coords : null);
@@ -190,23 +189,7 @@ function getDiagramCoords(pozo) {
 function getPozoDiagram(pozo) {
     const currentDiagram = (pozo.diagrama || '').toString().trim().toLowerCase();
     if (Object.prototype.hasOwnProperty.call(zones, currentDiagram)) return currentDiagram;
-    const legacyDiagram = getLegacyDiagramFromZona(pozo);
-    if (legacyDiagram) return legacyDiagram;
     return 'sin-asignar';
-}
-
-function getLegacyDiagramFromZona(pozo) {
-    const legacyZone = (pozo.zona || '').toString().trim().toLowerCase();
-    if (!Object.prototype.hasOwnProperty.call(zones, legacyZone)) return null;
-
-    const hasMapCoords = isGeoCoords(pozo.coordsMapa) || isGeoCoords(pozo.coords);
-    const hasDiagramCoords = isDiagramCoords(pozo.coordsDiagrama) || isDiagramCoords(pozo.coords);
-
-    // Fallback solo para registros legacy de diagrama (sin coordenadas de mapa).
-    if (hasDiagramCoords && !hasMapCoords) {
-        return legacyZone;
-    }
-    return null;
 }
 
 function getSelectedDiagram() {
@@ -1349,12 +1332,8 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-estado').value = normalizedEstado;
         document.getElementById('form-diferido-cause').value = normalizedEstado === STATUS.DIFERIDO ? (p.causaDiferido || '') : '';
         setFormZonaValue(p.zona || '');
+        document.getElementById('form-diagrama').value = getPozoDiagram(p);
         document.getElementById('form-nota').value = p.nota || '';
-        const zoneSelect = document.getElementById('zone-select');
-        const explicitDiagram = (p.diagrama || '').toString().trim().toLowerCase();
-        if (Object.prototype.hasOwnProperty.call(zones, explicitDiagram)) {
-            zoneSelect.value = explicitDiagram;
-        }
         togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
@@ -1369,6 +1348,7 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-lng').value = lng;
         document.getElementById('form-diferido-cause').value = '';
         setFormZonaValue('');
+        document.getElementById('form-diagrama').value = getSelectedDiagram();
         document.getElementById('form-nota').value = '';
         document.getElementById('form-fecha-ultimo-servicio').value = '';
         togglePozoDiferidoCause();
@@ -1383,6 +1363,7 @@ function closeForm() {
     document.getElementById('form-id').disabled = false;
     document.getElementById('form-diferido-cause').value = '';
     setFormZonaValue('');
+    document.getElementById('form-diagrama').value = 'sin-asignar';
     document.getElementById('form-nota').value = '';
     document.getElementById('form-fecha-ultimo-servicio').value = '';
     togglePozoDiferidoCause();
@@ -1607,11 +1588,9 @@ async function savePozo(e) {
     const formEstado = normalizeEstado(document.getElementById('form-estado').value);
     const formCausaDiferido = document.getElementById('form-diferido-cause').value.trim();
     const formZona = document.getElementById('form-zona').value.trim();
+    const formDiagrama = document.getElementById('form-diagrama').value;
     const formNota = document.getElementById('form-nota').value.trim();
-    const existingDiagram = previousPozo ? (previousPozo.diagrama || '').toString().trim().toLowerCase() : '';
-    const targetDiagram = previousPozo
-        ? (Object.prototype.hasOwnProperty.call(zones, existingDiagram) ? existingDiagram : 'sin-asignar')
-        : document.getElementById('zone-select').value;
+    const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
     const pozo = {
         id: document.getElementById('form-id').value.trim().toUpperCase(),
         zona: formZona || null,
