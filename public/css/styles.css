@@ -443,8 +443,8 @@ main {
 
 /* formulario y overlay */
 .form-container {
-    position: absolute;
-    top: 10%;
+    position: fixed;
+    top: calc(var(--header-height) + 16px);
     left: 50%;
     transform: translateX(-50%);
     background: var(--surface);
@@ -454,6 +454,8 @@ main {
     z-index: 1000;
     width: 90%;
     max-width: 400px;
+    max-height: calc(100vh - var(--header-height) - 32px);
+    overflow-y: auto;
 }
 
 #assign-form-container {
@@ -490,6 +492,21 @@ main {
     display: flex;
     justify-content: space-between;
     margin-top: 1rem;
+}
+
+#pozo-form.pozo-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 0.8rem;
+}
+
+#pozo-form.pozo-form-grid h3,
+#pozo-form.pozo-form-grid .field-full {
+    grid-column: 1 / -1;
+}
+
+#pozo-form.pozo-form-grid label {
+    margin-bottom: 0;
 }
 
 .form-actions button {
@@ -673,6 +690,11 @@ main {
         width: 98%;
         max-width: none;
         padding: 1.5rem;
+    }
+
+    #pozo-form.pozo-form-grid {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
     }
 
     .form-container input,

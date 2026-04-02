@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=13">
+    <link rel="stylesheet" href="css/styles.css?v=14">
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -74,7 +74,7 @@
 
     <!-- formulario oculto -->
     <div id="form-container" class="form-container hidden">
-        <form id="pozo-form">
+        <form id="pozo-form" class="pozo-form-grid">
             <h3 id="form-title">Nuevo Pozo</h3>
             <input type="hidden" id="form-lat">
             <input type="hidden" id="form-lng">
@@ -117,7 +117,7 @@
                     <option value="bare-este">Bare Este</option>
                 </select>
             </label>
-            <label>Nota<br><input type="text" id="form-nota" placeholder="Ej: espera RIG-351 / en diagnostico por bomba"></label>
+            <label class="field-full">Nota<br><input type="text" id="form-nota" placeholder="Ej: espera RIG-351 / en diagnostico por bomba"></label>
             <label>Cabezal<br>
                 <select id="form-cabezal">
                     <option value="">Ninguno</option>
@@ -152,9 +152,10 @@
                     <option value="combest">Combest</option>
                 </select>
             </label>
+            <label>Velocidad Operacional (VO)<br><input type="number" id="form-vo" min="0" step="0.01" placeholder="Ej: 1200"></label>
             <label>Potencial (barriles)<br><input type="number" id="form-potencial" min="0" step="0.01"></label>
             <label>Fecha de ultimo servicio<br><input type="date" id="form-fecha-ultimo-servicio"></label>
-            <div class="form-actions">
+            <div class="form-actions field-full">
                 <button type="submit">Guardar</button>
                 <button type="button" id="form-cancel">Cancelar</button>
             </div>
@@ -287,7 +288,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=18"></script>
+    <script src="js/main.js?v=20"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->

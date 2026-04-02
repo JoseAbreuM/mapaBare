@@ -7,6 +7,7 @@ let osmLayer = null;
 let mapaLayers = [];
 let mapBounds = null;
 let currentDiagramZone = null;
+let diagramSizeCache = null;
 const zones = {
     'bare-tradicional': 'assets/mapas/bare-tradicional.jpg',
     'bare-6': 'assets/mapas/bare6-1.jpg',
@@ -22,8 +23,8 @@ let currentStatsFilter = 'all';
 let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
-const APP_VERSION = 'v1.12';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v22';
+const APP_VERSION = 'v1.14';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v24';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx'];
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
@@ -131,6 +132,10 @@ function normalizePozo(pozo) {
     const coordsDiagrama = isDiagramCoords(pozo.coordsDiagrama)
         ? pozo.coordsDiagrama
         : (isDiagramCoords(pozo.coords) ? pozo.coords : null);
+    const voRaw = pozo.velocidadOperacional ?? pozo.vo;
+    const voValue = (voRaw === null || voRaw === undefined || voRaw === '')
+        ? null
+        : Number(voRaw);
     return {
         ...pozo,
         zona: normalizedZone || null,
@@ -140,6 +145,7 @@ function normalizePozo(pozo) {
         coordsDiagrama,
         coords: coordsMapa || coordsDiagrama || pozo.coords,
         nota: (pozo.nota || '').toString().trim() || null,
+        velocidadOperacional: Number.isFinite(voValue) ? voValue : null,
         fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
         vistaMapa: pozo.vistaMapa !== false,
         categoria: normalizeCategoria(pozo, normalizedEstado)
@@ -199,6 +205,84 @@ function getSelectedDiagram() {
 
 function getSelectedZone() {
     return getSelectedDiagram();
+}
+
+function isKnownDiagram(value) {
+    const normalized = (value || '').toString().trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(zones, normalized);
+}
+
+function loadImageSize(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.onerror = () => resolve(null);
+        img.src = url;
+    });
+}
+
+async function getDiagramSizeCache() {
+    if (diagramSizeCache) return diagramSizeCache;
+    const entries = await Promise.all(
+        Object.entries(zones).map(async ([diagramKey, url]) => {
+            const size = await loadImageSize(url);
+            return [diagramKey, size];
+        })
+    );
+    diagramSizeCache = Object.fromEntries(entries.filter(([, size]) => !!size));
+    return diagramSizeCache;
+}
+
+function inferDiagramFromCoords(coords, sizeCache) {
+    if (!isDiagramCoords(coords)) return null;
+    const y = Number(coords[0]);
+    const x = Number(coords[1]);
+    const matches = Object.entries(sizeCache)
+        .filter(([, size]) => {
+            if (!size) return false;
+            return y >= 0 && x >= 0 && y <= size.height && x <= size.width;
+        })
+        .map(([diagramKey]) => diagramKey);
+
+    return matches.length === 1 ? matches[0] : null;
+}
+
+async function migrateLegacyDiagramByCoords(rawPozos) {
+    if (!Array.isArray(rawPozos)) {
+        return { pozos: [], changed: false };
+    }
+
+    const sizeCache = await getDiagramSizeCache();
+
+    let changed = false;
+    const migrated = rawPozos.map((pozo) => {
+        const nextPozo = { ...pozo };
+        const currentDiagram = (nextPozo.diagrama || '').toString().trim().toLowerCase();
+
+        if (isKnownDiagram(currentDiagram)) {
+            return nextPozo;
+        }
+
+        const diagramCoords = isDiagramCoords(nextPozo.coordsDiagrama)
+            ? nextPozo.coordsDiagrama
+            : (isDiagramCoords(nextPozo.coords) ? nextPozo.coords : null);
+        const inferredDiagram = inferDiagramFromCoords(diagramCoords, sizeCache);
+        if (inferredDiagram) {
+            nextPozo.diagrama = inferredDiagram;
+            changed = true;
+            return nextPozo;
+        }
+
+        const legacyZone = (nextPozo.zona || '').toString().trim().toLowerCase();
+        if (diagramCoords && isKnownDiagram(legacyZone)) {
+            // Migración legacy de una sola vez para registros históricos de diagrama.
+            nextPozo.diagrama = legacyZone;
+            changed = true;
+        }
+        return nextPozo;
+    });
+
+    return { pozos: migrated, changed };
 }
 
 function setFormZonaValue(value) {
@@ -780,12 +864,22 @@ async function init() {
     try {
         const localData = await localforage.getItem(POZO_DATA_KEY);
         if (localData && Array.isArray(localData)) {
-            pozoData = localData.map(normalizePozo);
+            const migration = await migrateLegacyDiagramByCoords(localData);
+            pozoData = migration.pozos.map(normalizePozo);
+            if (migration.changed) {
+                await localforage.setItem(POZO_DATA_KEY, pozoData);
+                await markDataDirty();
+            }
         } else if (Array.isArray(window.POZOS_SEED) && window.POZOS_SEED.length > 0) {
             // Fallback opcional: snapshot embebido para primer uso offline.
-            pozoData = window.POZOS_SEED.map(normalizePozo);
+            const migration = await migrateLegacyDiagramByCoords(window.POZOS_SEED);
+            pozoData = migration.pozos.map(normalizePozo);
             await localforage.setItem(POZO_DATA_KEY, pozoData);
-            await clearDataDirty();
+            if (migration.changed) {
+                await markDataDirty();
+            } else {
+                await clearDataDirty();
+            }
         } else if (!navigator.onLine) {
             // Primera carga sin internet
             document.getElementById('map').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:18px;">Requiere conexión a internet para la primera carga</div>';
@@ -828,7 +922,8 @@ async function init() {
             if (doc.exists) {
                 const isDirty = await localforage.getItem(POZO_DIRTY_KEY);
                 if (isDirty) return; // evita pisar cambios locales pendientes
-                pozoData = (doc.data().pozos || []).map(normalizePozo);
+                const migration = await migrateLegacyDiagramByCoords(doc.data().pozos || []);
+                pozoData = migration.pozos.map(normalizePozo);
                 await localforage.setItem(POZO_DATA_KEY, pozoData);
                 renderActiveMarkers();
                 updateDatalist();
@@ -855,11 +950,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=12',
+            '/css/styles.css?v=14',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=18',
+            '/js/main.js?v=20',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -914,7 +1009,11 @@ async function syncData() {
         }
         const docSnap = await docRef.get();
         if (docSnap.exists) {
-            pozoData = (docSnap.data().pozos || []).map(normalizePozo);
+            const migration = await migrateLegacyDiagramByCoords(docSnap.data().pozos || []);
+            if (migration.changed) {
+                await docRef.set({ pozos: migration.pozos });
+            }
+            pozoData = migration.pozos.map(normalizePozo);
             await localforage.setItem(POZO_DATA_KEY, pozoData);
             renderActiveMarkers();
             updateDatalist();
@@ -1288,6 +1387,9 @@ function popupContent(p) {
     Categoria: ${categoriaValue}`;
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
+    if (p.velocidadOperacional !== null && p.velocidadOperacional !== undefined && p.velocidadOperacional !== '') {
+        content += `<br>VO: ${p.velocidadOperacional}`;
+    }
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
     if (p.fechaUltimoServicio) content += `<br>Fecha de ultimo servicio: ${p.fechaUltimoServicio}`;
@@ -1337,6 +1439,7 @@ function openForm(lat = null, lng = null, id = null) {
         togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
+        document.getElementById('form-vo').value = p.velocidadOperacional ?? '';
         document.getElementById('form-potencial').value = p.potencial || '';
         document.getElementById('form-fecha-ultimo-servicio').value = p.fechaUltimoServicio || '';
         // no setear coords para edición
@@ -1350,6 +1453,7 @@ function openForm(lat = null, lng = null, id = null) {
         setFormZonaValue('');
         document.getElementById('form-diagrama').value = getSelectedDiagram();
         document.getElementById('form-nota').value = '';
+        document.getElementById('form-vo').value = '';
         document.getElementById('form-fecha-ultimo-servicio').value = '';
         togglePozoDiferidoCause();
     }
@@ -1365,6 +1469,7 @@ function closeForm() {
     setFormZonaValue('');
     document.getElementById('form-diagrama').value = 'sin-asignar';
     document.getElementById('form-nota').value = '';
+    document.getElementById('form-vo').value = '';
     document.getElementById('form-fecha-ultimo-servicio').value = '';
     togglePozoDiferidoCause();
     editId = null;
@@ -1590,6 +1695,8 @@ async function savePozo(e) {
     const formZona = document.getElementById('form-zona').value.trim();
     const formDiagrama = document.getElementById('form-diagrama').value;
     const formNota = document.getElementById('form-nota').value.trim();
+    const formVoRaw = document.getElementById('form-vo').value;
+    const formVo = formVoRaw === '' ? null : Number(formVoRaw);
     const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
     const pozo = {
         id: document.getElementById('form-id').value.trim().toUpperCase(),
@@ -1607,6 +1714,7 @@ async function savePozo(e) {
         estado: formEstado,
         cabezal: document.getElementById('form-cabezal').value || null,
         variador: document.getElementById('form-variador').value || null,
+        velocidadOperacional: Number.isFinite(formVo) ? formVo : null,
         potencial: document.getElementById('form-potencial').value || null,
         fechaUltimoServicio: document.getElementById('form-fecha-ultimo-servicio').value || null,
         nota: formNota || null,
