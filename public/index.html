@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=16">
+    <link rel="stylesheet" href="css/styles.css?v=18">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <!-- Firebase -->
@@ -161,6 +161,8 @@
             <label>Fecha de arranque<br><input type="date" id="form-fecha-ultimo-servicio"></label>
             <div class="form-actions field-full">
                 <button type="submit">Guardar</button>
+                <button type="button" id="form-reassign-diagram" class="btn-secondary hidden">Reasignar en diagrama</button>
+                <button type="button" id="form-unassign-diagram" class="btn-danger hidden">Desasignar del diagrama</button>
                 <button type="button" id="form-cancel">Cancelar</button>
             </div>
         </form>
@@ -193,8 +195,9 @@
         <form id="assign-diagram-form">
             <h3>Asignar Pozo Ya Creado</h3>
             <p id="assign-diagram-point-label" class="verification-subtitle"></p>
-            <label>Pozo disponible<br>
-                <select id="assign-diagram-pozo-select" required></select>
+            <label>Pozo disponible (escribe ID para filtrar)<br>
+                <input type="text" id="assign-diagram-pozo-input" list="assign-diagram-pozo-list" placeholder="Ej: 857" autocomplete="off" required>
+                <datalist id="assign-diagram-pozo-list"></datalist>
             </label>
             <p id="assign-diagram-remaining" class="verification-subtitle"></p>
             <div class="form-actions">
@@ -292,7 +295,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=21"></script>
+    <script src="js/main.js?v=24"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->

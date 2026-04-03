@@ -23,6 +23,7 @@ let currentStatsFilter = 'all';
 let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
+let pendingDiagramReassignPozoId = null;
 const APP_VERSION = 'v1.16';
 const OFFLINE_CACHE_NAME = 'pozos-cache-v24';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
@@ -584,38 +585,87 @@ function closeAssignDiagramForm() {
     if (container) container.classList.add('hidden');
     if (form) form.reset();
     pendingDiagramAssignCoords = null;
+    pendingDiagramReassignPozoId = null;
 }
 
 function openAssignDiagramForm(lat, lng) {
-    const select = document.getElementById('assign-diagram-pozo-select');
+    const input = document.getElementById('assign-diagram-pozo-input');
+    const list = document.getElementById('assign-diagram-pozo-list');
     const pointLabel = document.getElementById('assign-diagram-point-label');
     const remaining = document.getElementById('assign-diagram-remaining');
-    if (!select || !pointLabel || !remaining) return;
+    if (!input || !list || !pointLabel || !remaining) return;
 
-    const assignable = getAssignablePozosForDiagram();
-    select.innerHTML = '';
+    const reassignPozo = pendingDiagramReassignPozoId
+        ? pozoData.find(pozo => pozo.id === pendingDiagramReassignPozoId)
+        : null;
+    const assignable = reassignPozo ? [reassignPozo] : getAssignablePozosForDiagram();
+    list.innerHTML = '';
+    input.value = '';
     if (!assignable.length) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'No hay pozos pendientes por asignar';
-        select.appendChild(opt);
-        select.disabled = true;
+        input.disabled = true;
+        input.placeholder = 'No hay pozos pendientes por asignar';
     } else {
         assignable.forEach(pozo => {
             const opt = document.createElement('option');
             opt.value = pozo.id;
             const diagram = getPozoDiagram(pozo);
             const zona = pozo.zona || 'sin zona';
-            opt.textContent = `${pozo.id} (Diagrama: ${diagram === 'sin-asignar' ? 'sin asignar' : diagram} | Zona: ${zona})`;
-            select.appendChild(opt);
+            opt.label = `Diagrama: ${diagram === 'sin-asignar' ? 'sin asignar' : diagram} | Zona: ${zona}`;
+            list.appendChild(opt);
         });
-        select.disabled = false;
+        input.disabled = false;
+        input.placeholder = 'Ej: 857';
     }
 
     pointLabel.textContent = `Punto seleccionado: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    remaining.textContent = `Pendientes por asignar al diagrama: ${assignable.length}`;
+    if (reassignPozo) {
+        remaining.textContent = `Reasignando pozo: ${reassignPozo.id} (se actualiza solo su ubicacion en diagrama)`;
+        input.value = reassignPozo.id;
+        input.disabled = true;
+    } else {
+        remaining.textContent = `Pendientes por asignar al diagrama: ${assignable.length}`;
+    }
     pendingDiagramAssignCoords = [lat, lng];
     document.getElementById('assign-diagram-form-container').classList.remove('hidden');
+}
+
+async function startDiagramReassignFromEdit() {
+    if (!requireCrudAuth()) return;
+    if (!editId) return;
+
+    const pozo = pozoData.find(p => p.id === editId);
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    pendingDiagramReassignPozoId = pozo.id;
+    closeForm();
+
+    const assignMode = document.getElementById('assign-existing-mode');
+    if (assignMode) {
+        assignMode.checked = true;
+    }
+    const editMode = document.getElementById('edit-mode');
+    if (editMode) {
+        editMode.checked = false;
+    }
+
+    if (mapMode !== 'diagram') {
+        await applyViewMode('diagram');
+    }
+
+    const targetDiagram = getPozoDiagram(pozo);
+    if (targetDiagram !== 'sin-asignar') {
+        const zoneSelect = document.getElementById('zone-select');
+        const mobileZoneSelect = document.getElementById('mobile-zone-select');
+        if (zoneSelect) zoneSelect.value = targetDiagram;
+        if (mobileZoneSelect) mobileZoneSelect.value = targetDiagram;
+        await loadZone(targetDiagram);
+        renderMarkers(targetDiagram);
+    }
+
+    alert(`Haz click en el nuevo punto del diagrama para reasignar el pozo ${pozo.id}.`);
 }
 
 function ensureMapForMode() {
@@ -1560,6 +1610,8 @@ function onMapClick(e) {
 function openForm(lat = null, lng = null, id = null) {
     if (!requireCrudAuth()) return;
     document.getElementById('form-container').classList.remove('hidden');
+    const reassignBtn = document.getElementById('form-reassign-diagram');
+    const unassignBtn = document.getElementById('form-unassign-diagram');
     if (id) {
         editId = id;
         document.getElementById('form-title').textContent = 'Editar Pozo';
@@ -1578,6 +1630,8 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-vo').value = p.velocidadOperacional ?? '';
         document.getElementById('form-potencial').value = p.potencial || '';
         document.getElementById('form-fecha-ultimo-servicio').value = p.fechaUltimoServicio || '';
+        if (reassignBtn) reassignBtn.classList.remove('hidden');
+        if (unassignBtn) unassignBtn.classList.remove('hidden');
         // no setear coords para edición
     } else {
         editId = null;
@@ -1591,6 +1645,8 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-nota').value = '';
         document.getElementById('form-vo').value = '';
         document.getElementById('form-fecha-ultimo-servicio').value = '';
+        if (reassignBtn) reassignBtn.classList.add('hidden');
+        if (unassignBtn) unassignBtn.classList.add('hidden');
         togglePozoDiferidoCause();
     }
 }
@@ -1607,8 +1663,47 @@ function closeForm() {
     document.getElementById('form-nota').value = '';
     document.getElementById('form-vo').value = '';
     document.getElementById('form-fecha-ultimo-servicio').value = '';
+    const reassignBtn = document.getElementById('form-reassign-diagram');
+    const unassignBtn = document.getElementById('form-unassign-diagram');
+    if (reassignBtn) reassignBtn.classList.add('hidden');
+    if (unassignBtn) unassignBtn.classList.add('hidden');
     togglePozoDiferidoCause();
     editId = null;
+}
+
+async function unassignPozoFromDiagramFromEdit() {
+    if (!requireCrudAuth()) return;
+    if (!editId) return;
+
+    const pozo = pozoData.find(p => p.id === editId);
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    const currentDiagram = getPozoDiagram(pozo);
+    if (currentDiagram === 'sin-asignar') {
+        alert(`El pozo ${pozo.id} ya está sin asignar en diagrama.`);
+        return;
+    }
+
+    const confirmed = confirm(`¿Desasignar el pozo ${pozo.id} del diagrama ${currentDiagram}?\n\nEl pozo no se eliminará del sistema ni del mapa.`);
+    if (!confirmed) {
+        return;
+    }
+
+    const mapCoords = getMapaCoords(pozo);
+    pozo.diagrama = 'sin-asignar';
+    pozo.coordsDiagrama = null;
+    pozo.coords = mapCoords || null;
+    if (mapCoords) {
+        pozo.coordsMapa = mapCoords;
+    }
+    Object.assign(pozo, normalizePozo(pozo));
+
+    await persistPozosAndRefresh();
+    updateDatalist();
+    closeForm();
 }
 
 function togglePozoDiferidoCause() {
@@ -1767,18 +1862,40 @@ async function submitAssignDiagramForm(e) {
         return;
     }
 
-    const select = document.getElementById('assign-diagram-pozo-select');
-    const selectedPozoId = (select && select.value) ? select.value : '';
+    const isReassignFromEdit = !!pendingDiagramReassignPozoId;
+    const input = document.getElementById('assign-diagram-pozo-input');
+    const typedPozoId = (input && input.value) ? input.value.trim() : '';
+    const selectedPozoId = pendingDiagramReassignPozoId || typedPozoId;
     const targetDiagram = getSelectedDiagram();
-    const pozo = pozoData.find(p => p.id === selectedPozoId) || null;
+    const assignable = getAssignablePozosForDiagram();
+    const assignableIds = new Set(assignable.map(p => p.id));
+    const exactPozo = pozoData.find(p => (p.id || '').toString().toUpperCase() === selectedPozoId.toUpperCase()) || null;
+    const resolvedPozo = exactPozo || resolvePozoFromInput(selectedPozoId, targetDiagram) || resolvePozoFromInput(selectedPozoId) || null;
+    const pozo = isReassignFromEdit
+        ? (pozoData.find(p => p.id === selectedPozoId) || null)
+        : (resolvedPozo && assignableIds.has(resolvedPozo.id) ? resolvedPozo : null);
 
     if (!pozo) {
-        alert('Pozo no encontrado');
+        alert('Pozo no encontrado en la lista de pendientes. Escribe o selecciona un pozo pendiente valido.');
         return;
     }
     if (!Object.prototype.hasOwnProperty.call(zones, targetDiagram)) {
         alert('Zona inválida');
         return;
+    }
+
+    if (isReassignFromEdit) {
+        const currentDiagram = getPozoDiagram(pozo);
+        const currentCoords = getDiagramCoords(pozo);
+        const currentCoordsLabel = currentCoords
+            ? `${Number(currentCoords[0]).toFixed(6)}, ${Number(currentCoords[1]).toFixed(6)}`
+            : 'sin coordenadas';
+        const nextCoordsLabel = `${Number(pendingDiagramAssignCoords[0]).toFixed(6)}, ${Number(pendingDiagramAssignCoords[1]).toFixed(6)}`;
+        const diagramLabel = targetDiagram === 'sin-asignar' ? 'sin asignar' : targetDiagram;
+        const confirmMessage = `Vas a mover el pozo ${pozo.id}.\n\nOrigen: ${currentDiagram} (${currentCoordsLabel})\nDestino: ${diagramLabel} (${nextCoordsLabel})\n\n¿Confirmas la reasignación?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
     }
 
     pozo.diagrama = targetDiagram;
@@ -2189,6 +2306,8 @@ function attachControls() {
     }
     document.getElementById('assign-diagram-form').addEventListener('submit', submitAssignDiagramForm);
     document.getElementById('assign-diagram-cancel').addEventListener('click', closeAssignDiagramForm);
+    document.getElementById('form-reassign-diagram').addEventListener('click', startDiagramReassignFromEdit);
+    document.getElementById('form-unassign-diagram').addEventListener('click', unassignPozoFromDiagramFromEdit);
     document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
     document.getElementById('verification-cancel').addEventListener('click', () => {
         pendingServiceAssignment = null;

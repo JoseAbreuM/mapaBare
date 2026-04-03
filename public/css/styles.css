@@ -616,6 +616,18 @@ main {
     color: var(--fg);
 }
 
+.form-actions button.btn-secondary {
+    background: #1f274f;
+    color: #d9e2ff;
+    border: 1px solid #3f4ea1;
+}
+
+.form-actions button.btn-danger {
+    background: #4b1616;
+    color: #ffd8d8;
+    border: 1px solid #8f2a2a;
+}
+
 .verification-subtitle {
     margin-top: 0;
     color: #bfc5ff;
