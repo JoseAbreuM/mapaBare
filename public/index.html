@@ -158,9 +158,11 @@
             </label>
             <label>VO (RPM)<br><input type="number" id="form-vo" min="0" step="0.01" placeholder="80"></label>
             <label>Potencial (barriles)<br><input type="number" id="form-potencial" min="0" step="0.01"></label>
+            <label class="field-wide checkbox-inline"><input type="checkbox" id="form-alto-corte-agua"> Mostrar gota de alto corte de agua</label>
             <label>Fecha de arranque<br><input type="date" id="form-fecha-ultimo-servicio"></label>
             <div class="form-actions field-full">
                 <button type="submit">Guardar</button>
+                <button type="button" id="form-toggle-alto-corte" class="btn-secondary hidden">Agregar gota alto corte</button>
                 <button type="button" id="form-reassign-diagram" class="btn-secondary hidden">Reasignar en diagrama</button>
                 <button type="button" id="form-unassign-diagram" class="btn-danger hidden">Desasignar del diagrama</button>
                 <button type="button" id="form-cancel">Cancelar</button>

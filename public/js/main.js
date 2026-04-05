@@ -17,6 +17,7 @@ const zones = {
 
 let pozoData = [];
 let markers = {};
+let markerDecorators = [];
 let searchId = null;
 let editId = null;
 let currentStatsFilter = 'all';
@@ -184,6 +185,7 @@ function normalizePozo(pozo) {
         nota: (pozo.nota || '').toString().trim() || null,
         velocidadOperacional: Number.isFinite(voValue) ? voValue : null,
         fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
+        altoCorteAgua: parseBooleanFlag(pozo.altoCorteAgua),
         vistaMapa: pozo.vistaMapa !== false,
         categoria: normalizeCategoria(pozo, normalizedEstado)
     };
@@ -200,6 +202,32 @@ function normalizeText(value) {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim();
+}
+
+function parseBooleanFlag(value) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return normalized === 'true' || normalized === '1' || normalized === 'si' || normalized === 'sí';
+    }
+    return false;
+}
+
+function hasHighWaterCut(pozo) {
+    if (parseBooleanFlag(pozo.altoCorteAgua)) return true;
+    const potencialRaw = pozo.potencial;
+    if (potencialRaw === null || potencialRaw === undefined || potencialRaw === '') return false;
+    const potencialValue = Number(potencialRaw);
+    return Number.isFinite(potencialValue) && potencialValue === 0;
+}
+
+function pozoMapLabel(pozoId) {
+    const raw = (pozoId || '').toString().trim();
+    const numeric = raw.replace(/\D+/g, '');
+    if (!numeric) return raw;
+    const withoutLeadingZeros = numeric.replace(/^0+/, '');
+    return withoutLeadingZeros || '0';
 }
 
 function isGeoCoords(coords) {
@@ -1405,7 +1433,9 @@ function updateDatalist(filter = '') {
 function renderMarkers(zone) {
     // eliminar anteriores
     Object.values(markers).forEach(m => map.removeLayer(m));
+    markerDecorators.forEach(layer => map.removeLayer(layer));
     markers = {};
+    markerDecorators = [];
 
     pozoData
         .filter(p => {
@@ -1423,6 +1453,11 @@ function renderMarkers(zone) {
         if (!markerCoords) return;
         const marker = createMarker(p, markerCoords);
         marker.addTo(map);
+        const decorators = createMarkerDecorators(p, marker, markerCoords);
+        decorators.forEach(layer => {
+            layer.addTo(map);
+            markerDecorators.push(layer);
+        });
         markers[p.id] = marker;
         });
 }
@@ -1492,6 +1527,17 @@ function crearIconoWT() {
     });
 }
 
+function createMapNumberIcon(pozoId, color) {
+    const label = pozoMapLabel(pozoId);
+    return L.divIcon({
+        html: `<span class="map-number-marker" style="--marker-color:${color};">${label}</span>`,
+        className: 'map-number-marker-wrapper',
+        iconSize: [28, 20],
+        iconAnchor: [14, 10],
+        popupAnchor: [0, -10]
+    });
+}
+
 function createMarker(p, markerCoords) {
     const normalizedEstado = normalizeEstado(p.estado);
     const color =
@@ -1525,17 +1571,44 @@ function createMarker(p, markerCoords) {
         }
         marker = L.marker(markerCoords, { icon });
     } else {
-        // Hacer los marcadores de pozos más sutiles
-        marker = L.circleMarker(markerCoords, {
-            radius: 4,
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.6,
-            weight: 1
-        });
+        if (mapMode === 'mapa') {
+            marker = L.marker(markerCoords, { icon: createMapNumberIcon(p.id, color) });
+        } else {
+            // Hacer los marcadores de pozos más sutiles
+            marker = L.circleMarker(markerCoords, {
+                radius: 4,
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.6,
+                weight: 1
+            });
+        }
     }
     marker.bindPopup(popupContent(p));
     return marker;
+}
+
+function createMarkerDecorators(p, marker, markerCoords) {
+    const layers = [];
+
+    if (hasHighWaterCut(p)) {
+        const highWaterCutIcon = L.divIcon({
+            html: '<span class="high-water-cut-icon" aria-hidden="true"><svg class="high-water-cut-svg" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 2.6C9.3 6 5.3 10.7 5.3 14.4A6.7 6.7 0 0 0 12 21a6.7 6.7 0 0 0 6.7-6.6c0-3.7-4-8.4-6.7-11.8z"/></svg></span>',
+            className: 'high-water-cut-wrapper',
+            iconSize: [16, 16],
+            iconAnchor: [20, 8]
+        });
+        const highWaterCutMarker = L.marker(markerCoords, {
+            icon: highWaterCutIcon,
+            interactive: false,
+            keyboard: false,
+            zIndexOffset: 1400
+        });
+        highWaterCutMarker.on('click', () => marker.openPopup());
+        layers.push(highWaterCutMarker);
+    }
+
+    return layers;
 }
 
 function createStationMarker(station) {
@@ -1577,6 +1650,7 @@ function popupContent(p) {
         content += `<br>VO: ${p.velocidadOperacional}`;
     }
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
+    if (hasHighWaterCut(p)) content += '<br>Alto corte de agua: si';
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
     if (p.fechaUltimoServicio) content += `<br>Fecha de arranque: ${p.fechaUltimoServicio}`;
     if (p.nota) content += `<br>Nota: ${p.nota}`;
@@ -1612,6 +1686,7 @@ function openForm(lat = null, lng = null, id = null) {
     document.getElementById('form-container').classList.remove('hidden');
     const reassignBtn = document.getElementById('form-reassign-diagram');
     const unassignBtn = document.getElementById('form-unassign-diagram');
+    const toggleHighWaterCutBtn = document.getElementById('form-toggle-alto-corte');
     if (id) {
         editId = id;
         document.getElementById('form-title').textContent = 'Editar Pozo';
@@ -1629,9 +1704,12 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-variador').value = p.variador || '';
         document.getElementById('form-vo').value = p.velocidadOperacional ?? '';
         document.getElementById('form-potencial').value = p.potencial || '';
+        document.getElementById('form-alto-corte-agua').checked = !!p.altoCorteAgua;
         document.getElementById('form-fecha-ultimo-servicio').value = p.fechaUltimoServicio || '';
         if (reassignBtn) reassignBtn.classList.remove('hidden');
         if (unassignBtn) unassignBtn.classList.remove('hidden');
+        if (toggleHighWaterCutBtn) toggleHighWaterCutBtn.classList.remove('hidden');
+        syncHighWaterCutButtonLabel();
         // no setear coords para edición
     } else {
         editId = null;
@@ -1644,11 +1722,30 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-diagrama').value = getSelectedDiagram();
         document.getElementById('form-nota').value = '';
         document.getElementById('form-vo').value = '';
+        document.getElementById('form-alto-corte-agua').checked = false;
         document.getElementById('form-fecha-ultimo-servicio').value = '';
         if (reassignBtn) reassignBtn.classList.add('hidden');
         if (unassignBtn) unassignBtn.classList.add('hidden');
+        if (toggleHighWaterCutBtn) toggleHighWaterCutBtn.classList.add('hidden');
+        syncHighWaterCutButtonLabel();
         togglePozoDiferidoCause();
     }
+}
+
+function syncHighWaterCutButtonLabel() {
+    const toggleHighWaterCutBtn = document.getElementById('form-toggle-alto-corte');
+    const highWaterCutInput = document.getElementById('form-alto-corte-agua');
+    if (!toggleHighWaterCutBtn || !highWaterCutInput) return;
+    toggleHighWaterCutBtn.textContent = highWaterCutInput.checked
+        ? 'Quitar gota alto corte'
+        : 'Agregar gota alto corte';
+}
+
+function toggleHighWaterCutFromEdit() {
+    const highWaterCutInput = document.getElementById('form-alto-corte-agua');
+    if (!highWaterCutInput) return;
+    highWaterCutInput.checked = !highWaterCutInput.checked;
+    syncHighWaterCutButtonLabel();
 }
 
 function closeForm() {
@@ -1662,11 +1759,15 @@ function closeForm() {
     document.getElementById('form-diagrama').value = 'sin-asignar';
     document.getElementById('form-nota').value = '';
     document.getElementById('form-vo').value = '';
+    document.getElementById('form-alto-corte-agua').checked = false;
     document.getElementById('form-fecha-ultimo-servicio').value = '';
     const reassignBtn = document.getElementById('form-reassign-diagram');
     const unassignBtn = document.getElementById('form-unassign-diagram');
+    const toggleHighWaterCutBtn = document.getElementById('form-toggle-alto-corte');
     if (reassignBtn) reassignBtn.classList.add('hidden');
     if (unassignBtn) unassignBtn.classList.add('hidden');
+    if (toggleHighWaterCutBtn) toggleHighWaterCutBtn.classList.add('hidden');
+    syncHighWaterCutButtonLabel();
     togglePozoDiferidoCause();
     editId = null;
 }
@@ -1950,6 +2051,7 @@ async function savePozo(e) {
     const formNota = document.getElementById('form-nota').value.trim();
     const formVoRaw = document.getElementById('form-vo').value;
     const formVo = formVoRaw === '' ? null : Number(formVoRaw);
+    const formHighWaterCut = document.getElementById('form-alto-corte-agua').checked;
     const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
     const pozo = {
         id: document.getElementById('form-id').value.trim().toUpperCase(),
@@ -1969,6 +2071,7 @@ async function savePozo(e) {
         variador: document.getElementById('form-variador').value || null,
         velocidadOperacional: Number.isFinite(formVo) ? formVo : null,
         potencial: document.getElementById('form-potencial').value || null,
+        altoCorteAgua: formHighWaterCut,
         fechaUltimoServicio: document.getElementById('form-fecha-ultimo-servicio').value || null,
         nota: formNota || null,
         taladro: previousPozo ? previousPozo.taladro : null,
@@ -2279,6 +2382,8 @@ function attachControls() {
     document.getElementById('pozo-form').addEventListener('submit', savePozo);
     document.getElementById('form-cancel').addEventListener('click', closeForm);
     document.getElementById('form-estado').addEventListener('change', togglePozoDiferidoCause);
+    document.getElementById('form-toggle-alto-corte').addEventListener('click', toggleHighWaterCutFromEdit);
+    document.getElementById('form-alto-corte-agua').addEventListener('change', syncHighWaterCutButtonLabel);
 
     document.getElementById('edit-mode').addEventListener('change', (e) => {
         if (e.target.checked && !requireCrudAuth()) {

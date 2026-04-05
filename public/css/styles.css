@@ -573,6 +573,17 @@ main {
     color: var(--fg);
 }
 
+.form-container input[type="checkbox"] {
+    width: auto;
+    margin-top: 0;
+}
+
+.checkbox-inline {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .form-actions {
     display: flex;
     justify-content: space-between;
@@ -1127,4 +1138,69 @@ main {
     border: 2px solid var(--station-border, #f1c40f);
     box-shadow: 0 3px 9px rgba(0, 0, 0, 0.45);
     font-size: 13px;
+}
+
+.pozo-id-map-label {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    color: #111111;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 5px;
+    margin: 0;
+    letter-spacing: 0.01em;
+    text-shadow: none;
+}
+
+.pozo-id-map-label::before {
+    display: none;
+}
+
+.map-number-marker-wrapper {
+    background: transparent !important;
+    border: none !important;
+}
+
+.map-number-marker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--marker-color, #43a047);
+    color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1;
+}
+
+.high-water-cut-wrapper {
+    background: transparent !important;
+    border: none !important;
+}
+
+.high-water-cut-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+}
+
+.high-water-cut-svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+    fill: #0a4dbf;
+    stroke: #ffffff;
+    stroke-width: 1.4;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
