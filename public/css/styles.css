@@ -405,6 +405,21 @@ body.sidebar-compact .stats-panel .stats-item[data-filter-type="category"] {
     line-height: 1.35;
 }
 
+.legend-subtitle {
+    margin-top: 0.55rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #bfc5ff;
+}
+
+.legend-count {
+    margin-left: auto;
+    font-weight: 700;
+}
+
 .legend-item + .legend-item {
     margin-top: 0.35rem;
 }

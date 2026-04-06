@@ -2342,6 +2342,34 @@ function updateStats() {
     if (countCategory1) countCategory1.textContent = counts.categoria1;
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
+    updateFloatingLegendCounts(counts);
+}
+
+function updateFloatingLegendCounts(counts) {
+    const statusCountMap = {
+        activo: counts.activo,
+        'inactivo-servicio': counts['inactivo-servicio'],
+        'en-servicio': counts['en-servicio'],
+        diagnostico: counts.diagnostico,
+        candidato: counts.candidato,
+        diferido: counts.diferido
+    };
+
+    Object.entries(statusCountMap).forEach(([status, value]) => {
+        const item = document.querySelector(`[data-legend-status="${status}"] .legend-count`);
+        if (item) item.textContent = `(${value})`;
+    });
+
+    const categoryCountMap = {
+        1: counts.categoria1,
+        2: counts.categoria2,
+        3: counts.categoria3
+    };
+
+    Object.entries(categoryCountMap).forEach(([category, value]) => {
+        const item = document.querySelector(`[data-legend-category="${category}"] .legend-count`);
+        if (item) item.textContent = `(${value})`;
+    });
 }
 
 function updateStatsFilterUi() {

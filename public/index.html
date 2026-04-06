@@ -342,12 +342,16 @@
     <div id="floating-legend-container">
         <button id="floating-legend-btn" class="floating-legend-btn" aria-label="Mostrar leyenda">i</button>
         <div id="floating-legend-box" class="floating-legend-box hidden" role="button" tabindex="0" aria-label="Ocultar leyenda">
-            <div class="legend-item"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</div>
-            <div class="legend-item"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio</div>
-            <div class="legend-item"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio</div>
-            <div class="legend-item"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico</div>
-            <div class="legend-item"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</div>
-            <div class="legend-item"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido</div>
+            <div class="legend-item" data-legend-status="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-status="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-status="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-status="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-status="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-status="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido <span class="legend-count">(0)</span></div>
+            <div class="legend-subtitle">Categorías</div>
+            <div class="legend-item" data-legend-category="1"><span class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1 <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-category="2"><span class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2 <span class="legend-count">(0)</span></div>
+            <div class="legend-item" data-legend-category="3"><span class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3 <span class="legend-count">(0)</span></div>
         </div>
     </div>
 
