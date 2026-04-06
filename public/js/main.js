@@ -25,8 +25,9 @@ let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
+let resolvedCtIconHtml = null;
 const APP_VERSION = 'v1.16';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v24';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v28';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -70,22 +71,29 @@ const SERVICE_SEARCH_CONFIG = [
     { taladro: 'RIG-RANGER-555', tags: ['555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
     { taladro: 'Ranger-151', tags: ['151', 'ranger-151', 'ranger 151', 'servicio 151'] },
     {
-        taladro: 'WT',
+        taladro: 'CT',
         tags: [
-            'wt',
             'ct',
             'coiled tubing',
             'coiled-tubing',
             'coiledtubing',
             'coiled tubbing',
             'coil tubing',
+            'estimulacion',
+            'estimulacion ct',
+            'estimulacion de pozo'
+        ]
+    },
+    {
+        taladro: 'WT',
+        tags: [
+            'wt',
             'well testing',
             'wel testing',
             'well-testing',
             'wel-testing',
             'prueba liquida',
-            'prueba liquida wt',
-            'prueba liquida ct'
+            'prueba liquida wt'
         ]
     }
 ];
@@ -120,6 +128,13 @@ const BARE_MAP_BOUNDS = {
     minLng: -64.25,
     maxLng: -63.95
 };
+
+const MAP_LABEL_MIN_ZOOM = 15;
+const MAP_LABEL_DENSITY_LIMIT = 90;
+const MAP_SIMPLIFIED_MARKER_LIMIT = 220;
+const MAP_VIEWPORT_PAD = 0.12;
+
+let pendingMapRenderFrame = null;
 
 function normalizeEstado(estado) {
     const value = (estado || '').toString().trim().toLowerCase();
@@ -393,6 +408,59 @@ function setFormZonaValue(value) {
 
 function renderActiveMarkers() {
     renderMarkers(getSelectedDiagram());
+}
+
+function getMapRenderConfig(totalPozos) {
+    if (mapMode !== 'mapa' || !map) {
+        return {
+            simplified: false,
+            showLabels: true,
+            showDecorators: true
+        };
+    }
+
+    const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 0;
+    const belowLabelZoom = zoom < MAP_LABEL_MIN_ZOOM;
+    const highDensityAtCurrentZoom = totalPozos > MAP_LABEL_DENSITY_LIMIT && zoom < MAP_LABEL_MIN_ZOOM + 1;
+    const tooManyMarkers = totalPozos > MAP_SIMPLIFIED_MARKER_LIMIT;
+    const simplified = belowLabelZoom || highDensityAtCurrentZoom || tooManyMarkers;
+
+    return {
+        simplified,
+        showLabels: !simplified,
+        showDecorators: !simplified
+    };
+}
+
+function scheduleMapRender() {
+    if (pendingMapRenderFrame !== null) {
+        cancelAnimationFrame(pendingMapRenderFrame);
+    }
+
+    pendingMapRenderFrame = requestAnimationFrame(() => {
+        pendingMapRenderFrame = null;
+        renderMarkers('mapa');
+    });
+}
+
+function getMapViewportBounds() {
+    if (mapMode !== 'mapa' || !map || typeof map.getBounds !== 'function') return null;
+    return map.getBounds().pad(MAP_VIEWPORT_PAD);
+}
+
+function isCoordsInsideViewport(coords, bounds) {
+    if (!bounds || !Array.isArray(coords) || coords.length !== 2) return true;
+    return bounds.contains(L.latLng(Number(coords[0]), Number(coords[1])));
+}
+
+function attachMapEvents() {
+    if (!map) return;
+    map.on('click', onMapClick);
+    map.on('moveend', () => {
+        if (mapMode === 'mapa') {
+            scheduleMapRender();
+        }
+    });
 }
 
 function closeFloatingPanels(exceptId = null) {
@@ -717,7 +785,11 @@ function ensureMapForMode() {
 
     map = L.map(mapContainer, {
         minZoom: 11,
-        maxZoom: 18
+        maxZoom: 18,
+        preferCanvas: true,
+        zoomAnimation: false,
+        fadeAnimation: false,
+        markerZoomAnimation: false
     });
 }
 
@@ -1120,11 +1192,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=16',
+            '/css/styles.css?v=21',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=21',
+            '/js/main.js?v=28',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -1198,7 +1270,7 @@ async function syncData() {
 
 async function setupMap() {
     ensureMapForMode();
-    map.on('click', onMapClick);
+    attachMapEvents();
 }
 
 async function applyViewMode(mode, skipPersist = false) {
@@ -1221,7 +1293,7 @@ async function applyViewMode(mode, skipPersist = false) {
 
     if (modeChanged) {
         ensureMapForMode();
-        map.on('click', onMapClick);
+        attachMapEvents();
         markers = {};
         currentOverlay = null;
     }
@@ -1423,6 +1495,8 @@ function updateDatalist(filter = '') {
         opt.value = `servicio ${primaryAlias}`;
         if (service.taladro === 'WT') {
             opt.label = 'Servicio WT (Well Testing)';
+        } else if (service.taladro === 'CT') {
+            opt.label = 'Servicio CT (Coiled Tubing / Estimulacion)';
         } else {
             opt.label = `Servicio ${service.taladro}`;
         }
@@ -1436,30 +1510,36 @@ function renderMarkers(zone) {
     markerDecorators.forEach(layer => map.removeLayer(layer));
     markers = {};
     markerDecorators = [];
+    const viewportBounds = getMapViewportBounds();
 
-    pozoData
+    const visiblePozos = pozoData
         .filter(p => {
             if (mapMode === 'mapa') {
                 const coords = getMapaCoords(p);
-                return !!coords && isInsideBareMap(coords) && p.vistaMapa !== false;
+                return !!coords
+                    && isInsideBareMap(coords)
+                    && p.vistaMapa !== false
+                    && isCoordsInsideViewport(coords, viewportBounds);
             }
             const coords = getDiagramCoords(p);
             return !!coords && getPozoDiagram(p) === zone;
         })
         .filter(matchesCurrentFilter)
-        .filter(matchesCurrentCategoryFilter)
-        .forEach(p => {
+        .filter(matchesCurrentCategoryFilter);
+    const mapRenderConfig = getMapRenderConfig(visiblePozos.length);
+
+    visiblePozos.forEach(p => {
         const markerCoords = mapMode === 'mapa' ? getMapaCoords(p) : getDiagramCoords(p);
         if (!markerCoords) return;
-        const marker = createMarker(p, markerCoords);
+        const marker = createMarker(p, markerCoords, mapRenderConfig);
         marker.addTo(map);
-        const decorators = createMarkerDecorators(p, marker, markerCoords);
+        const decorators = createMarkerDecorators(p, marker, markerCoords, mapRenderConfig);
         decorators.forEach(layer => {
             layer.addTo(map);
             markerDecorators.push(layer);
         });
         markers[p.id] = marker;
-        });
+    });
 }
 
 function matchesCurrentFilter(pozo) {
@@ -1527,6 +1607,44 @@ function crearIconoWT() {
     });
 }
 
+function crearIconoCT() {
+    if (!resolvedCtIconHtml) {
+        const iconClasses = ['fa-flask', 'fa-flask-vial'];
+        let selectedClass = null;
+
+        if (typeof document !== 'undefined' && document.body) {
+            for (const className of iconClasses) {
+                const probe = document.createElement('i');
+                probe.className = `fa-solid ${className}`;
+                probe.style.position = 'absolute';
+                probe.style.opacity = '0';
+                probe.style.pointerEvents = 'none';
+                document.body.appendChild(probe);
+                const content = window.getComputedStyle(probe, '::before').content;
+                document.body.removeChild(probe);
+                if (content && content !== 'none' && content !== '""') {
+                    selectedClass = className;
+                    break;
+                }
+            }
+        }
+
+        if (selectedClass) {
+            resolvedCtIconHtml = `<i class="fa-solid ${selectedClass}" aria-hidden="true"></i>`;
+        } else {
+            resolvedCtIconHtml = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 2h4v2l-1 1v4.5l5.2 8.2A2 2 0 0 1 16.5 21h-9a2 2 0 0 1-1.7-3.3L11 9.5V5l-1-1V2zm1.4 9-4 6.3a.5.5 0 0 0 .4.7h8.4a.5.5 0 0 0 .4-.7L12.6 11h-1.2z"/></svg>';
+        }
+    }
+
+    return L.divIcon({
+        html: resolvedCtIconHtml,
+        className: 'contenedor-icono-ct',
+        iconSize: [16, 16],
+        iconAnchor: [8, 16],
+        popupAnchor: [0, -16]
+    });
+}
+
 function createMapNumberIcon(pozoId, color) {
     const label = pozoMapLabel(pozoId);
     return L.divIcon({
@@ -1538,7 +1656,7 @@ function createMapNumberIcon(pozoId, color) {
     });
 }
 
-function createMarker(p, markerCoords) {
+function createMarker(p, markerCoords, mapRenderConfig = null) {
     const normalizedEstado = normalizeEstado(p.estado);
     const color =
         normalizedEstado === STATUS.ACTIVO
@@ -1557,6 +1675,8 @@ function createMarker(p, markerCoords) {
         let icon;
         if (p.taladro === 'WT') {
             icon = crearIconoWT();
+        } else if (p.taladro === 'CT') {
+            icon = crearIconoCT();
         } else {
             // Mapear servicios a colores y números
             const servicioConfig = {
@@ -1572,7 +1692,17 @@ function createMarker(p, markerCoords) {
         marker = L.marker(markerCoords, { icon });
     } else {
         if (mapMode === 'mapa') {
-            marker = L.marker(markerCoords, { icon: createMapNumberIcon(p.id, color) });
+            if (mapRenderConfig && mapRenderConfig.showLabels) {
+                marker = L.marker(markerCoords, { icon: createMapNumberIcon(p.id, color) });
+            } else {
+                marker = L.circleMarker(markerCoords, {
+                    radius: 5,
+                    color: '#ffffff',
+                    weight: 1,
+                    fillColor: color,
+                    fillOpacity: 0.92
+                });
+            }
         } else {
             // Hacer los marcadores de pozos más sutiles
             marker = L.circleMarker(markerCoords, {
@@ -1588,8 +1718,12 @@ function createMarker(p, markerCoords) {
     return marker;
 }
 
-function createMarkerDecorators(p, marker, markerCoords) {
+function createMarkerDecorators(p, marker, markerCoords, mapRenderConfig = null) {
     const layers = [];
+
+    if (mapMode === 'mapa' && mapRenderConfig && !mapRenderConfig.showDecorators) {
+        return layers;
+    }
 
     if (hasHighWaterCut(p)) {
         const highWaterCutIcon = L.divIcon({
@@ -1860,6 +1994,24 @@ async function assignTaladro(e) {
     closeAssignForm();
 }
 
+function unassignTaladroFromAssignForm() {
+    if (!requireCrudAuth()) return;
+    const pozoId = document.getElementById('assign-pozo-id').value.trim();
+    const p = resolvePozoFromInput(pozoId, getSelectedDiagram());
+    if (!p) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    if (!p.taladro) {
+        alert(`El pozo ${p.id} no tiene servicio asignado.`);
+        return;
+    }
+
+    pendingServiceAssignment = { mode: 'manual-unassign', previousPozoId: p.id };
+    openServiceVerification(p.id);
+}
+
 function openServiceVerification(previousPozoId) {
     document.getElementById('verification-pozo-label').textContent = `Pozo saliente: ${previousPozoId}`;
     document.querySelector('input[name="verification-estado"][value="activo"]').checked = true;
@@ -1893,9 +2045,29 @@ async function submitServiceVerification(e) {
         return;
     }
 
-    const { pozoId, taladro, previousPozoId } = pendingServiceAssignment;
+    const { pozoId, taladro, previousPozoId, mode } = pendingServiceAssignment;
     const currentPozo = pozoData.find(pozo => pozo.id === pozoId);
     const previousPozo = pozoData.find(pozo => pozo.id === previousPozoId);
+
+    if (mode === 'manual-unassign') {
+        if (!previousPozo) {
+            alert('Pozo con servicio no encontrado');
+            pendingServiceAssignment = null;
+            closeServiceVerification();
+            return;
+        }
+
+        previousPozo.taladro = null;
+        previousPozo.estado = selectedEstado;
+        previousPozo.causaDiferido = selectedEstado === STATUS.DIFERIDO ? cause : null;
+        Object.assign(previousPozo, normalizePozo(previousPozo));
+
+        pendingServiceAssignment = null;
+        await persistPozosAndRefresh();
+        closeServiceVerification();
+        closeAssignForm();
+        return;
+    }
 
     if (!currentPozo) {
         alert('Pozo destino no encontrado');
@@ -2393,6 +2565,7 @@ function attachControls() {
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
+    document.getElementById('assign-unassign-btn').addEventListener('click', unassignTaladroFromAssignForm);
     document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
     const assignExistingMode = document.getElementById('assign-existing-mode');
     if (assignExistingMode) {

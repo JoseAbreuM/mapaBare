@@ -1080,6 +1080,30 @@ main {
     height: 100%;
 }
 
+.contenedor-icono-ct {
+    background: none !important;
+    border: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #f6d04d;
+    font-size: 16px;
+    line-height: 1;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+
+.contenedor-icono-ct i {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.contenedor-icono-ct svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+    fill: currentColor;
+}
+
 /* Estilos para los iconos de taladros */
 .contenedor-icono-taladro {
     background: none !important;
@@ -1179,6 +1203,8 @@ main {
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1;
+    white-space: nowrap;
+    contain: layout paint style;
 }
 
 .high-water-cut-wrapper {

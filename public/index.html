@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=18">
+    <link rel="stylesheet" href="css/styles.css?v=21">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <!-- Firebase -->
@@ -182,11 +182,13 @@
                     <option value="RIG-352">RIG-352</option>
                     <option value="RIG-RANGER-555">RIG-RANGER-555</option>
                     <option value="Ranger-151">Ranger-151</option>
+                    <option value="CT">CT (Coiled Tubing / Estimulación)</option>
                     <option value="WT">WT</option>
                 </select>
             </label>
             <div class="form-actions">
                 <button type="submit">Asignar</button>
+                <button type="button" id="assign-unassign-btn">Desasignar servicio</button>
                 <button type="button" id="assign-cancel">Cancelar</button>
             </div>
         </form>
@@ -297,7 +299,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=24"></script>
+    <script src="js/main.js?v=28"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
