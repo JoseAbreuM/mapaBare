@@ -46,6 +46,8 @@
                 <span class="slider"></span>
                 <span class="label">Modo asignación</span>
             </label>
+            <button id="bulk-zone-select-toggle" type="button" class="desktop-only hidden" aria-pressed="false">Selección múltiple</button>
+            <button id="export-json-btn" type="button">Exportar JSON</button>
             <span id="auth-user-label" class="auth-user-label hidden"></span>
             <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
             <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
@@ -70,6 +72,30 @@
         <button type="button" class="stats-item" data-filter-type="category" data-category="1"><span class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1: <span id="count-category-1">0</span></button>
         <button type="button" class="stats-item" data-filter-type="category" data-category="2"><span class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2: <span id="count-category-2">0</span></button>
         <button type="button" class="stats-item" data-filter-type="category" data-category="3"><span class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3: <span id="count-category-3">0</span></button>
+        <hr class="stats-divider">
+        <h3 class="stats-subtitle">Pozos activos por zona</h3>
+        <div id="zone-summary-container" class="stats-zone-summary">
+            <button type="button" class="stats-item zone-summary-item" data-zone="bare-tradicional">
+                <span>BARE tradicional</span>
+                <span class="zone-summary-meta"><span id="zone-count-bare-tradicional">0</span> <span class="zone-summary-toggle">▾</span></span>
+            </button>
+            <div id="zone-list-bare-tradicional" class="zone-detail-list hidden"></div>
+            <button type="button" class="stats-item zone-summary-item" data-zone="trilla">
+                <span>Trilla</span>
+                <span class="zone-summary-meta"><span id="zone-count-trilla">0</span> <span class="zone-summary-toggle">▾</span></span>
+            </button>
+            <div id="zone-list-trilla" class="zone-detail-list hidden"></div>
+            <button type="button" class="stats-item zone-summary-item" data-zone="asfaltada-y-tigra">
+                <span>Asfaltada y Tigra</span>
+                <span class="zone-summary-meta"><span id="zone-count-asfaltada-y-tigra">0</span> <span class="zone-summary-toggle">▾</span></span>
+            </button>
+            <div id="zone-list-asfaltada-y-tigra" class="zone-detail-list hidden"></div>
+            <button type="button" class="stats-item zone-summary-item" data-zone="bare-6">
+                <span>BARE 6</span>
+                <span class="zone-summary-meta"><span id="zone-count-bare-6">0</span> <span class="zone-summary-toggle">▾</span></span>
+            </button>
+            <div id="zone-list-bare-6" class="zone-detail-list hidden"></div>
+        </div>
     </aside>
 
     <main>
@@ -179,6 +205,9 @@
             <label>Servicio<br>
                 <select id="assign-taladro-select">
                     <option value="Ranger-357">Ranger-357</option>
+                    <option value="Ranger-356">Ranger-356</option>
+                    <option value="Ranger-553">Ranger-553</option>
+                    <option value="Ranger-554">Ranger-554</option>
                     <option value="RIG-351">RIG-351</option>
                     <option value="RIG-352">RIG-352</option>
                     <option value="RIG-RANGER-555">RIG-RANGER-555</option>
@@ -208,6 +237,20 @@
             <div class="form-actions">
                 <button type="submit">Asignar al punto</button>
                 <button type="button" id="assign-diagram-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="bulk-zone-form-container" class="form-container hidden">
+        <form id="bulk-zone-form">
+            <h3>Editar Zona De Selección</h3>
+            <p id="bulk-zone-selection-count" class="verification-subtitle"></p>
+            <label>Zona de perimetro<br>
+                <select id="bulk-zone-select"></select>
+            </label>
+            <div class="form-actions">
+                <button type="submit">Aplicar zona</button>
+                <button type="button" id="bulk-zone-cancel">Cancelar</button>
             </div>
         </form>
     </div>
@@ -353,6 +396,11 @@
             <div class="legend-item" data-legend-category="1"><span class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1 <span class="legend-count">(0)</span></div>
             <div class="legend-item" data-legend-category="2"><span class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2 <span class="legend-count">(0)</span></div>
             <div class="legend-item" data-legend-category="3"><span class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3 <span class="legend-count">(0)</span></div>
+            <div class="legend-subtitle">Activos por zona</div>
+            <div class="legend-zone-item" data-zone="bare-tradicional">BARE tradicional <span class="legend-count" id="mobile-zone-count-bare-tradicional">(0)</span></div>
+            <div class="legend-zone-item" data-zone="trilla">Trilla <span class="legend-count" id="mobile-zone-count-trilla">(0)</span></div>
+            <div class="legend-zone-item" data-zone="asfaltada-y-tigra">Asfaltada y Tigra <span class="legend-count" id="mobile-zone-count-asfaltada-y-tigra">(0)</span></div>
+            <div class="legend-zone-item" data-zone="bare-6">BARE 6 <span class="legend-count" id="mobile-zone-count-bare-6">(0)</span></div>
         </div>
     </div>
 

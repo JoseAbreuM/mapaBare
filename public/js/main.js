@@ -15,6 +15,36 @@ const zones = {
     'bare-este': 'assets/mapas/trilla-asfaltada.jpg',
 };
 
+const ZONE_SUMMARY_DEFINITIONS = [
+    {
+        key: 'bare-tradicional',
+        label: 'BARE tradicional',
+        variants: ['bare tradicional', 'bare-tradicional']
+    },
+    {
+        key: 'trilla',
+        label: 'Trilla',
+        variants: ['trilla']
+    },
+    {
+        key: 'asfaltada-y-tigra',
+        label: 'Asfaltada y Tigra',
+        variants: ['asfaltada y tigra', 'asfaltada-tigra', 'tigra y asfaltada', 'tigra']
+    },
+    {
+        key: 'bare-6',
+        label: 'BARE 6',
+        variants: ['bare 6', 'bare-6', 'bare 6 norte', 'bare 6-norte', 'bare-6-norte']
+    }
+];
+
+const ZONE_ORDER = ZONE_SUMMARY_DEFINITIONS.map(def => def.key);
+
+const ZONE_LABELS = ZONE_SUMMARY_DEFINITIONS.reduce((acc, def) => {
+    acc[def.key] = def.label;
+    return acc;
+}, {});
+
 let pozoData = [];
 let markers = {};
 let markerDecorators = [];
@@ -25,6 +55,10 @@ let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
+let bulkSelectModeEnabled = false;
+let bulkSelectionDragStart = null;
+let bulkSelectionRect = null;
+let bulkSelectionPozoIds = [];
 let resolvedCtIconHtml = null;
 const APP_VERSION = 'v1.16';
 const OFFLINE_CACHE_NAME = 'pozos-cache-v28';
@@ -62,6 +96,30 @@ const MAP_STATION_DEFINITIONS = [
         colorFondo: '#123b2c',
         colorBorde: '#2ecc71',
         colorIcono: '#2ecc71'
+    },
+    {
+        id: 'ranger-356',
+        nombre: 'Ranger 356',
+        aliases: ['356', 'ranger-356', 'ranger 356', 'servicio 356'],
+        colorFondo: '#1a3a5c',
+        colorBorde: '#3498db',
+        colorIcono: '#3498db'
+    },
+    {
+        id: 'ranger-553',
+        nombre: 'Ranger 553',
+        aliases: ['553', 'ranger-553', 'ranger 553', 'servicio 553'],
+        colorFondo: '#5c3a1a',
+        colorBorde: '#e67e22',
+        colorIcono: '#e67e22'
+    },
+    {
+        id: 'ranger-554',
+        nombre: 'Ranger 554',
+        aliases: ['554', 'ranger-554', 'ranger 554', 'servicio 554'],
+        colorFondo: '#3a1a5c',
+        colorBorde: '#9b59b6',
+        colorIcono: '#9b59b6'
     }
 ];
 const SERVICE_SEARCH_CONFIG = [
@@ -70,6 +128,9 @@ const SERVICE_SEARCH_CONFIG = [
     { taladro: 'RIG-352', tags: ['352', 'rig-352', 'rig 352', 'servicio 352'] },
     { taladro: 'RIG-RANGER-555', tags: ['555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
     { taladro: 'Ranger-151', tags: ['151', 'ranger-151', 'ranger 151', 'servicio 151'] },
+    { taladro: 'Ranger-356', tags: ['356', 'ranger-356', 'ranger 356', 'servicio 356'] },
+    { taladro: 'Ranger-553', tags: ['553', 'ranger-553', 'ranger 553', 'servicio 553'] },
+    { taladro: 'Ranger-554', tags: ['554', 'ranger-554', 'ranger 554', 'servicio 554'] },
     {
         taladro: 'CT',
         tags: [
@@ -456,11 +517,151 @@ function isCoordsInsideViewport(coords, bounds) {
 function attachMapEvents() {
     if (!map) return;
     map.on('click', onMapClick);
+    map.on('mousedown', onMapMouseDown);
+    map.on('mousemove', onMapMouseMove);
+    map.on('mouseup', onMapMouseUp);
     map.on('moveend', () => {
         if (mapMode === 'mapa') {
             scheduleMapRender();
         }
     });
+}
+
+function syncBulkSelectUi() {
+    const toggleBtn = document.getElementById('bulk-zone-select-toggle');
+    if (!toggleBtn) return;
+
+    const enabledForView = isDesktop() && mapMode === 'diagram';
+    toggleBtn.disabled = !enabledForView;
+    toggleBtn.classList.toggle('is-active', enabledForView && bulkSelectModeEnabled);
+    toggleBtn.setAttribute('aria-pressed', enabledForView && bulkSelectModeEnabled ? 'true' : 'false');
+
+    const mapContainer = map && typeof map.getContainer === 'function' ? map.getContainer() : null;
+    if (mapContainer) {
+        mapContainer.classList.toggle('bulk-select-active', enabledForView && bulkSelectModeEnabled);
+    }
+}
+
+function clearBulkSelectionVisual() {
+    bulkSelectionDragStart = null;
+    if (bulkSelectionRect && map && map.hasLayer(bulkSelectionRect)) {
+        map.removeLayer(bulkSelectionRect);
+    }
+    bulkSelectionRect = null;
+    if (map && map.dragging) {
+        map.dragging.enable();
+    }
+}
+
+function applyBulkSelectionHighlight() {
+    const canHighlight = mapMode === 'diagram' && bulkSelectModeEnabled && bulkSelectionPozoIds.length > 0;
+    const selectedIds = canHighlight ? new Set(bulkSelectionPozoIds) : null;
+    Object.entries(markers).forEach(([pozoId, marker]) => {
+        if (!marker || typeof marker.setOpacity !== 'function') return;
+        if (!canHighlight) {
+            marker.setOpacity(1);
+            return;
+        }
+        marker.setOpacity(selectedIds.has(pozoId) ? 1 : 0.35);
+    });
+}
+
+function setBulkSelectMode(enabled) {
+    const nextEnabled = !!enabled;
+
+    if (nextEnabled) {
+        if (!isDesktop() || mapMode !== 'diagram') {
+            bulkSelectModeEnabled = false;
+            syncBulkSelectUi();
+            return;
+        }
+        if (!requireCrudAuth()) {
+            bulkSelectModeEnabled = false;
+            syncBulkSelectUi();
+            return;
+        }
+        const editMode = document.getElementById('edit-mode');
+        const assignMode = document.getElementById('assign-existing-mode');
+        if (editMode) editMode.checked = false;
+        if (assignMode) assignMode.checked = false;
+        closeAssignDiagramForm();
+    } else {
+        closeBulkZoneForm();
+        bulkSelectionPozoIds = [];
+        clearBulkSelectionVisual();
+    }
+
+    bulkSelectModeEnabled = nextEnabled;
+    syncBulkSelectUi();
+    applyBulkSelectionHighlight();
+}
+
+function onMapMouseDown(e) {
+    if (!bulkSelectModeEnabled || mapMode !== 'diagram') return;
+    if (!e || !e.latlng) return;
+    if (e.originalEvent && e.originalEvent.button !== 0) return;
+
+    bulkSelectionDragStart = e.latlng;
+    clearBulkSelectionVisual();
+    bulkSelectionDragStart = e.latlng;
+    bulkSelectionPozoIds = [];
+    closeBulkZoneForm();
+
+    bulkSelectionRect = L.rectangle(L.latLngBounds(e.latlng, e.latlng), {
+        color: '#7d88ff',
+        weight: 1.2,
+        fillColor: '#7d88ff',
+        fillOpacity: 0.18,
+        interactive: false
+    }).addTo(map);
+
+    if (map.dragging) {
+        map.dragging.disable();
+    }
+
+    applyBulkSelectionHighlight();
+}
+
+function onMapMouseMove(e) {
+    if (!bulkSelectModeEnabled || mapMode !== 'diagram') return;
+    if (!bulkSelectionDragStart || !bulkSelectionRect || !e || !e.latlng) return;
+    bulkSelectionRect.setBounds(L.latLngBounds(bulkSelectionDragStart, e.latlng));
+}
+
+function onMapMouseUp(e) {
+    if (!bulkSelectionDragStart) return;
+
+    const start = bulkSelectionDragStart;
+    const end = (e && e.latlng) ? e.latlng : start;
+    const selectionBounds = L.latLngBounds(start, end);
+    const minDelta = 2;
+
+    clearBulkSelectionVisual();
+
+    if (Math.abs(start.lat - end.lat) < minDelta && Math.abs(start.lng - end.lng) < minDelta) {
+        bulkSelectionPozoIds = [];
+        applyBulkSelectionHighlight();
+        return;
+    }
+
+    const selectedDiagram = getSelectedDiagram();
+    bulkSelectionPozoIds = pozoData
+        .filter(pozo => {
+            const coords = getDiagramCoords(pozo);
+            return !!coords
+                && getPozoDiagram(pozo) === selectedDiagram
+                && selectionBounds.contains(L.latLng(Number(coords[0]), Number(coords[1])));
+        })
+        .map(pozo => pozo.id);
+
+    if (!bulkSelectionPozoIds.length) {
+        applyBulkSelectionHighlight();
+        alert('No hay pozos dentro del área seleccionada.');
+        return;
+    }
+
+    applyBulkSelectionHighlight();
+    openBulkZoneForm();
 }
 
 function closeFloatingPanels(exceptId = null) {
@@ -682,6 +883,63 @@ function closeAssignDiagramForm() {
     if (form) form.reset();
     pendingDiagramAssignCoords = null;
     pendingDiagramReassignPozoId = null;
+}
+
+function closeBulkZoneForm() {
+    const container = document.getElementById('bulk-zone-form-container');
+    const form = document.getElementById('bulk-zone-form');
+    if (container) container.classList.add('hidden');
+    if (form) form.reset();
+}
+
+function openBulkZoneForm() {
+    const sourceSelect = document.getElementById('form-zona');
+    const targetSelect = document.getElementById('bulk-zone-select');
+    const countLabel = document.getElementById('bulk-zone-selection-count');
+    const container = document.getElementById('bulk-zone-form-container');
+
+    if (!sourceSelect || !targetSelect || !countLabel || !container) return;
+
+    targetSelect.innerHTML = '';
+    Array.from(sourceSelect.options).forEach(option => {
+        targetSelect.appendChild(option.cloneNode(true));
+    });
+    targetSelect.value = '';
+
+    countLabel.textContent = `Pozos seleccionados: ${bulkSelectionPozoIds.length}`;
+    container.classList.remove('hidden');
+    targetSelect.focus();
+}
+
+async function submitBulkZoneForm(e) {
+    e.preventDefault();
+    if (!requireCrudAuth()) return;
+
+    if (!bulkSelectionPozoIds.length) {
+        closeBulkZoneForm();
+        return;
+    }
+
+    const targetZoneValue = (document.getElementById('bulk-zone-select').value || '').trim().toLowerCase();
+    let updatedCount = 0;
+
+    bulkSelectionPozoIds.forEach(pozoId => {
+        const pozo = pozoData.find(item => item.id === pozoId);
+        if (!pozo) return;
+        pozo.zona = targetZoneValue || null;
+        Object.assign(pozo, normalizePozo(pozo));
+        updatedCount += 1;
+    });
+
+    if (!updatedCount) {
+        alert('No se pudo actualizar la zona de los pozos seleccionados.');
+        return;
+    }
+
+    await persistPozosAndRefresh();
+    closeBulkZoneForm();
+    updateDatalist();
+    alert(`Zona actualizada para ${updatedCount} pozo(s).`);
 }
 
 function openAssignDiagramForm(lat, lng) {
@@ -969,6 +1227,7 @@ function updateAuthUi() {
     const assignButton = document.getElementById('assign-taladro-btn');
     const assignExistingToggle = document.getElementById('assign-existing-toggle');
     const assignExistingMode = document.getElementById('assign-existing-mode');
+    const bulkSelectToggle = document.getElementById('bulk-zone-select-toggle');
 
     if (isDesktop()) {
         if (isAuthenticated && authenticatedUser) {
@@ -979,6 +1238,7 @@ function updateAuthUi() {
             editSwitch.classList.remove('hidden');
             assignButton.classList.remove('hidden');
             assignExistingToggle.classList.remove('hidden');
+            if (bulkSelectToggle) bulkSelectToggle.classList.remove('hidden');
         } else {
             loginBtn.classList.remove('hidden');
             logoutBtn.classList.add('hidden');
@@ -987,8 +1247,10 @@ function updateAuthUi() {
             editSwitch.classList.add('hidden');
             assignButton.classList.add('hidden');
             assignExistingToggle.classList.add('hidden');
+            if (bulkSelectToggle) bulkSelectToggle.classList.add('hidden');
             document.getElementById('edit-mode').checked = false;
             if (assignExistingMode) assignExistingMode.checked = false;
+            setBulkSelectMode(false);
             closeForm();
             closeAssignForm();
             closeAssignDiagramForm();
@@ -1004,8 +1266,10 @@ function updateAuthUi() {
     editSwitch.classList.add('hidden');
     assignButton.classList.add('hidden');
     assignExistingToggle.classList.add('hidden');
+    if (bulkSelectToggle) bulkSelectToggle.classList.add('hidden');
     document.getElementById('edit-mode').checked = false;
     if (assignExistingMode) assignExistingMode.checked = false;
+    setBulkSelectMode(false);
     closeAssignDiagramForm();
 }
 
@@ -1290,12 +1554,16 @@ async function applyViewMode(mode, skipPersist = false) {
     }
     updateStatsFilterUi();
     updateResponsiveControls();
+    if (mapMode !== 'diagram' && bulkSelectModeEnabled) {
+        setBulkSelectMode(false);
+    }
 
     if (modeChanged) {
         ensureMapForMode();
         attachMapEvents();
         markers = {};
         currentOverlay = null;
+        syncBulkSelectUi();
     }
 
     if (mapMode === 'diagram') {
@@ -1540,6 +1808,8 @@ function renderMarkers(zone) {
         });
         markers[p.id] = marker;
     });
+
+    applyBulkSelectionHighlight();
 }
 
 function matchesCurrentFilter(pozo) {
@@ -1681,6 +1951,9 @@ function createMarker(p, markerCoords, mapRenderConfig = null) {
             // Mapear servicios a colores y números
             const servicioConfig = {
                 'Ranger-357': { color: '#000000', numero: 7, borde: '#ffcc00', numeroColor: '#ffcc00' },
+                'Ranger-356': { color: '#1a3a5c', numero: 6, borde: '#3498db', numeroColor: '#ffffff' },
+                'Ranger-553': { color: '#5c3a1a', numero: 3, borde: '#e67e22', numeroColor: '#ffffff' },
+                'Ranger-554': { color: '#3a1a5c', numero: 4, borde: '#9b59b6', numeroColor: '#ffffff' },
                 'RIG-351': { color: '#e53935', numero: 1, borde: '#000000', numeroColor: '#ffffff' },
                 'RIG-352': { color: '#3388ff', numero: 2, borde: '#000000', numeroColor: '#ffffff' },
                 'RIG-RANGER-555': { color: '#00BD3E', numero: null, borde: '#000000', numeroColor: '#ffffff' },
@@ -1798,6 +2071,7 @@ function popupContent(p) {
 
 function onMapClick(e) {
     if (mapMode !== 'diagram') return;
+    if (bulkSelectModeEnabled) return;
     const assignMode = document.getElementById('assign-existing-mode');
     if (assignMode && assignMode.checked) {
         if (!requireCrudAuth()) {
@@ -2343,6 +2617,7 @@ function updateStats() {
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
     updateFloatingLegendCounts(counts);
+    updateZoneSummaries();
 }
 
 function updateFloatingLegendCounts(counts) {
@@ -2370,6 +2645,186 @@ function updateFloatingLegendCounts(counts) {
         const item = document.querySelector(`[data-legend-category="${category}"] .legend-count`);
         if (item) item.textContent = `(${value})`;
     });
+}
+
+function getZoneSummaryKey(rawZone) {
+    if (!rawZone) return null;
+    const normalized = normalizeText(rawZone).replace(/[\s\-]+/g, ' ').trim();
+    for (const def of ZONE_SUMMARY_DEFINITIONS) {
+        if (def.variants.includes(normalized)) return def.key;
+    }
+    return null;
+}
+
+function getActiveZoneSummary() {
+    const result = {};
+    ZONE_ORDER.forEach(zone => {
+        result[zone] = {
+            count: 0,
+            ids: []
+        };
+    });
+
+    pozoData.forEach(p => {
+        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
+        if (normalizedEstado !== STATUS.ACTIVO) return;
+        const zoneKey = getZoneSummaryKey(p.zona);
+        if (!zoneKey) return;
+        result[zoneKey].count += 1;
+        result[zoneKey].ids.push(p.id);
+    });
+
+    return result;
+}
+
+function renderZoneDetailList(zone, ids) {
+    const list = document.getElementById(`zone-list-${zone}`);
+    if (!list) return;
+
+    if (!ids.length) {
+        list.innerHTML = `
+            <div class="zone-detail-panel-header">
+                <span>${ZONE_LABELS[zone]} — 0 pozos</span>
+                <div class="zone-detail-controls">
+                    <button type="button" class="zone-detail-minimize" data-zone="${zone}">−</button>
+                    <button type="button" class="zone-detail-close" data-zone="${zone}">×</button>
+                </div>
+            </div>
+            <div class="zone-detail-scroll">
+                <div class="zone-detail-empty">Sin pozos activos</div>
+            </div>
+        `;
+        return;
+    }
+
+    const items = ids.map(id => `
+        <button type="button" class="zone-detail-item" data-zone="${zone}" data-pozo="${id}">
+            ${id}
+        </button>
+    `);
+
+    list.innerHTML = `
+        <div class="zone-detail-panel-header">
+            <span>${ZONE_LABELS[zone]} — ${ids.length} pozos</span>
+            <div class="zone-detail-controls">
+                <button type="button" class="zone-detail-minimize" data-zone="${zone}">−</button>
+                <button type="button" class="zone-detail-close" data-zone="${zone}">×</button>
+            </div>
+        </div>
+        <div class="zone-detail-scroll">
+            ${items.join('')}
+        </div>
+    `;
+}
+
+function updateZoneSummaries() {
+    const summary = getActiveZoneSummary();
+    ZONE_ORDER.forEach(zone => {
+        const countEl = document.getElementById(`zone-count-${zone}`);
+        const mobileCountEl = document.getElementById(`mobile-zone-count-${zone}`);
+        const zoneData = summary[zone];
+        const countText = zoneData ? zoneData.count : 0;
+        if (countEl) countEl.textContent = countText;
+        if (mobileCountEl) mobileCountEl.textContent = `(${countText})`;
+        renderZoneDetailList(zone, zoneData ? zoneData.ids : []);
+    });
+}
+
+function closeAllZoneDetailPanels() {
+    document.querySelectorAll('.zone-detail-list').forEach(list => list.classList.add('hidden'));
+    document.querySelectorAll('.zone-summary-item').forEach(btn => btn.classList.remove('is-expanded'));
+}
+
+function openZoneDetailPanel(zone) {
+    closeAllZoneDetailPanels();
+    const target = document.getElementById(`zone-list-${zone}`);
+    const button = document.querySelector(`.zone-summary-item[data-zone="${zone}"]`);
+    if (!target) return;
+    target.classList.remove('hidden');
+    if (button) button.classList.add('is-expanded');
+}
+
+function toggleZoneDetailList(e) {
+    const btn = e.currentTarget;
+    const zone = btn.dataset.zone;
+    if (!zone) return;
+    const target = document.getElementById(`zone-list-${zone}`);
+    if (!target) return;
+
+    if (target.classList.contains('hidden')) {
+        openZoneDetailPanel(zone);
+    } else {
+        target.classList.add('hidden');
+        btn.classList.remove('is-expanded');
+    }
+}
+
+function attachZoneSummaryEvents() {
+    document.querySelectorAll('.zone-summary-item').forEach(btn => {
+        btn.addEventListener('click', toggleZoneDetailList);
+    });
+
+    document.addEventListener('click', event => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        if (target.matches('.zone-detail-close')) {
+            const zone = target.dataset.zone;
+            if (!zone) return;
+            const panel = document.getElementById(`zone-list-${zone}`);
+            if (panel) panel.classList.add('hidden');
+            const button = document.querySelector(`.zone-summary-item[data-zone="${zone}"]`);
+            if (button) button.classList.remove('is-expanded');
+            return;
+        }
+
+        if (target.matches('.zone-detail-minimize')) {
+            const zone = target.dataset.zone;
+            if (!zone) return;
+            const panel = document.getElementById(`zone-list-${zone}`);
+            if (panel) panel.classList.toggle('minimized');
+            return;
+        }
+
+        if (target.matches('.zone-detail-item')) {
+            const pozoId = target.dataset.pozo;
+            if (pozoId) {
+                flyToPozo(pozoId);
+            }
+        }
+    });
+}
+
+function flyToPozo(pozoId) {
+    const pozo = pozoData.find(p => p.id === pozoId || p.id.toString() === pozoId.toString());
+    if (!pozo || !map) return;
+
+    let coords;
+    if (mapMode === 'diagram') {
+        coords = getDiagramCoords(pozo);
+        if (!coords) {
+            // Si no hay coords diagrama, cambiar a mapa y usar coords mapa
+            setMapMode('map');
+            coords = getMapaCoords(pozo);
+        }
+    } else {
+        coords = getMapaCoords(pozo);
+    }
+
+    if (!coords) return;
+
+    map.flyTo(coords, map.getZoom(), {
+        duration: 1.0
+    });
+
+    // Mostrar la ficha del pozo
+    if (markers[pozoId] && markers[pozoId].openPopup) {
+        markers[pozoId].openPopup();
+    }
+
+    if (typeof highlightPozoMarker === 'function') {
+        highlightPozoMarker(pozoId);
+    }
 }
 
 function updateStatsFilterUi() {
@@ -2588,8 +3043,19 @@ function attachControls() {
     document.getElementById('edit-mode').addEventListener('change', (e) => {
         if (e.target.checked && !requireCrudAuth()) {
             e.target.checked = false;
+            return;
+        }
+        if (e.target.checked) {
+            setBulkSelectMode(false);
         }
     });
+
+    const bulkSelectToggle = document.getElementById('bulk-zone-select-toggle');
+    if (bulkSelectToggle) {
+        bulkSelectToggle.addEventListener('click', () => {
+            setBulkSelectMode(!bulkSelectModeEnabled);
+        });
+    }
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
@@ -2604,6 +3070,7 @@ function attachControls() {
                     return;
                 }
                 document.getElementById('edit-mode').checked = false;
+                setBulkSelectMode(false);
             }
             if (!e.target.checked) {
                 closeAssignDiagramForm();
@@ -2612,6 +3079,8 @@ function attachControls() {
     }
     document.getElementById('assign-diagram-form').addEventListener('submit', submitAssignDiagramForm);
     document.getElementById('assign-diagram-cancel').addEventListener('click', closeAssignDiagramForm);
+    document.getElementById('bulk-zone-form').addEventListener('submit', submitBulkZoneForm);
+    document.getElementById('bulk-zone-cancel').addEventListener('click', closeBulkZoneForm);
     document.getElementById('form-reassign-diagram').addEventListener('click', startDiagramReassignFromEdit);
     document.getElementById('form-unassign-diagram').addEventListener('click', unassignPozoFromDiagramFromEdit);
     document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
@@ -2627,6 +3096,7 @@ function attachControls() {
     document.getElementById('logout-btn').addEventListener('click', logout);
     document.getElementById('login-form').addEventListener('submit', submitLogin);
     document.getElementById('login-cancel').addEventListener('click', closeLoginForm);
+    document.getElementById('export-json-btn').addEventListener('click', exportCurrentPozos);
 
     // Botón flotante de búsqueda para móvil
     document.getElementById('floating-search-btn').addEventListener('click', () => {
@@ -2714,8 +3184,36 @@ function attachControls() {
         });
     });
 
+    attachZoneSummaryEvents();
     updateStatsFilterUi();
     updateResponsiveControls();
+    syncBulkSelectUi();
+}
+
+function exportCurrentPozos() {
+    const exportData = {
+        exportedAt: new Date().toISOString(),
+        projectId: 'mapa-trillas-bare',
+        data: {
+            pozos: pozoData,
+            mapa: {
+                mode: mapMode,
+                bounds: map ? map.getBounds() : null
+            }
+        }
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pozos-backup-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 // para depuración
