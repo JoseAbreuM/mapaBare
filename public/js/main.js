@@ -1456,11 +1456,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=21',
+            '/css/styles.css?v=24',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=28',
+            '/js/main.js?v=31',
             '/js/sw-register.js?v=4',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -3190,7 +3190,50 @@ function attachControls() {
     syncBulkSelectUi();
 }
 
-function exportCurrentPozos() {
+async function exportCurrentPozos() {
+    const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    if (navigator.onLine) {
+        const functionUrl = 'https://us-central1-mapa-trillas-bare.cloudfunctions.net/exportFirestoreJson';
+        try {
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+
+            if (!response.ok) {
+                throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+            }
+
+            const filenameHeader = response.headers.get('Content-Disposition');
+            let filename = `firestore-full-backup-${Date.now()}.json`;
+            if (filenameHeader) {
+                const match = /filename="?([^";]+)"?/.exec(filenameHeader);
+                if (match && match[1]) {
+                    filename = match[1];
+                }
+            }
+
+            const blob = await response.blob();
+            downloadBlob(blob, filename);
+            return;
+        } catch (error) {
+            console.warn('No se pudo exportar desde Firestore completo:', error);
+        }
+    }
+
     const exportData = {
         exportedAt: new Date().toISOString(),
         projectId: 'mapa-trillas-bare',
@@ -3205,15 +3248,7 @@ function exportCurrentPozos() {
 
     const json = JSON.stringify(exportData, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pozos-backup-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `pozos-backup-${Date.now()}.json`);
 }
 
 // para depuración

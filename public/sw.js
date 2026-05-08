@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v30';
+const CACHE_NAME = 'pozos-cache-v31';
 const BARE_TILE_BOUNDS = {
     minLat: 8.5,
     maxLat: 8.7,
@@ -36,13 +36,13 @@ function tileIntersectsBareBounds(url) {
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
-    '/css/styles.css?v=23',
+    '/css/styles.css?v=24',
     '/css/leaflet.css',
     // incluimos las rutas con query string para que coincidan exactamente
     '/js/leaflet.js?v=3',
     '/js/localforage.min.js?v=3',
     '/js/lucide.min.js?v=3',
-        '/js/main.js?v=30',
+    '/js/main.js?v=31',
     '/js/sw-register.js?v=4',
     '/js/firebase-init.js?v=3',
     '/js/pozos-data.js?v=1',
