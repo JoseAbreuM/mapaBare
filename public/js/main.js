@@ -99,6 +99,8 @@ let serviceRoutes = [];
 let routeLayers = {};
 let routeDrawingMode = false;
 let currentRouteDraft = null;
+let routeDrawingDragStart = null;
+let routeDrawingDragged = false;
 let selectedRouteService = null;
 let selectedRouteId = null;
 
@@ -548,7 +550,9 @@ function closeRoutesPanel() {
     const mobilePanel = document.getElementById('mobile-routes-panel');
     if (desktopPanel) desktopPanel.classList.add('hidden');
     if (mobilePanel) mobilePanel.classList.add('hidden');
-    cancelRouteDraft();
+    if (!routeDrawingMode || !currentRouteDraft) {
+        cancelRouteDraft();
+    }
     hideModalBackdrop();
 }
 
@@ -1144,6 +1148,10 @@ function setBulkSelectMode(enabled) {
 }
 
 function onMapMouseDown(e) {
+    if (routeDrawingMode && e && e.latlng) {
+        routeDrawingDragStart = e.latlng;
+        routeDrawingDragged = false;
+    }
     if (!bulkSelectModeEnabled || mapMode !== 'diagram') return;
     if (!e || !e.latlng) return;
     if (e.originalEvent && e.originalEvent.button !== 0) return;
@@ -1170,12 +1178,23 @@ function onMapMouseDown(e) {
 }
 
 function onMapMouseMove(e) {
+    if (routeDrawingMode && routeDrawingDragStart && e && e.latlng) {
+        const deltaLat = Math.abs(routeDrawingDragStart.lat - e.latlng.lat);
+        const deltaLng = Math.abs(routeDrawingDragStart.lng - e.latlng.lng);
+        if (deltaLat > 0.001 || deltaLng > 0.001) {
+            routeDrawingDragged = true;
+        }
+    }
     if (!bulkSelectModeEnabled || mapMode !== 'diagram') return;
     if (!bulkSelectionDragStart || !bulkSelectionRect || !e || !e.latlng) return;
     bulkSelectionRect.setBounds(L.latLngBounds(bulkSelectionDragStart, e.latlng));
 }
 
 function onMapMouseUp(e) {
+    if (routeDrawingMode) {
+        routeDrawingDragStart = null;
+        return;
+    }
     if (!bulkSelectionDragStart) return;
 
     const start = bulkSelectionDragStart;
@@ -1902,8 +1921,11 @@ function closeAnyMobileModal() {
     safeHide('mobile-routes-panel');
     safeHide('routes-panel');
     safeHide('mobile-assign-service-panel');
-    cancelRouteDraft();
-    hideModalBackdrop();
+    if (!routeDrawingMode || !currentRouteDraft) {
+        cancelRouteDraft();
+    } else {
+        hideModalBackdrop();
+    }
 }
 
 function openLoginForm() {
@@ -2699,6 +2721,10 @@ function onMapClick(e) {
     if (mapMode !== 'diagram') return;
     if (bulkSelectModeEnabled) return;
     if (routeDrawingMode) {
+        if (routeDrawingDragged) {
+            routeDrawingDragged = false;
+            return;
+        }
         if (e && e.latlng) {
             addPointToRouteDraft(e.latlng);
         }
@@ -2913,6 +2939,21 @@ async function submitMobileAssignService(e) {
         return;
     }
 
+    const assignmentValidation = validatePozoForServiceAssignment(pozo);
+    if (!assignmentValidation.isValid) {
+        alert(assignmentValidation.message);
+        return;
+    }
+
+    const previousPozo = pozoData.find(p => p.taladro === service && p.id !== pozo.id);
+    if (previousPozo) {
+        pendingServiceAssignment = { pozoId: pozo.id, taladro: service, previousPozoId: previousPozo.id };
+        closeMobileAssignService();
+        openServiceVerification(previousPozo.id);
+        showModalBackdrop();
+        return;
+    }
+
     pozo.taladro = service;
     pozo.estado = STATUS.EN_SERVICIO;
     pozo.causaDiferido = null;
@@ -2939,22 +2980,10 @@ async function unassignMobileService() {
         return;
     }
 
-    if (!confirm(`¿Desasignar el servicio ${pozo.taladro} del pozo ${pozo.id}?`)) {
-        return;
-    }
-
-    pozo.taladro = null;
-    const nextEstadoSelect = document.getElementById('mobile-assign-next-status');
-    const nextEstado = nextEstadoSelect ? nextEstadoSelect.value : STATUS.ACTIVO;
-    pozo.estado = normalizeEstado(nextEstado);
-    if (pozo.estado !== STATUS.DIFERIDO) {
-        pozo.causaDiferido = null;
-    }
-    Object.assign(pozo, normalizePozo(pozo));
-
-    await persistPozosAndRefresh();
+    pendingServiceAssignment = { mode: 'manual-unassign', previousPozoId: pozo.id };
     closeMobileAssignService();
-    alert(`Servicio desasignado del pozo ${pozo.id}.`);
+    openServiceVerification(pozo.id);
+    showModalBackdrop();
 }
 
 window.openMobileAssignService = openMobileAssignService;
@@ -3022,6 +3051,7 @@ function closeServiceVerification() {
     document.getElementById('service-verification-container').classList.add('hidden');
     document.getElementById('service-verification-form').reset();
     document.getElementById('verification-cause-wrapper').classList.add('hidden');
+    hideModalBackdrop();
 }
 
 async function submitServiceVerification(e) {
