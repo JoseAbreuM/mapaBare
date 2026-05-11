@@ -60,8 +60,8 @@ let bulkSelectionDragStart = null;
 let bulkSelectionRect = null;
 let bulkSelectionPozoIds = [];
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.22';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v34';
+const APP_VERSION = 'v1.23';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v35';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -82,6 +82,7 @@ const MAP_ROUTE_STYLES = {
 };
 
 const SERVICE_ROUTES_KEY = 'serviceRoutes';
+const SERVICE_ROUTES_DIRTY_KEY = 'serviceRoutesDirty';
 const SERVICE_ROUTE_SERVICES = [
     'Ranger-357',
     'Ranger-356',
@@ -102,7 +103,133 @@ let currentRouteDraft = null;
 let routeDrawingDragStart = null;
 let routeDrawingDragged = false;
 let selectedRouteService = null;
-let selectedRouteId = null;
+let serviceRoutesUnsubscribe = null;
+
+function getServiceRoutesDocRef() {
+  return window.db.collection('serviceRoutes').doc('data');
+}
+
+function normalizeServiceRoute(route) {
+  return {
+    id: route.id || `route-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    servicio: route.servicio || '',
+    nombre: route.nombre || 'Ruta sin nombre',
+    diagrama: route.diagrama || getSelectedDiagram(),
+    points: Array.isArray(route.points) ? route.points : [],
+    color: route.color || getServiceRouteColor(route.servicio),
+    weight: Number(route.weight) || 4,
+    visible: route.visible !== false,
+    createdAt: route.createdAt || new Date().toISOString(),
+    updatedAt: route.updatedAt || new Date().toISOString()
+  };
+}
+
+function normalizeServiceRoutes(routes) {
+  return Array.isArray(routes) ? routes.map(normalizeServiceRoute) : [];
+}
+
+async function markServiceRoutesDirty() {
+  await localforage.setItem(SERVICE_ROUTES_DIRTY_KEY, true);
+}
+
+async function clearServiceRoutesDirty() {
+  await localforage.setItem(SERVICE_ROUTES_DIRTY_KEY, false);
+}
+
+function mergeServiceRoutes(localRoutes, remoteRoutes) {
+  const byId = new Map();
+
+  normalizeServiceRoutes(remoteRoutes).forEach(route => {
+    byId.set(route.id, route);
+  });
+
+  normalizeServiceRoutes(localRoutes).forEach(route => {
+    const existing = byId.get(route.id);
+
+    if (!existing) {
+      byId.set(route.id, route);
+      return;
+    }
+
+    const localTime = new Date(route.updatedAt || route.createdAt || 0).getTime();
+    const remoteTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+
+    byId.set(route.id, localTime >= remoteTime ? route : existing);
+  });
+
+  return Array.from(byId.values());
+}
+
+async function syncServiceRoutes() {
+  if (!navigator.onLine || !isDbReady()) return;
+
+  const docRef = getServiceRoutesDocRef();
+
+  const localRoutes = normalizeServiceRoutes(await localforage.getItem(SERVICE_ROUTES_KEY));
+  const isDirty = await localforage.getItem(SERVICE_ROUTES_DIRTY_KEY);
+
+  if (isDirty && localRoutes.length) {
+    await docRef.set({
+      routes: localRoutes,
+      updatedAt: new Date().toISOString()
+    });
+    await clearServiceRoutesDirty();
+  }
+
+  const snap = await docRef.get();
+
+  if (snap.exists) {
+    const remoteData = snap.data() || {};
+    const remoteRoutes = normalizeServiceRoutes(remoteData.routes || []);
+    const mergedRoutes = mergeServiceRoutes(localRoutes, remoteRoutes);
+
+    serviceRoutes = mergedRoutes;
+
+    await localforage.setItem(SERVICE_ROUTES_KEY, serviceRoutes);
+
+    const mergedChangedRemote =
+      JSON.stringify(mergedRoutes) !== JSON.stringify(remoteRoutes);
+
+    if (mergedChangedRemote && navigator.onLine && isDbReady()) {
+      await docRef.set({
+        routes: mergedRoutes,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  } else {
+    serviceRoutes = localRoutes;
+
+    if (serviceRoutes.length) {
+      await docRef.set({
+        routes: serviceRoutes,
+        updatedAt: new Date().toISOString()
+      });
+      await clearServiceRoutesDirty();
+    }
+  }
+}
+
+function setupServiceRoutesRealtimeListener() {
+  if (!isDbReady() || serviceRoutesUnsubscribe) return;
+
+  serviceRoutesUnsubscribe = getServiceRoutesDocRef().onSnapshot(async (snap) => {
+    if (!snap.exists) return;
+
+    const remoteRoutes = normalizeServiceRoutes((snap.data() || {}).routes || []);
+    const localRoutes = normalizeServiceRoutes(await localforage.getItem(SERVICE_ROUTES_KEY));
+
+    const merged = mergeServiceRoutes(localRoutes, remoteRoutes);
+
+    serviceRoutes = merged;
+
+    await localforage.setItem(SERVICE_ROUTES_KEY, merged);
+
+    renderServiceRoutes();
+    renderRoutesList();
+  }, error => {
+    console.warn('Listener de rutas de servicio falló:', error);
+  });
+}
 
 const MAP_STATION_DEFINITIONS = [
     {
@@ -502,13 +629,36 @@ async function submitMobilePozoEdit(e) {
 }
 
 async function loadServiceRoutes() {
-    const saved = await localforage.getItem(SERVICE_ROUTES_KEY);
-    serviceRoutes = Array.isArray(saved) ? saved : [];
-    return serviceRoutes;
+  const localRoutes = normalizeServiceRoutes(await localforage.getItem(SERVICE_ROUTES_KEY));
+  serviceRoutes = localRoutes;
+
+  if (navigator.onLine && isDbReady()) {
+    try {
+      await syncServiceRoutes();
+    } catch (error) {
+      console.warn('No se pudieron sincronizar rutas de servicio:', error);
+    }
+  }
+
+  renderServiceRoutes();
+  renderRoutesList();
+
+  return serviceRoutes;
 }
 
 async function persistServiceRoutes() {
-    await localforage.setItem(SERVICE_ROUTES_KEY, serviceRoutes);
+  serviceRoutes = normalizeServiceRoutes(serviceRoutes);
+
+  await localforage.setItem(SERVICE_ROUTES_KEY, serviceRoutes);
+  await markServiceRoutesDirty();
+
+  if (navigator.onLine && isDbReady()) {
+    try {
+      await syncServiceRoutes();
+    } catch (error) {
+      console.warn('No se pudieron subir rutas de servicio:', error);
+    }
+  }
 }
 
 function getServiceRouteColor(servicio) {
@@ -1272,6 +1422,7 @@ function updateResponsiveControls() {
         const shouldShow = mobile && showingDiagram && isAuthenticated;
         mobileHeaderRoutesBtn.classList.toggle('hidden', !shouldShow);
     }
+    updateMobileHeaderActionButtons();
 }
 
 function getRouteStyle(filePath) {
@@ -1876,6 +2027,27 @@ function updateAuthUi() {
             if (mobileHeaderRoutesBtn) mobileHeaderRoutesBtn.classList.add('hidden');
         }
     }
+    updateMobileHeaderActionButtons();
+}
+
+function updateMobileHeaderActionButtons() {
+  const routesBtn = document.getElementById('mobile-header-routes-btn');
+  const serviceBtn = document.getElementById('mobile-header-service-btn');
+
+  const shouldShowMobileAuthActions =
+    !isDesktop() &&
+    isAuthenticated;
+
+  if (routesBtn) {
+    routesBtn.classList.toggle(
+      'hidden',
+      !(shouldShowMobileAuthActions && mapMode === 'diagram')
+    );
+  }
+
+  if (serviceBtn) {
+    serviceBtn.classList.toggle('hidden', !shouldShowMobileAuthActions);
+  }
 }
 
 async function initAuth() {
@@ -2034,6 +2206,9 @@ async function init() {
     }
 
     await setupMap();
+    if (navigator.onLine && isDbReady()) {
+      setupServiceRoutesRealtimeListener();
+    }
     await loadServiceRoutes();
     const savedMode = await localforage.getItem(MAP_MODE_KEY);
     if (savedMode === 'mapa') {
@@ -2076,7 +2251,11 @@ async function init() {
     }
 
     // Listeners para online/offline
-    window.addEventListener('online', syncData);
+    window.addEventListener('online', async () => {
+      await syncData();
+      await syncServiceRoutes();
+      await loadServiceRoutes();
+    });
     window.addEventListener('resize', () => {
         updateAuthUi();
         updateResponsiveControls();
@@ -2093,11 +2272,11 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=27',
+            '/css/styles.css?v=28',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=34',
+            '/js/main.js?v=35',
             '/js/sw-register.js?v=5',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
@@ -2894,6 +3073,33 @@ function closeAssignForm() {
     if (assignForm) assignForm.reset();
 }
 
+function openMobileAssignServiceGeneral() {
+  if (!requireAuthForCapability('editPozos')) return;
+
+  const panel = document.getElementById('mobile-assign-service-panel');
+  if (!panel) return;
+
+  const idInput = document.getElementById('mobile-assign-pozo-id');
+  const pozoInput = document.getElementById('mobile-assign-pozo-input');
+  const pozoInputWrapper = document.getElementById('mobile-assign-pozo-input-wrapper');
+  const pozoLabel = document.getElementById('mobile-assign-pozo-label');
+  const currentServiceLabel = document.getElementById('mobile-current-service-label');
+
+  if (idInput) idInput.value = '';
+  if (pozoInput) pozoInput.value = '';
+  if (pozoInputWrapper) pozoInputWrapper.classList.remove('hidden');
+  if (pozoLabel) pozoLabel.textContent = 'Seleccione un pozo';
+  if (currentServiceLabel) currentServiceLabel.textContent = '';
+
+  const serviceSelect = document.getElementById('mobile-assign-service-select');
+  if (serviceSelect) serviceSelect.value = '';
+
+  panel.classList.remove('hidden');
+  showModalBackdrop();
+
+  if (pozoInput) pozoInput.focus();
+}
+
 function openMobileAssignService(pozoId) {
     if (!requireAuthForCapability('editPozos')) return;
     const pozo = pozoData.find(p => p.id === pozoId);
@@ -2904,6 +3110,9 @@ function openMobileAssignService(pozoId) {
 
     const panel = document.getElementById('mobile-assign-service-panel');
     if (!panel) return;
+
+    const pozoInputWrapper = document.getElementById('mobile-assign-pozo-input-wrapper');
+    if (pozoInputWrapper) pozoInputWrapper.classList.add('hidden');
 
     document.getElementById('mobile-assign-pozo-id').value = pozo.id;
     document.getElementById('mobile-assign-pozo-label').textContent = `Pozo: ${pozo.id}`;
@@ -2925,9 +3134,17 @@ async function submitMobileAssignService(e) {
     e.preventDefault();
     if (!requireAuthForCapability('editPozos')) return;
 
-    const pozoId = document.getElementById('mobile-assign-pozo-id').value;
+    const hiddenPozoId = (document.getElementById('mobile-assign-pozo-id')?.value || '').trim();
+    const typedPozoId = (document.getElementById('mobile-assign-pozo-input')?.value || '').trim();
     const service = document.getElementById('mobile-assign-service-select').value;
-    const pozo = pozoData.find(p => p.id === pozoId);
+
+    const pozo =
+      hiddenPozoId
+        ? pozoData.find(p => p.id === hiddenPozoId)
+        : (
+            resolvePozoFromInput(typedPozoId, getSelectedDiagram()) ||
+            resolvePozoFromInput(typedPozoId)
+          );
 
     if (!pozo) {
         alert('Pozo no encontrado.');
@@ -3866,6 +4083,15 @@ function attachControls() {
     const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
     if (mobileHeaderRoutesBtn) {
         mobileHeaderRoutesBtn.addEventListener('click', openRoutesPanel);
+    }
+
+    const mobileHeaderServiceBtn = document.getElementById('mobile-header-service-btn');
+    if (mobileHeaderServiceBtn) {
+        mobileHeaderServiceBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openMobileAssignServiceGeneral();
+        });
     }
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);

@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=27">
+    <link rel="stylesheet" href="css/styles.css?v=28">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <!-- Firebase -->
@@ -57,6 +57,7 @@
         <!-- Botón móvil de auth -->
         <div id="mobile-auth-btn" class="mobile-auth-btn hidden">
             <button id="mobile-header-routes-btn" type="button" class="mobile-header-action hidden">Rutas</button>
+            <button id="mobile-header-service-btn" type="button" class="mobile-header-action hidden">Servicio</button>
             <button id="mobile-login-btn" type="button" class="mobile-auth-trigger">Login</button>
             <div id="mobile-auth-menu" class="mobile-auth-menu hidden">
                 <span id="mobile-auth-user-label"></span>
@@ -448,6 +449,10 @@
         </div>
         <form id="mobile-assign-service-form" class="mobile-form-grid">
             <input type="hidden" id="mobile-assign-pozo-id">
+            <div id="mobile-assign-pozo-input-wrapper" class="mobile-form-field">
+                <label for="mobile-assign-pozo-input">Pozo</label>
+                <input id="mobile-assign-pozo-input" list="pozos-list" placeholder="Ej: 857">
+            </div>
             <div class="mobile-form-field">
                 <label for="mobile-assign-service-select">Servicio</label>
                 <select id="mobile-assign-service-select" required>
@@ -601,7 +606,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=34"></script>
+    <script src="js/main.js?v=35"></script>
     <script src="js/sw-register.js?v=5" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->

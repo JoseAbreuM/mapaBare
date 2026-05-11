@@ -2268,3 +2268,27 @@ body.modal-open {
     display: flex;
     align-items: center;
 }
+
+/* Acciones en header izquierdo móvil */
+@media (max-width: 768px) {
+  .mobile-header-left-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-header-action {
+    min-height: 30px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border, rgba(255,255,255,0.2));
+    background: var(--panel, rgba(15, 23, 42, 0.85));
+    color: var(--fg, #fff);
+  }
+
+  .mobile-header-action.hidden {
+    display: none;
+  }
+}
