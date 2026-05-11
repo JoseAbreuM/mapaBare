@@ -29,7 +29,7 @@
 
 #routes-panel {
     position: absolute;
-    z-index: 1100;
+    z-index: 3000;
     top: 72px;
     right: 16px;
     width: 320px;
@@ -1765,24 +1765,24 @@ main {
     bottom: 90px;
     right: 20px;
     z-index: 10001;
-    display: none; /* Mostrar solo cuando corresponda */
-}
-
-.mobile-floating-route-btn button {
-    width: 60px;
-    height: 60px;
+    display: inline-flex;
+    width: auto;
+    height: auto;
     border-radius: 50%;
     background: var(--accent);
     color: #fff;
     border: none;
-    font-size: 24px;
+    font-size: 14px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    padding: 14px 16px;
     transition: transform 0.2s;
+    align-items: center;
+    justify-content: center;
 }
 
-.mobile-floating-route-btn button:hover {
-    transform: scale(1.1);
+.mobile-floating-route-btn:hover {
+    transform: scale(1.05);
 }
 
 /* Panel responsive de recorridos */
@@ -1949,12 +1949,39 @@ main {
 }
 
 /* Estilos para formularios móviles compactos */
-.mobile-modal-backdrop {
+#mobile-modal-backdrop {
     position: fixed;
     inset: 0;
     z-index: 2500;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(2px);
+}
+
+#login-panel,
+#mobile-pozo-edit-sheet,
+#mobile-routes-panel,
+#routes-panel,
+#mobile-assign-service-panel {
+    z-index: 3000;
+}
+
+#login-panel {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    width: min(92vw, 380px);
+    max-height: 82vh;
+    overflow-y: auto;
+    border-radius: 18px;
+    background: rgba(23, 24, 28, 0.98);
+}
+
+@media (min-width: 769px) {
+    #login-panel {
+        width: min(420px, 90vw);
+    }
 }
 
 body.modal-open {
@@ -2131,6 +2158,49 @@ body.modal-open {
 
 #mobile-routes-panel .route-actions button:hover {
     background: #3a3a3a;
+}
+
+#mobile-assign-service-panel {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    width: min(92vw, 380px);
+    max-height: 82vh;
+    overflow-y: auto;
+    background: rgba(23, 24, 28, 0.98);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+    padding: 1rem;
+}
+
+#mobile-assign-service-panel .mobile-form-actions {
+    position: sticky;
+    bottom: 0;
+    background: rgba(23, 24, 28, 0.98);
+    padding-top: 8px;
+}
+
+#mobile-assign-service-panel .mobile-form-actions button {
+    min-height: 36px;
+    font-size: 13px;
+    padding: 6px 10px;
+    flex: 1;
+}
+
+.mobile-pozo-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.mobile-pozo-actions button {
+    min-height: 34px;
+    font-size: 12px;
+    padding: 6px 10px;
 }
 
 #mobile-routes-list {

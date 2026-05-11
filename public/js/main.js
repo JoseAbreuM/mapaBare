@@ -60,8 +60,8 @@ let bulkSelectionDragStart = null;
 let bulkSelectionRect = null;
 let bulkSelectionPozoIds = [];
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.20';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v32';
+const APP_VERSION = 'v1.21';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v33';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -528,38 +528,93 @@ function getServiceRouteColor(servicio) {
 function openRoutesPanel() {
     if (!requireAuthForCapability('serviceRoutes')) return;
 
+    const desktopPanel = document.getElementById('routes-panel');
+    const mobilePanel = document.getElementById('mobile-routes-panel');
+
     if (isDesktop()) {
-        document.getElementById('routes-panel').classList.remove('hidden');
+        if (desktopPanel) desktopPanel.classList.remove('hidden');
+        if (mobilePanel) mobilePanel.classList.add('hidden');
     } else {
-        document.getElementById('mobile-routes-panel').classList.remove('hidden');
-        showModalBackdrop();
+        if (mobilePanel) mobilePanel.classList.remove('hidden');
+        if (desktopPanel) desktopPanel.classList.add('hidden');
     }
+
+    showModalBackdrop();
     renderRoutesList();
 }
 
 function closeRoutesPanel() {
-    document.getElementById('routes-panel').classList.add('hidden');
-    document.getElementById('mobile-routes-panel').classList.add('hidden');
+    const desktopPanel = document.getElementById('routes-panel');
+    const mobilePanel = document.getElementById('mobile-routes-panel');
+    if (desktopPanel) desktopPanel.classList.add('hidden');
+    if (mobilePanel) mobilePanel.classList.add('hidden');
     cancelRouteDraft();
     hideModalBackdrop();
 }
 
+function setRouteDrawingMode(enabled) {
+    routeDrawingMode = !!enabled;
+    const mapContainer = map && typeof map.getContainer === 'function' ? map.getContainer() : null;
+    if (mapContainer) {
+        mapContainer.classList.toggle('route-drawing-active', routeDrawingMode);
+    }
+    const routeModeBtn = document.getElementById('route-mode-btn');
+    if (routeModeBtn) {
+        routeModeBtn.classList.toggle('active', routeDrawingMode);
+    }
+}
+
+function isElementVisible(el) {
+    return !!el && !el.classList.contains('hidden') && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+}
+
+function getActiveRouteServiceSelect() {
+    const mobileSelect = document.getElementById('mobile-route-service-select');
+    const desktopSelect = document.getElementById('route-service-select');
+
+    if (isMobile() && mobileSelect) return mobileSelect;
+    if (!isMobile() && desktopSelect) return desktopSelect;
+    if (isElementVisible(mobileSelect)) return mobileSelect;
+    if (isElementVisible(desktopSelect)) return desktopSelect;
+    return desktopSelect || mobileSelect;
+}
+
+function getActiveRouteNameInput() {
+    const mobileInput = document.getElementById('mobile-route-name-input');
+    const desktopInput = document.getElementById('route-name-input');
+
+    if (isMobile() && mobileInput) return mobileInput;
+    if (!isMobile() && desktopInput) return desktopInput;
+    if (isElementVisible(mobileInput)) return mobileInput;
+    if (isElementVisible(desktopInput)) return desktopInput;
+    return desktopInput || mobileInput;
+}
+
+function getActiveRouteColorInput() {
+    const mobileInput = document.getElementById('mobile-route-color-input');
+    const desktopInput = document.getElementById('route-color-input');
+
+    if (isMobile() && mobileInput) return mobileInput;
+    if (!isMobile() && desktopInput) return desktopInput;
+    if (isElementVisible(mobileInput)) return mobileInput;
+    if (isElementVisible(desktopInput)) return desktopInput;
+    return desktopInput || mobileInput;
+}
+
 function startNewServiceRouteDraft() {
-    const serviceSelect = document.getElementById('route-service-select') || document.getElementById('mobile-route-service-select');
+    const serviceSelect = getActiveRouteServiceSelect();
     const service = serviceSelect ? serviceSelect.value : '';
     if (!service) {
         alert('Seleccione un servicio antes de iniciar una nueva ruta.');
         return;
     }
 
-    if (!routeDrawingMode) {
-        setRouteDrawingMode(true);
-    }
+    setRouteDrawingMode(true);
 
-    const routeNameInput = document.getElementById('route-name-input') || document.getElementById('mobile-route-name-input');
+    const routeNameInput = getActiveRouteNameInput();
     const routeName = routeNameInput ? routeNameInput.value.trim() : '';
 
-    const routeColorInput = document.getElementById('route-color-input') || document.getElementById('mobile-route-color-input');
+    const routeColorInput = getActiveRouteColorInput();
     const routeColor = routeColorInput ? routeColorInput.value : getServiceRouteColor(service);
 
     if (currentRouteDraft && currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
@@ -652,13 +707,13 @@ function cancelRouteDraft() {
     }
     currentRouteDraft = null;
     routeDrawingMode = false;
-    const panel = document.getElementById('routes-panel');
-    const modeBtn = document.getElementById('route-mode-btn');
-    if (panel) panel.classList.add('hidden');
-    if (modeBtn) modeBtn.classList.remove('active');
     if (map && typeof map.getContainer === 'function') {
         map.getContainer().classList.remove('route-drawing-active');
     }
+    const helpText = document.getElementById('route-drawing-help');
+    if (helpText) helpText.classList.add('hidden');
+    const mobileHelpText = document.getElementById('mobile-route-drawing-help');
+    if (mobileHelpText) mobileHelpText.classList.add('hidden');
 }
 
 function renderServiceRoutes() {
@@ -694,7 +749,8 @@ function renderRoutesList() {
     const mobileListContainer = document.getElementById('mobile-routes-list');
 
     const selectedDiagram = getSelectedDiagram();
-    const serviceFilter = (document.getElementById('route-service-select')?.value || '') || (document.getElementById('mobile-route-service-select')?.value || '');
+    const activeServiceSelect = getActiveRouteServiceSelect();
+    const serviceFilter = activeServiceSelect ? activeServiceSelect.value : '';
     const filteredRoutes = serviceRoutes.filter(route => {
         if (route.diagrama !== selectedDiagram) return false;
         if (serviceFilter && route.servicio !== serviceFilter) return false;
@@ -1837,21 +1893,33 @@ function hideModalBackdrop() {
 }
 
 function closeAnyMobileModal() {
-    closeMobilePozoEdit();
-    closeRoutesPanel();
-    closeLoginForm();
+    const safeHide = (id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    };
+    safeHide('login-panel');
+    safeHide('mobile-pozo-edit-sheet');
+    safeHide('mobile-routes-panel');
+    safeHide('routes-panel');
+    safeHide('mobile-assign-service-panel');
+    cancelRouteDraft();
+    hideModalBackdrop();
 }
 
 function openLoginForm() {
     showLoginError('');
-    document.getElementById('login-form-container').classList.remove('hidden');
+    const loginPanel = document.getElementById('login-panel');
+    if (loginPanel) loginPanel.classList.remove('hidden');
     showModalBackdrop();
-    document.getElementById('login-username').focus();
+    const loginUsername = document.getElementById('login-username');
+    if (loginUsername) loginUsername.focus();
 }
 
 function closeLoginForm() {
-    document.getElementById('login-form-container').classList.add('hidden');
-    document.getElementById('login-form').reset();
+    const loginPanel = document.getElementById('login-panel');
+    if (loginPanel) loginPanel.classList.add('hidden');
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.reset();
     showLoginError('');
     hideModalBackdrop();
 }
@@ -2616,9 +2684,13 @@ function popupContent(p) {
     if (p.fechaUltimoServicio) content += `<br>Fecha de arranque: ${p.fechaUltimoServicio}`;
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
-    // Solo mostrar botones CRUD en desktop autenticado o móvil autenticado
-    if ((isDesktop() && isAuthenticated) || (!isDesktop() && isAuthenticated)) {
-        content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
+    // Solo mostrar botones CRUD cuando el usuario está autenticado
+    if (isAuthenticated) {
+        if (isDesktop()) {
+            content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
+        } else {
+            content += `<br><div class="mobile-pozo-actions"><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="openMobileAssignService('${p.id}')">Servicio</button></div>`;
+        }
     }
     return content;
 }
@@ -2792,8 +2864,100 @@ function openAssignForm() {
 
 function closeAssignForm() {
     document.getElementById('assign-form-container').classList.add('hidden');
-    document.getElementById('assign-taladro-form').reset();
+    const assignForm = document.getElementById('assign-taladro-form');
+    if (assignForm) assignForm.reset();
 }
+
+function openMobileAssignService(pozoId) {
+    if (!requireAuthForCapability('editPozos')) return;
+    const pozo = pozoData.find(p => p.id === pozoId);
+    if (!pozo) {
+        alert('Pozo no encontrado.');
+        return;
+    }
+
+    const panel = document.getElementById('mobile-assign-service-panel');
+    if (!panel) return;
+
+    document.getElementById('mobile-assign-pozo-id').value = pozo.id;
+    document.getElementById('mobile-assign-pozo-label').textContent = `Pozo: ${pozo.id}`;
+    document.getElementById('mobile-current-service-label').textContent = pozo.taladro ? `Servicio actual: ${pozo.taladro}` : 'Sin servicio asignado';
+    document.getElementById('mobile-assign-service-select').value = pozo.taladro || '';
+    document.getElementById('mobile-assign-next-status').value = pozo.estado || STATUS.ACTIVO;
+
+    panel.classList.remove('hidden');
+    showModalBackdrop();
+}
+
+function closeMobileAssignService() {
+    const panel = document.getElementById('mobile-assign-service-panel');
+    if (panel) panel.classList.add('hidden');
+    hideModalBackdrop();
+}
+
+async function submitMobileAssignService(e) {
+    e.preventDefault();
+    if (!requireAuthForCapability('editPozos')) return;
+
+    const pozoId = document.getElementById('mobile-assign-pozo-id').value;
+    const service = document.getElementById('mobile-assign-service-select').value;
+    const pozo = pozoData.find(p => p.id === pozoId);
+
+    if (!pozo) {
+        alert('Pozo no encontrado.');
+        return;
+    }
+
+    if (!service) {
+        alert('Seleccione un servicio.');
+        return;
+    }
+
+    pozo.taladro = service;
+    pozo.estado = STATUS.EN_SERVICIO;
+    pozo.causaDiferido = null;
+    Object.assign(pozo, normalizePozo(pozo));
+
+    await persistPozosAndRefresh();
+    closeMobileAssignService();
+    alert(`Servicio ${service} asignado al pozo ${pozo.id}.`);
+}
+
+async function unassignMobileService() {
+    if (!requireAuthForCapability('editPozos')) return;
+
+    const pozoId = document.getElementById('mobile-assign-pozo-id').value;
+    const pozo = pozoData.find(p => p.id === pozoId);
+
+    if (!pozo) {
+        alert('Pozo no encontrado.');
+        return;
+    }
+
+    if (!pozo.taladro) {
+        alert('Este pozo no tiene servicio asignado.');
+        return;
+    }
+
+    if (!confirm(`¿Desasignar el servicio ${pozo.taladro} del pozo ${pozo.id}?`)) {
+        return;
+    }
+
+    pozo.taladro = null;
+    const nextEstadoSelect = document.getElementById('mobile-assign-next-status');
+    const nextEstado = nextEstadoSelect ? nextEstadoSelect.value : STATUS.ACTIVO;
+    pozo.estado = normalizeEstado(nextEstado);
+    if (pozo.estado !== STATUS.DIFERIDO) {
+        pozo.causaDiferido = null;
+    }
+    Object.assign(pozo, normalizePozo(pozo));
+
+    await persistPozosAndRefresh();
+    closeMobileAssignService();
+    alert(`Servicio desasignado del pozo ${pozo.id}.`);
+}
+
+window.openMobileAssignService = openMobileAssignService;
 
 async function assignTaladro(e) {
     e.preventDefault();
@@ -3625,8 +3789,12 @@ function attachControls() {
 
     const routeModeBtn = document.getElementById('route-mode-btn');
     if (routeModeBtn) {
-        routeModeBtn.addEventListener('click', () => {
-            setRouteDrawingMode(!routeDrawingMode);
+        routeModeBtn.addEventListener('click', (event) => {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            openRoutesPanel();
         });
     }
 
@@ -3634,6 +3802,18 @@ function attachControls() {
     if (routeServiceSelect) {
         routeServiceSelect.addEventListener('change', () => {
             selectedRouteService = routeServiceSelect.value || null;
+            renderRoutesList();
+        });
+    }
+
+    const mobileRouteServiceSelect = document.getElementById('mobile-route-service-select');
+    if (mobileRouteServiceSelect) {
+        mobileRouteServiceSelect.addEventListener('change', () => {
+            selectedRouteService = mobileRouteServiceSelect.value || null;
+            const colorInput = getActiveRouteColorInput();
+            if (colorInput && selectedRouteService) {
+                colorInput.value = getServiceRouteColor(selectedRouteService);
+            }
             renderRoutesList();
         });
     }
@@ -3651,6 +3831,16 @@ function attachControls() {
     const routeCancelBtn = document.getElementById('route-cancel-btn');
     if (routeCancelBtn) {
         routeCancelBtn.addEventListener('click', cancelRouteDraft);
+    }
+
+    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
+    if (mobileHeaderRoutesBtn) {
+        mobileHeaderRoutesBtn.addEventListener('click', openRoutesPanel);
+    }
+
+    const mobileFloatingRoutesBtn = document.getElementById('mobile-routes-btn');
+    if (mobileFloatingRoutesBtn) {
+        mobileFloatingRoutesBtn.addEventListener('click', openRoutesPanel);
     }
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
@@ -3821,6 +4011,19 @@ function attachControls() {
         mobileRoutesClose.addEventListener('click', closeRoutesPanel);
     }
 
+    [
+        'login-panel',
+        'mobile-pozo-edit-sheet',
+        'mobile-routes-panel',
+        'routes-panel',
+        'mobile-assign-service-panel'
+    ].forEach((id) => {
+        const panel = document.getElementById(id);
+        if (panel) {
+            panel.addEventListener('click', event => event.stopPropagation());
+        }
+    });
+
     const modalBackdrop = document.getElementById('mobile-modal-backdrop');
     if (modalBackdrop) {
         modalBackdrop.addEventListener('click', closeAnyMobileModal);
@@ -3840,6 +4043,26 @@ function attachControls() {
     const mobileRouteCancelBtn = document.getElementById('mobile-route-cancel-btn');
     if (mobileRouteCancelBtn) {
         mobileRouteCancelBtn.addEventListener('click', cancelRouteDraft);
+    }
+
+    const mobileAssignServiceForm = document.getElementById('mobile-assign-service-form');
+    if (mobileAssignServiceForm) {
+        mobileAssignServiceForm.addEventListener('submit', submitMobileAssignService);
+    }
+
+    const mobileAssignServiceClose = document.getElementById('mobile-assign-service-close');
+    if (mobileAssignServiceClose) {
+        mobileAssignServiceClose.addEventListener('click', closeMobileAssignService);
+    }
+
+    const mobileAssignServiceCancel = document.getElementById('mobile-assign-service-cancel');
+    if (mobileAssignServiceCancel) {
+        mobileAssignServiceCancel.addEventListener('click', closeMobileAssignService);
+    }
+
+    const mobileUnassignServiceBtn = document.getElementById('mobile-unassign-service-btn');
+    if (mobileUnassignServiceBtn) {
+        mobileUnassignServiceBtn.addEventListener('click', unassignMobileService);
     }
 }
 

@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=25">
+    <link rel="stylesheet" href="css/styles.css?v=26">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <!-- Firebase -->
@@ -436,6 +436,52 @@
         </form>
     </div>
 
+    <!-- formulario móvil de asignación de servicios -->
+    <div id="mobile-assign-service-panel" class="mobile-bottom-sheet hidden">
+        <div class="mobile-sheet-header">
+            <div>
+                <h3>Asignar servicio</h3>
+                <p id="mobile-assign-pozo-label" class="mobile-sheet-subtitle"></p>
+                <p id="mobile-current-service-label" class="mobile-sheet-subtitle"></p>
+            </div>
+            <button id="mobile-assign-service-close" type="button">×</button>
+        </div>
+        <form id="mobile-assign-service-form" class="mobile-form-grid">
+            <input type="hidden" id="mobile-assign-pozo-id">
+            <div class="mobile-form-field">
+                <label for="mobile-assign-service-select">Servicio</label>
+                <select id="mobile-assign-service-select" required>
+                    <option value="">Seleccione servicio</option>
+                    <option value="Ranger-357">Ranger-357</option>
+                    <option value="Ranger-356">Ranger-356</option>
+                    <option value="Ranger-553">Ranger-553</option>
+                    <option value="Ranger-554">Ranger-554</option>
+                    <option value="RIG-351">RIG-351</option>
+                    <option value="RIG-352">RIG-352</option>
+                    <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+                    <option value="Ranger-151">Ranger-151</option>
+                    <option value="CT">CT</option>
+                    <option value="WT">WT</option>
+                </select>
+            </div>
+            <div class="mobile-form-field">
+                <label for="mobile-assign-next-status">Estado al desasignar</label>
+                <select id="mobile-assign-next-status">
+                    <option value="activo">Activo</option>
+                    <option value="inactivo-servicio">En espera de servicio</option>
+                    <option value="diagnostico">En diagnóstico</option>
+                    <option value="candidato">Candidato</option>
+                    <option value="diferido">Diferido</option>
+                </select>
+            </div>
+            <div class="mobile-form-actions">
+                <button type="submit" class="primary">Asignar</button>
+                <button id="mobile-unassign-service-btn" type="button" class="secondary">Desasignar</button>
+                <button id="mobile-assign-service-cancel" type="button" class="ghost">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
     <!-- formulario asignar pozo ya creado al diagrama (modo asignación por click) -->
     <div id="assign-diagram-form-container" class="form-container hidden">
         <form id="assign-diagram-form">
@@ -468,7 +514,7 @@
     </div>
 
     <!-- formulario login -->
-    <div id="login-form-container" class="form-container hidden">
+    <div id="login-panel" class="form-container hidden">
         <form id="login-form" autocomplete="on">
             <h3>Iniciar sesión</h3>
             <label>Usuario<br><input type="text" id="login-username" autocomplete="username" required></label>
@@ -555,7 +601,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=32"></script>
+    <script src="js/main.js?v=33"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
