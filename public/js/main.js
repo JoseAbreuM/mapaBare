@@ -60,8 +60,8 @@ let bulkSelectionDragStart = null;
 let bulkSelectionRect = null;
 let bulkSelectionPozoIds = [];
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.21';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v33';
+const APP_VERSION = 'v1.22';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v34';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -1250,7 +1250,7 @@ function updateResponsiveControls() {
     const floatingViewBtn = document.getElementById('floating-view-btn');
     const floatingZoneContainer = document.getElementById('floating-zone-container');
     const mobileMapFilters = document.getElementById('mobile-map-filters');
-    const mobileRoutesBtn = document.getElementById('mobile-routes-btn');
+    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
     if (!floatingViewBtn || !floatingZoneContainer || !mobileMapFilters) return;
 
     const mobile = !isDesktop();
@@ -1268,9 +1268,9 @@ function updateResponsiveControls() {
     mobileMapFilters.classList.toggle('hidden', !mobile || !showingMap);
 
     // Mostrar botón de recorridos solo en móvil, diagrama, con sesión
-    if (mobileRoutesBtn) {
+    if (mobileHeaderRoutesBtn) {
         const shouldShow = mobile && showingDiagram && isAuthenticated;
-        mobileRoutesBtn.classList.toggle('hidden', !shouldShow);
+        mobileHeaderRoutesBtn.classList.toggle('hidden', !shouldShow);
     }
 }
 
@@ -2093,12 +2093,12 @@ async function init() {
         if (!('caches' in window)) return;
         const resources = [
             '/index.html',
-            '/css/styles.css?v=24',
+            '/css/styles.css?v=27',
             '/css/leaflet.css',
             '/js/leaflet.js?v=3',
             '/js/localforage.min.js?v=3',
-            '/js/main.js?v=31',
-            '/js/sw-register.js?v=4',
+            '/js/main.js?v=34',
+            '/js/sw-register.js?v=5',
             '/js/firebase-init.js?v=3',
             '/js/pozos-data.js?v=1',
             '/manifest.json',
@@ -3866,11 +3866,6 @@ function attachControls() {
     const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
     if (mobileHeaderRoutesBtn) {
         mobileHeaderRoutesBtn.addEventListener('click', openRoutesPanel);
-    }
-
-    const mobileFloatingRoutesBtn = document.getElementById('mobile-routes-btn');
-    if (mobileFloatingRoutesBtn) {
-        mobileFloatingRoutesBtn.addEventListener('click', openRoutesPanel);
     }
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);

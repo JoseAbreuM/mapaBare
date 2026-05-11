@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v33';
+const CACHE_NAME = 'pozos-cache-v34';
 const BARE_TILE_BOUNDS = {
     minLat: 8.5,
     maxLat: 8.7,
@@ -36,14 +36,14 @@ function tileIntersectsBareBounds(url) {
 const FILES_TO_CACHE = [
     '/',
     '/index.html',
-    '/css/styles.css?v=26',
+    '/css/styles.css?v=27',
     '/css/leaflet.css',
     // incluimos las rutas con query string para que coincidan exactamente
     '/js/leaflet.js?v=3',
     '/js/localforage.min.js?v=3',
     '/js/lucide.min.js?v=3',
-    '/js/main.js?v=33',
-    '/js/sw-register.js?v=4',
+    '/js/main.js?v=34',
+    '/js/sw-register.js?v=5',
     '/js/firebase-init.js?v=3',
     '/js/pozos-data.js?v=1',
     '/manifest.json',
@@ -66,7 +66,7 @@ self.addEventListener('install', event => {
         caches.open(CACHE_NAME).then(async cache => {
             // No romper la instalación completa si un recurso falla.
             await Promise.allSettled(FILES_TO_CACHE.map(file => cache.add(file)));
-        })
+        }).then(() => self.skipWaiting())
     );
 });
 
