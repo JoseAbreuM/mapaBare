@@ -23,6 +23,126 @@
     display: none !important;
 }
 
+.route-drawing-active {
+    cursor: crosshair;
+}
+
+#routes-panel {
+    position: absolute;
+    z-index: 1100;
+    top: 72px;
+    right: 16px;
+    width: 320px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: rgba(16, 18, 24, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 16px 30px rgba(0,0,0,0.35);
+}
+
+#routes-panel h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+}
+
+#routes-panel label,
+#routes-panel input,
+#routes-panel select,
+#routes-panel button {
+    display: block;
+    width: 100%;
+}
+
+#routes-panel label {
+    margin-bottom: 0.35rem;
+    font-size: 0.88rem;
+    color: #d8d8d8;
+}
+
+#routes-panel select,
+#routes-panel input {
+    margin-bottom: 0.85rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    background: #111316;
+    color: #f5f7ff;
+}
+
+#routes-panel .route-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+}
+
+#routes-panel button {
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: #1f2430;
+    color: #f5f7ff;
+    cursor: pointer;
+}
+
+#routes-panel button:hover {
+    background: #2e3446;
+}
+
+#routes-panel hr {
+    border: 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin: 0.75rem 0;
+}
+
+.route-item {
+    margin-bottom: 0.85rem;
+    padding: 0.9rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.route-item label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    color: #d8d8d8;
+}
+
+.route-item input[type="color"] {
+    width: 50px;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.route-item .route-buttons button:last-child {
+    flex: 1 1 100%;
+}
+
+#routes-panel .no-routes {
+    color: #a5a5a5;
+    font-size: 0.9rem;
+    padding: 0.75rem 0 0;
+}
+
+body .map-container.route-drawing-active {
+    cursor: crosshair;
+}
+
+body .map-container.route-drawing-active * {
+    cursor: crosshair;
+}
+
+body .map-container.route-drawing-active .leaflet-container {
+    cursor: crosshair;
+}
+
 body {
     margin: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -1451,4 +1571,630 @@ main {
     stroke: #ffffff;
     stroke-width: 1.4;
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
+
+/* ==============================
+   AUTH / PERMISOS RESPONSIVE
+   ============================== */
+
+.mobile-auth-btn {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    display: none; /* Mostrar solo en móvil */
+}
+
+.mobile-auth-trigger {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.mobile-auth-trigger:hover {
+    background: var(--accent-strong);
+}
+
+.mobile-auth-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 120px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.mobile-auth-menu button {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--fg);
+    padding: 6px 8px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.mobile-auth-menu button:hover {
+    background: var(--panel);
+}
+
+/* Mostrar solo en móvil */
+@media (max-width: 768px) {
+    .mobile-auth-btn {
+        display: block;
+    }
+}
+
+/* ==============================
+   EDICIÓN MÓVIL DE POZOS
+   ============================== */
+
+.mobile-bottom-sheet {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: min(94vw, 420px);
+    max-width: 420px;
+    max-height: 82vh;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow-y: auto;
+    z-index: 3000;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-bottom-sheet:not(.hidden) {
+    transform: translate(-50%, -50%);
+}
+
+.mobile-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.mobile-sheet-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.mobile-sheet-header button {
+    background: none;
+    border: none;
+    color: var(--fg);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#mobile-pozo-edit-form {
+    padding: 1rem;
+}
+
+#mobile-pozo-edit-form label {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: 14px;
+    color: var(--fg);
+}
+
+#mobile-pozo-edit-form input,
+#mobile-pozo-edit-form select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 16px;
+    margin-top: 4px;
+}
+
+#mobile-pozo-edit-form input[readonly] {
+    background: var(--surface);
+    color: #888;
+}
+
+#mobile-pozo-edit-form .checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+}
+
+#mobile-pozo-edit-form .checkbox-inline input {
+    width: auto;
+}
+
+#mobile-pozo-edit-form .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 1.5rem;
+}
+
+#mobile-pozo-edit-form .form-actions button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#mobile-pozo-edit-form .form-actions button[type="submit"] {
+    background: var(--accent);
+    color: #fff;
+}
+
+#mobile-pozo-edit-form .form-actions button[type="button"] {
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border);
+}
+
+/* ==============================
+   RUTAS DE SERVICIOS / RECORRIDOS
+   ============================== */
+
+.mobile-floating-route-btn {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    z-index: 10001;
+    display: none; /* Mostrar solo cuando corresponda */
+}
+
+.mobile-floating-route-btn button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+}
+
+.mobile-floating-route-btn button:hover {
+    transform: scale(1.1);
+}
+
+/* Panel responsive de recorridos */
+.routes-panel {
+    position: absolute;
+    z-index: 1100;
+    top: 72px;
+    right: 16px;
+    width: 320px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: rgba(16, 18, 24, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 16px 30px rgba(0,0,0,0.35);
+}
+
+.routes-panel h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+}
+
+.routes-panel label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #d8d8d8;
+}
+
+.routes-panel select,
+.routes-panel input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.routes-panel .route-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.routes-panel .route-actions button {
+    flex: 1;
+    padding: 0.6rem;
+    border: none;
+    border-radius: 6px;
+    background: #2a2a2a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.routes-panel .route-actions button:hover {
+    background: #3a3a3a;
+}
+
+.routes-panel hr {
+    border: none;
+    border-top: 1px solid #444;
+    margin: 1rem 0;
+}
+
+#routes-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.route-item {
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: #1a1a1a;
+}
+
+.route-item h4 {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+}
+
+.route-item p {
+    margin: 0.2rem 0;
+    font-size: 0.82rem;
+    color: #d8d8d8;
+}
+
+.route-item label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    color: #d8d8d8;
+}
+
+.route-item input[type="color"] {
+    width: 50px;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.route-item .route-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.7rem;
+}
+
+.route-item .route-buttons button {
+    flex: 1 1 48%;
+    font-size: 0.8rem;
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
+    .routes-panel {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        width: 100%;
+        max-width: none;
+        max-height: 80vh;
+        border-radius: 16px 16px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s ease-out;
+    }
+
+    .routes-panel:not(.hidden) {
+        transform: translateY(0);
+    }
+
+    .routes-panel h3 {
+        font-size: 1.2rem;
+    }
+
+    .routes-panel label {
+        font-size: 1rem;
+    }
+
+    .routes-panel select,
+    .routes-panel input {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .routes-panel .route-actions {
+        flex-direction: column;
+    }
+
+    .routes-panel .route-actions button {
+        padding: 14px;
+        font-size: 16px;
+    }
+}
+
+/* Estilos para formularios móviles compactos */
+.mobile-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+.mobile-bottom-sheet,
+.routes-panel.mobile {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: min(94vw, 420px);
+    max-width: 420px;
+    max-height: 82vh;
+    overflow-y: auto;
+    padding: 16px;
+    border-radius: 18px;
+    z-index: 3000;
+    background: rgba(23, 24, 28, 0.96);
+    border: 1px solid #313754;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+    transform: translate(-50%, -50%);
+    transition: transform 0.2s ease-out;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-bottom-sheet:not(.hidden),
+.routes-panel.mobile:not(.hidden) {
+    transform: translate(-50%, -50%);
+}
+
+@media (max-height: 620px) {
+    .mobile-bottom-sheet,
+    .routes-panel.mobile {
+        top: 52%;
+        max-height: 88vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(94vw, 420px);
+        max-height: 88vh;
+    }
+}
+
+.mobile-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-sheet-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #f5f7ff;
+}
+
+.mobile-sheet-header button {
+    background: none;
+    border: none;
+    color: #f5f7ff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+.mobile-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+@media (min-width: 480px) {
+    .mobile-form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.mobile-form-field label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 3px;
+    color: #bfc5ff;
+}
+
+.mobile-form-field input,
+.mobile-form-field select,
+.mobile-form-field textarea {
+    width: 100%;
+    min-height: 36px;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    background: #1a1a1a;
+    color: #f5f7ff;
+    box-sizing: border-box;
+}
+
+.mobile-form-field textarea {
+    min-height: 64px;
+    resize: vertical;
+}
+
+.mobile-form-field input:focus,
+.mobile-form-field select:focus,
+.mobile-form-field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.mobile-form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.mobile-form-actions button {
+    flex: 1;
+    min-height: 36px;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.mobile-form-actions button[type="submit"] {
+    background: var(--accent);
+    color: #fff;
+}
+
+.mobile-form-actions button[type="button"] {
+    background: #2a2a2a;
+    color: #f5f7ff;
+}
+
+.mobile-form-actions button:hover {
+    opacity: 0.9;
+}
+
+/* Estilos específicos para panel de rutas móvil */
+#mobile-routes-panel .mobile-form-grid {
+    gap: 12px;
+}
+
+#mobile-routes-panel .route-actions {
+    display: flex;
+    gap: 6px;
+    margin: 12px 0;
+}
+
+#mobile-routes-panel .route-actions button {
+    flex: 1;
+    min-height: 36px;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    background: #2a2a2a;
+    color: #f5f7ff;
+    cursor: pointer;
+}
+
+#mobile-routes-panel .route-actions button:hover {
+    background: #3a3a3a;
+}
+
+#mobile-routes-list {
+    margin-top: 12px;
+}
+
+#mobile-routes-list .route-item {
+    border: 1px solid #4a4a4a;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #1a1a1a;
+}
+
+#mobile-routes-list .route-item h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    color: #f5f7ff;
+}
+
+#mobile-routes-list .route-item p {
+    margin: 2px 0;
+    font-size: 12px;
+    color: #bfc5ff;
+}
+
+#mobile-routes-list .route-item .route-buttons {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+#mobile-routes-list .route-item .route-buttons button {
+    flex: 1;
+    font-size: 12px;
+    padding: 4px 6px;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    background: #2a2a2a;
+    color: #f5f7ff;
+    cursor: pointer;
+}
+
+#mobile-routes-list .route-item .route-buttons button:hover {
+    background: #3a3a3a;
+}
+
+/* Botón en header móvil */
+.mobile-header-action {
+    padding: 6px 12px;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    background: #2a2a2a;
+    color: #f5f7ff;
+    font-size: 13px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.mobile-header-action:hover {
+    background: #3a3a3a;
+}
+
+.mobile-auth-btn {
+    display: flex;
+    align-items: center;
 }

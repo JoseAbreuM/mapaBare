@@ -60,8 +60,8 @@ let bulkSelectionDragStart = null;
 let bulkSelectionRect = null;
 let bulkSelectionPozoIds = [];
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.16';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v28';
+const APP_VERSION = 'v1.20';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v32';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -80,6 +80,28 @@ const MAP_ROUTE_STYLES = {
         weight: 2.4
     }
 };
+
+const SERVICE_ROUTES_KEY = 'serviceRoutes';
+const SERVICE_ROUTE_SERVICES = [
+    'Ranger-357',
+    'Ranger-356',
+    'Ranger-553',
+    'Ranger-554',
+    'RIG-351',
+    'RIG-352',
+    'RIG-RANGER-555',
+    'Ranger-151',
+    'CT',
+    'WT'
+];
+
+let serviceRoutes = [];
+let routeLayers = {};
+let routeDrawingMode = false;
+let currentRouteDraft = null;
+let selectedRouteService = null;
+let selectedRouteId = null;
+
 const MAP_STATION_DEFINITIONS = [
     {
         id: 'bare-9',
@@ -271,6 +293,46 @@ function isDesktop() {
     return window.innerWidth > 768;
 }
 
+function isMobile() {
+    return !isDesktop();
+}
+
+function canUseDesktopCrud() {
+    return isDesktop() && isAuthenticated;
+}
+
+function canUseMobileCrud() {
+    return !isDesktop() && isAuthenticated;
+}
+
+function canEditPozos() {
+    return isAuthenticated;
+}
+
+function canUseServiceRoutes() {
+    return isAuthenticated;
+}
+
+function requireAuthForCapability(capabilityName) {
+    if (isAuthenticated) return true;
+
+    openLoginForm();
+
+    const messages = {
+        editPozos: 'Debes iniciar sesión para editar datos del pozo.',
+        serviceRoutes: 'Debes iniciar sesión para usar recorridos de servicios.',
+        default: 'Debes iniciar sesión para usar esta función.'
+    };
+
+    alert(messages[capabilityName] || messages.default);
+    return false;
+}
+
+function requireCrudAuth() {
+    return requireAuthForCapability('editPozos');
+}
+
+
 function normalizeText(value) {
     return (value || '')
         .toString()
@@ -346,6 +408,435 @@ function getSelectedDiagram() {
 
 function getSelectedZone() {
     return getSelectedDiagram();
+}
+
+// ==============================
+// EDICIÓN MÓVIL DE POZOS
+// ==============================
+
+function openMobilePozoEdit(pozoId) {
+    if (!requireAuthForCapability('editPozos')) return;
+
+    const pozo = pozoData.find(p => p.id === pozoId);
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    // Llenar el formulario con datos actuales
+    document.getElementById('mobile-form-id').value = pozo.id;
+    document.getElementById('mobile-form-estado').value = pozo.estado;
+    document.getElementById('mobile-form-zona').value = pozo.zona || '';
+    document.getElementById('mobile-form-diagrama').value = pozo.diagrama;
+    document.getElementById('mobile-form-nota').value = pozo.nota || '';
+    document.getElementById('mobile-form-cabezal').value = pozo.cabezal || '';
+    document.getElementById('mobile-form-variador').value = pozo.variador || '';
+    document.getElementById('mobile-form-vo').value = pozo.velocidadOperacional || '';
+    document.getElementById('mobile-form-potencial').value = pozo.potencial || '';
+    document.getElementById('mobile-form-alto-corte-agua').checked = parseBooleanFlag(pozo.altoCorteAgua);
+    document.getElementById('mobile-form-fecha-ultimo-servicio').value = pozo.fechaUltimoServicio || '';
+
+    // Mostrar/ocultar causa diferido
+    const diferidoCauseWrapper = document.getElementById('mobile-form-diferido-cause-wrapper');
+    if (diferidoCauseWrapper) {
+        diferidoCauseWrapper.classList.toggle('hidden', pozo.estado !== STATUS.DIFERIDO);
+        if (pozo.estado === STATUS.DIFERIDO) {
+            document.getElementById('mobile-form-diferido-cause').value = pozo.causaDiferido || '';
+        }
+    }
+
+    // Mostrar el sheet
+    document.getElementById('mobile-pozo-edit-sheet').classList.remove('hidden');
+    showModalBackdrop();
+    editId = pozoId; // Para compatibilidad con funciones existentes
+}
+
+function closeMobilePozoEdit() {
+    document.getElementById('mobile-pozo-edit-sheet').classList.add('hidden');
+    editId = null;
+    hideModalBackdrop();
+}
+
+async function submitMobilePozoEdit(e) {
+    e.preventDefault();
+    if (!editId) return;
+
+    const pozo = pozoData.find(p => p.id === editId);
+    if (!pozo) return;
+
+    // Recopilar datos del formulario
+    const updatedPozo = {
+        ...pozo,
+        estado: document.getElementById('mobile-form-estado').value,
+        zona: document.getElementById('mobile-form-zona').value || null,
+        diagrama: document.getElementById('mobile-form-diagrama').value,
+        nota: document.getElementById('mobile-form-nota').value.trim() || null,
+        cabezal: document.getElementById('mobile-form-cabezal').value || null,
+        variador: document.getElementById('mobile-form-variador').value || null,
+        velocidadOperacional: document.getElementById('mobile-form-vo').value ? Number(document.getElementById('mobile-form-vo').value) : null,
+        potencial: document.getElementById('mobile-form-potencial').value ? Number(document.getElementById('mobile-form-potencial').value) : null,
+        altoCorteAgua: document.getElementById('mobile-form-alto-corte-agua').checked,
+        fechaUltimoServicio: document.getElementById('mobile-form-fecha-ultimo-servicio').value || null,
+        causaDiferido: pozo.estado === STATUS.DIFERIDO ? document.getElementById('mobile-form-diferido-cause').value.trim() || null : null,
+        updatedAt: new Date().toISOString()
+    };
+
+    // Aplicar normalización
+    Object.assign(updatedPozo, normalizePozo(updatedPozo));
+
+    // Actualizar en pozoData
+    const index = pozoData.findIndex(p => p.id === editId);
+    if (index !== -1) {
+        pozoData[index] = updatedPozo;
+    }
+
+    // Persistir y refrescar
+    await persistPozosAndRefresh();
+
+    // Cerrar formulario
+    closeMobilePozoEdit();
+
+    alert('Pozo actualizado correctamente');
+}
+
+async function loadServiceRoutes() {
+    const saved = await localforage.getItem(SERVICE_ROUTES_KEY);
+    serviceRoutes = Array.isArray(saved) ? saved : [];
+    return serviceRoutes;
+}
+
+async function persistServiceRoutes() {
+    await localforage.setItem(SERVICE_ROUTES_KEY, serviceRoutes);
+}
+
+function getServiceRouteColor(servicio) {
+    const colors = {
+        'Ranger-357': '#0ea5e9',
+        'Ranger-356': '#3b82f6',
+        'Ranger-553': '#f97316',
+        'Ranger-554': '#a855f7',
+        'RIG-351': '#f59e0b',
+        'RIG-352': '#ef4444',
+        'RIG-RANGER-555': '#22c55e',
+        'Ranger-151': '#14b8a6',
+        'CT': '#8b5cf6',
+        'WT': '#06b6d4'
+    };
+    return colors[servicio] || '#f59e0b';
+}
+
+function openRoutesPanel() {
+    if (!requireAuthForCapability('serviceRoutes')) return;
+
+    if (isDesktop()) {
+        document.getElementById('routes-panel').classList.remove('hidden');
+    } else {
+        document.getElementById('mobile-routes-panel').classList.remove('hidden');
+        showModalBackdrop();
+    }
+    renderRoutesList();
+}
+
+function closeRoutesPanel() {
+    document.getElementById('routes-panel').classList.add('hidden');
+    document.getElementById('mobile-routes-panel').classList.add('hidden');
+    cancelRouteDraft();
+    hideModalBackdrop();
+}
+
+function startNewServiceRouteDraft() {
+    const serviceSelect = document.getElementById('route-service-select') || document.getElementById('mobile-route-service-select');
+    const service = serviceSelect ? serviceSelect.value : '';
+    if (!service) {
+        alert('Seleccione un servicio antes de iniciar una nueva ruta.');
+        return;
+    }
+
+    if (!routeDrawingMode) {
+        setRouteDrawingMode(true);
+    }
+
+    const routeNameInput = document.getElementById('route-name-input') || document.getElementById('mobile-route-name-input');
+    const routeName = routeNameInput ? routeNameInput.value.trim() : '';
+
+    const routeColorInput = document.getElementById('route-color-input') || document.getElementById('mobile-route-color-input');
+    const routeColor = routeColorInput ? routeColorInput.value : getServiceRouteColor(service);
+
+    if (currentRouteDraft && currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
+        map.removeLayer(currentRouteDraft.layer);
+    }
+
+    currentRouteDraft = {
+        id: `route-${Date.now()}`,
+        servicio: service,
+        nombre: routeName || '',
+        diagrama: getSelectedDiagram(),
+        points: [],
+        color: routeColor,
+        weight: 4,
+        visible: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        layer: null
+    };
+    selectedRouteService = service;
+    selectedRouteId = null;
+    if (routeNameInput) routeNameInput.value = routeName;
+    alert('Haz clic en el diagrama para agregar puntos a la ruta.');
+}
+
+function addPointToRouteDraft(latlng) {
+    if (!routeDrawingMode || !currentRouteDraft) return;
+
+    currentRouteDraft.points.push([latlng.lat, latlng.lng]);
+    currentRouteDraft.updatedAt = new Date().toISOString();
+
+    if (currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
+        map.removeLayer(currentRouteDraft.layer);
+    }
+
+    const style = {
+        color: currentRouteDraft.color,
+        weight: currentRouteDraft.weight,
+        opacity: 0.85,
+        dashArray: '6,6',
+        interactive: false
+    };
+    currentRouteDraft.layer = L.polyline(currentRouteDraft.points, style).addTo(map);
+}
+
+async function saveCurrentRouteDraft() {
+    if (!currentRouteDraft) {
+        alert('No hay ninguna ruta en borrador para guardar.');
+        return;
+    }
+    if (!currentRouteDraft.points || currentRouteDraft.points.length < 2) {
+        alert('La ruta debe tener al menos 2 puntos para poder guardarla.');
+        return;
+    }
+
+    const existingCount = serviceRoutes.filter(r => r.servicio === currentRouteDraft.servicio && r.diagrama === currentRouteDraft.diagrama).length;
+    if (!currentRouteDraft.nombre) {
+        currentRouteDraft.nombre = `Posible ruta ${existingCount + 1} - ${currentRouteDraft.servicio}`;
+    }
+
+    const routeToSave = {
+        id: currentRouteDraft.id,
+        servicio: currentRouteDraft.servicio,
+        nombre: currentRouteDraft.nombre,
+        diagrama: currentRouteDraft.diagrama,
+        points: currentRouteDraft.points.slice(),
+        color: currentRouteDraft.color,
+        weight: currentRouteDraft.weight,
+        visible: true,
+        createdAt: currentRouteDraft.createdAt,
+        updatedAt: new Date().toISOString()
+    };
+
+    if (currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
+        map.removeLayer(currentRouteDraft.layer);
+    }
+
+    serviceRoutes.push(routeToSave);
+    await persistServiceRoutes();
+    currentRouteDraft = null;
+    selectedRouteId = routeToSave.id;
+    renderServiceRoutes();
+    renderRoutesList();
+    alert('Ruta guardada correctamente.');
+}
+
+function cancelRouteDraft() {
+    if (currentRouteDraft && currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
+        map.removeLayer(currentRouteDraft.layer);
+    }
+    currentRouteDraft = null;
+    routeDrawingMode = false;
+    const panel = document.getElementById('routes-panel');
+    const modeBtn = document.getElementById('route-mode-btn');
+    if (panel) panel.classList.add('hidden');
+    if (modeBtn) modeBtn.classList.remove('active');
+    if (map && typeof map.getContainer === 'function') {
+        map.getContainer().classList.remove('route-drawing-active');
+    }
+}
+
+function renderServiceRoutes() {
+    Object.entries(routeLayers).forEach(([routeId, layer]) => {
+        if (layer && map && map.hasLayer(layer)) {
+            map.removeLayer(layer);
+        }
+    });
+    routeLayers = {};
+
+    if (!map || mapMode !== 'diagram') return;
+
+    const selectedDiagram = getSelectedDiagram();
+    const visibleRoutes = serviceRoutes.filter(route => route.diagrama === selectedDiagram && route.visible);
+
+    visibleRoutes.forEach(route => {
+        if (!route.points || route.points.length < 2) return;
+        const layer = L.polyline(route.points, {
+            color: route.color || getServiceRouteColor(route.servicio),
+            weight: route.weight || 4,
+            opacity: 0.8,
+            lineCap: 'round',
+            lineJoin: 'round'
+        });
+        layer.bindPopup(`<strong>${route.nombre}</strong><br>Servicio: ${route.servicio}<br>Puntos: ${route.points.length}`);
+        layer.addTo(map);
+        routeLayers[route.id] = layer;
+    });
+}
+
+function renderRoutesList() {
+    const desktopListContainer = document.getElementById('routes-list');
+    const mobileListContainer = document.getElementById('mobile-routes-list');
+
+    const selectedDiagram = getSelectedDiagram();
+    const serviceFilter = (document.getElementById('route-service-select')?.value || '') || (document.getElementById('mobile-route-service-select')?.value || '');
+    const filteredRoutes = serviceRoutes.filter(route => {
+        if (route.diagrama !== selectedDiagram) return false;
+        if (serviceFilter && route.servicio !== serviceFilter) return false;
+        return true;
+    });
+
+    const noRoutesHtml = '<div class="no-routes">No hay rutas guardadas para este diagrama y servicio.</div>';
+
+    if (!filteredRoutes.length) {
+        if (desktopListContainer) desktopListContainer.innerHTML = noRoutesHtml;
+        if (mobileListContainer) mobileListContainer.innerHTML = noRoutesHtml;
+        return;
+    }
+
+    const routesHtml = filteredRoutes.map(route => {
+        const visibleLabel = route.visible ? 'Visible' : 'Oculta';
+        return `
+            <div class="route-item">
+                <h4>${route.nombre}</h4>
+                <p>Servicio: ${route.servicio}</p>
+                <p>Puntos: ${route.points?.length || 0}</p>
+                <p>Estado: ${visibleLabel}</p>
+                <label>Color: <input type="color" class="route-color-picker" data-route-id="${route.id}" value="${route.color || '#f59e0b'}"></label>
+                <div class="route-buttons">
+                    <button type="button" class="route-show-only-btn" data-route-id="${route.id}">Ver solo</button>
+                    <button type="button" class="route-toggle-visibility-btn" data-route-id="${route.id}">${route.visible ? 'Ocultar' : 'Mostrar'}</button>
+                    <button type="button" class="route-delete-btn" data-route-id="${route.id}">Eliminar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (desktopListContainer) desktopListContainer.innerHTML = routesHtml;
+    if (mobileListContainer) mobileListContainer.innerHTML = routesHtml;
+
+    // Agregar event listeners a ambos contenedores
+    [desktopListContainer, mobileListContainer].forEach(container => {
+        if (!container) return;
+        container.querySelectorAll('.route-show-only-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const routeId = button.dataset.routeId;
+                await showOnlyServiceRoute(routeId);
+            });
+        });
+        container.querySelectorAll('.route-toggle-visibility-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const routeId = button.dataset.routeId;
+                await toggleServiceRouteVisibility(routeId);
+            });
+        });
+        container.querySelectorAll('.route-delete-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const routeId = button.dataset.routeId;
+                await deleteServiceRoute(routeId);
+            });
+        });
+        container.querySelectorAll('.route-color-picker').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                const routeId = input.dataset.routeId;
+                const newColor = e.target.value;
+                await updateServiceRouteColor(routeId, newColor);
+            });
+        });
+    });
+}
+
+async function showOnlyServiceRoute(routeId) {
+    const selectedDiagram = getSelectedDiagram();
+    let changed = false;
+    serviceRoutes = serviceRoutes.map(route => {
+        if (route.diagrama !== selectedDiagram) return route;
+        const nextVisible = route.id === routeId;
+        if (route.visible !== nextVisible) {
+            changed = true;
+            return { ...route, visible: nextVisible, updatedAt: new Date().toISOString() };
+        }
+        return route;
+    });
+    if (changed) {
+        await persistServiceRoutes();
+    }
+    renderServiceRoutes();
+    renderRoutesList();
+}
+
+async function toggleServiceRouteVisibility(routeId) {
+    let changed = false;
+    serviceRoutes = serviceRoutes.map(route => {
+        if (route.id !== routeId) return route;
+        changed = true;
+        return { ...route, visible: !route.visible, updatedAt: new Date().toISOString() };
+    });
+    if (!changed) return;
+    await persistServiceRoutes();
+    renderServiceRoutes();
+    renderRoutesList();
+}
+
+async function showOnlyRoutesByService(servicio) {
+    const selectedDiagram = getSelectedDiagram();
+    let changed = false;
+    serviceRoutes = serviceRoutes.map(route => {
+        if (route.diagrama !== selectedDiagram) return route;
+        const nextVisible = route.servicio === servicio;
+        if (route.visible !== nextVisible) {
+            changed = true;
+            return { ...route, visible: nextVisible, updatedAt: new Date().toISOString() };
+        }
+        return route;
+    });
+    if (changed) {
+        await persistServiceRoutes();
+    }
+    renderServiceRoutes();
+    renderRoutesList();
+}
+
+async function deleteServiceRoute(routeId) {
+    if (!confirm('¿Eliminar esta ruta de servicio? Esta acción no se puede deshacer.')) return;
+    const route = serviceRoutes.find(r => r.id === routeId);
+    if (!route) return;
+    serviceRoutes = serviceRoutes.filter(r => r.id !== routeId);
+    if (routeLayers[routeId] && map && map.hasLayer(routeLayers[routeId])) {
+        map.removeLayer(routeLayers[routeId]);
+    }
+    delete routeLayers[routeId];
+    await persistServiceRoutes();
+    renderServiceRoutes();
+    renderRoutesList();
+}
+
+async function updateServiceRouteColor(routeId, newColor) {
+    let changed = false;
+    serviceRoutes = serviceRoutes.map(route => {
+        if (route.id !== routeId) return route;
+        changed = true;
+        return { ...route, color: newColor, updatedAt: new Date().toISOString() };
+    });
+    if (!changed) return;
+    await persistServiceRoutes();
+    renderServiceRoutes();
+    renderRoutesList();
 }
 
 function isKnownDiagram(value) {
@@ -684,10 +1175,12 @@ function updateResponsiveControls() {
     const floatingViewBtn = document.getElementById('floating-view-btn');
     const floatingZoneContainer = document.getElementById('floating-zone-container');
     const mobileMapFilters = document.getElementById('mobile-map-filters');
+    const mobileRoutesBtn = document.getElementById('mobile-routes-btn');
     if (!floatingViewBtn || !floatingZoneContainer || !mobileMapFilters) return;
 
     const mobile = !isDesktop();
     const showingMap = mapMode === 'mapa';
+    const showingDiagram = mapMode === 'diagram';
 
     if (body) {
         body.classList.toggle('mobile-map-view', mobile && showingMap);
@@ -698,6 +1191,12 @@ function updateResponsiveControls() {
 
     floatingZoneContainer.classList.toggle('hidden', !mobile || showingMap);
     mobileMapFilters.classList.toggle('hidden', !mobile || !showingMap);
+
+    // Mostrar botón de recorridos solo en móvil, diagrama, con sesión
+    if (mobileRoutesBtn) {
+        const shouldShow = mobile && showingDiagram && isAuthenticated;
+        mobileRoutesBtn.classList.toggle('hidden', !shouldShow);
+    }
 }
 
 function getRouteStyle(filePath) {
@@ -1229,7 +1728,15 @@ function updateAuthUi() {
     const assignExistingMode = document.getElementById('assign-existing-mode');
     const bulkSelectToggle = document.getElementById('bulk-zone-select-toggle');
 
+    const mobileAuthBtn = document.getElementById('mobile-auth-btn');
+    const mobileLoginBtn = document.getElementById('mobile-login-btn');
+    const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+    const mobileAuthUserLabel = document.getElementById('mobile-auth-user-label');
+    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
+
     if (isDesktop()) {
+        // Desktop: mostrar controles normales
         if (isAuthenticated && authenticatedUser) {
             loginBtn.classList.add('hidden');
             logoutBtn.classList.remove('hidden');
@@ -1257,20 +1764,43 @@ function updateAuthUi() {
             pendingServiceAssignment = null;
             closeServiceVerification();
         }
-        return;
-    }
 
-    loginBtn.classList.add('hidden');
-    logoutBtn.classList.add('hidden');
-    userLabel.classList.add('hidden');
-    editSwitch.classList.add('hidden');
-    assignButton.classList.add('hidden');
-    assignExistingToggle.classList.add('hidden');
-    if (bulkSelectToggle) bulkSelectToggle.classList.add('hidden');
-    document.getElementById('edit-mode').checked = false;
-    if (assignExistingMode) assignExistingMode.checked = false;
-    setBulkSelectMode(false);
-    closeAssignDiagramForm();
+        // Ocultar controles móviles en desktop
+        if (mobileAuthBtn) mobileAuthBtn.classList.add('hidden');
+    } else {
+        // Móvil: ocultar controles desktop, mostrar controles móviles
+        loginBtn.classList.add('hidden');
+        logoutBtn.classList.add('hidden');
+        userLabel.classList.add('hidden');
+        editSwitch.classList.add('hidden');
+        assignButton.classList.add('hidden');
+        assignExistingToggle.classList.add('hidden');
+        if (bulkSelectToggle) bulkSelectToggle.classList.add('hidden');
+        document.getElementById('edit-mode').checked = false;
+        if (assignExistingMode) assignExistingMode.checked = false;
+        setBulkSelectMode(false);
+        closeAssignDiagramForm();
+
+        // Mostrar controles móviles
+        if (mobileAuthBtn) mobileAuthBtn.classList.remove('hidden');
+
+        if (isAuthenticated && authenticatedUser) {
+            if (mobileLoginBtn) mobileLoginBtn.classList.add('hidden');
+            if (mobileAuthMenu) mobileAuthMenu.classList.remove('hidden');
+            if (mobileAuthUserLabel) {
+                mobileAuthUserLabel.textContent = authenticatedUser.nombre;
+                mobileAuthUserLabel.classList.remove('hidden');
+            }
+            if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('hidden');
+            if (mobileHeaderRoutesBtn) mobileHeaderRoutesBtn.classList.remove('hidden');
+        } else {
+            if (mobileLoginBtn) mobileLoginBtn.classList.remove('hidden');
+            if (mobileAuthMenu) mobileAuthMenu.classList.add('hidden');
+            if (mobileAuthUserLabel) mobileAuthUserLabel.classList.add('hidden');
+            if (mobileLogoutBtn) mobileLogoutBtn.classList.add('hidden');
+            if (mobileHeaderRoutesBtn) mobileHeaderRoutesBtn.classList.add('hidden');
+        }
+    }
 }
 
 async function initAuth() {
@@ -1290,9 +1820,32 @@ function showLoginError(message) {
     errorEl.classList.remove('hidden');
 }
 
+function showModalBackdrop() {
+    const backdrop = document.getElementById('mobile-modal-backdrop');
+    if (backdrop) {
+        backdrop.classList.remove('hidden');
+    }
+    document.body.classList.add('modal-open');
+}
+
+function hideModalBackdrop() {
+    const backdrop = document.getElementById('mobile-modal-backdrop');
+    if (backdrop) {
+        backdrop.classList.add('hidden');
+    }
+    document.body.classList.remove('modal-open');
+}
+
+function closeAnyMobileModal() {
+    closeMobilePozoEdit();
+    closeRoutesPanel();
+    closeLoginForm();
+}
+
 function openLoginForm() {
     showLoginError('');
     document.getElementById('login-form-container').classList.remove('hidden');
+    showModalBackdrop();
     document.getElementById('login-username').focus();
 }
 
@@ -1300,6 +1853,7 @@ function closeLoginForm() {
     document.getElementById('login-form-container').classList.add('hidden');
     document.getElementById('login-form').reset();
     showLoginError('');
+    hideModalBackdrop();
 }
 
 async function submitLogin(e) {
@@ -1348,15 +1902,7 @@ async function logout() {
 }
 
 function requireCrudAuth() {
-    if (!isDesktop()) {
-        return false;
-    }
-    if (isAuthenticated) {
-        return true;
-    }
-    openLoginForm();
-    alert('Debes iniciar sesión para usar funciones de edición');
-    return false;
+    return requireAuthForCapability('editPozos');
 }
 
 async function init() {
@@ -1398,6 +1944,7 @@ async function init() {
     }
 
     await setupMap();
+    await loadServiceRoutes();
     const savedMode = await localforage.getItem(MAP_MODE_KEY);
     if (savedMode === 'mapa') {
         mapMode = 'mapa';
@@ -1570,9 +2117,16 @@ async function applyViewMode(mode, skipPersist = false) {
         const diagram = getSelectedDiagram();
         await loadZone(diagram, true);
         renderMarkers(diagram);
+        renderServiceRoutes();
+        renderRoutesList();
         return;
     }
 
+    if (routeDrawingMode) {
+        setRouteDrawingMode(false);
+    }
+
+    renderServiceRoutes();
     await loadRealMap();
     renderMarkers('mapa');
 }
@@ -2062,8 +2616,8 @@ function popupContent(p) {
     if (p.fechaUltimoServicio) content += `<br>Fecha de arranque: ${p.fechaUltimoServicio}`;
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
-    // Solo mostrar botones CRUD en desktop autenticado
-    if (isDesktop() && isAuthenticated) {
+    // Solo mostrar botones CRUD en desktop autenticado o móvil autenticado
+    if ((isDesktop() && isAuthenticated) || (!isDesktop() && isAuthenticated)) {
         content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
     }
     return content;
@@ -2072,6 +2626,12 @@ function popupContent(p) {
 function onMapClick(e) {
     if (mapMode !== 'diagram') return;
     if (bulkSelectModeEnabled) return;
+    if (routeDrawingMode) {
+        if (e && e.latlng) {
+            addPointToRouteDraft(e.latlng);
+        }
+        return;
+    }
     const assignMode = document.getElementById('assign-existing-mode');
     if (assignMode && assignMode.checked) {
         if (!requireCrudAuth()) {
@@ -2465,7 +3025,11 @@ async function submitAssignDiagramForm(e) {
 // funciones globales para popup
 window.editPozo = function(id) {
     if (!requireCrudAuth()) return;
-    openForm(null, null, id);
+    if (!isDesktop()) {
+        openMobilePozoEdit(id);
+    } else {
+        openForm(null, null, id);
+    }
 };
 
 window.deletePozo = async function(id) {
@@ -3011,6 +3575,8 @@ function attachControls() {
         if (mapMode !== 'diagram') return;
         await loadZone(e.target.value);
         renderMarkers(e.target.value);
+        renderServiceRoutes();
+        renderRoutesList();
     });
 
     const viewModeSelect = document.getElementById('view-mode-select');
@@ -3055,6 +3621,36 @@ function attachControls() {
         bulkSelectToggle.addEventListener('click', () => {
             setBulkSelectMode(!bulkSelectModeEnabled);
         });
+    }
+
+    const routeModeBtn = document.getElementById('route-mode-btn');
+    if (routeModeBtn) {
+        routeModeBtn.addEventListener('click', () => {
+            setRouteDrawingMode(!routeDrawingMode);
+        });
+    }
+
+    const routeServiceSelect = document.getElementById('route-service-select');
+    if (routeServiceSelect) {
+        routeServiceSelect.addEventListener('change', () => {
+            selectedRouteService = routeServiceSelect.value || null;
+            renderRoutesList();
+        });
+    }
+
+    const routeNewBtn = document.getElementById('route-new-btn');
+    if (routeNewBtn) {
+        routeNewBtn.addEventListener('click', startNewServiceRouteDraft);
+    }
+
+    const routeSaveBtn = document.getElementById('route-save-btn');
+    if (routeSaveBtn) {
+        routeSaveBtn.addEventListener('click', saveCurrentRouteDraft);
+    }
+
+    const routeCancelBtn = document.getElementById('route-cancel-btn');
+    if (routeCancelBtn) {
+        routeCancelBtn.addEventListener('click', cancelRouteDraft);
     }
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
@@ -3188,6 +3784,63 @@ function attachControls() {
     updateStatsFilterUi();
     updateResponsiveControls();
     syncBulkSelectUi();
+
+    // Event listeners para elementos móviles
+    const mobileLoginBtn = document.getElementById('mobile-login-btn');
+    if (mobileLoginBtn) {
+        mobileLoginBtn.addEventListener('click', openLoginForm);
+    }
+
+    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', logout);
+    }
+
+    const mobilePozoEditClose = document.getElementById('mobile-pozo-edit-close');
+    if (mobilePozoEditClose) {
+        mobilePozoEditClose.addEventListener('click', closeMobilePozoEdit);
+    }
+
+    const mobilePozoEditCancel = document.getElementById('mobile-pozo-edit-cancel');
+    if (mobilePozoEditCancel) {
+        mobilePozoEditCancel.addEventListener('click', closeMobilePozoEdit);
+    }
+
+    const mobilePozoEditForm = document.getElementById('mobile-pozo-edit-form');
+    if (mobilePozoEditForm) {
+        mobilePozoEditForm.addEventListener('submit', submitMobilePozoEdit);
+    }
+
+    const mobileRoutesBtn = document.getElementById('mobile-header-routes-btn');
+    if (mobileRoutesBtn) {
+        mobileRoutesBtn.addEventListener('click', openRoutesPanel);
+    }
+
+    const mobileRoutesClose = document.getElementById('mobile-routes-close');
+    if (mobileRoutesClose) {
+        mobileRoutesClose.addEventListener('click', closeRoutesPanel);
+    }
+
+    const modalBackdrop = document.getElementById('mobile-modal-backdrop');
+    if (modalBackdrop) {
+        modalBackdrop.addEventListener('click', closeAnyMobileModal);
+    }
+
+    // Event listeners para panel móvil de rutas
+    const mobileRouteNewBtn = document.getElementById('mobile-route-new-btn');
+    if (mobileRouteNewBtn) {
+        mobileRouteNewBtn.addEventListener('click', startNewServiceRouteDraft);
+    }
+
+    const mobileRouteSaveBtn = document.getElementById('mobile-route-save-btn');
+    if (mobileRouteSaveBtn) {
+        mobileRouteSaveBtn.addEventListener('click', saveCurrentRouteDraft);
+    }
+
+    const mobileRouteCancelBtn = document.getElementById('mobile-route-cancel-btn');
+    if (mobileRouteCancelBtn) {
+        mobileRouteCancelBtn.addEventListener('click', cancelRouteDraft);
+    }
 }
 
 async function exportCurrentPozos() {

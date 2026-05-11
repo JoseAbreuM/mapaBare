@@ -9,7 +9,7 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=24">
+    <link rel="stylesheet" href="css/styles.css?v=25">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <!-- Firebase -->
@@ -46,13 +46,59 @@
                 <span class="slider"></span>
                 <span class="label">Modo asignación</span>
             </label>
+            <button id="route-mode-btn" type="button">Modo recorridos</button>
             <button id="bulk-zone-select-toggle" type="button" class="desktop-only hidden" aria-pressed="false">Selección múltiple</button>
             <button id="export-json-btn" type="button">Exportar JSON</button>
             <span id="auth-user-label" class="auth-user-label hidden"></span>
             <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
             <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
         </div>
+
+        <!-- Botón móvil de auth -->
+        <div id="mobile-auth-btn" class="mobile-auth-btn hidden">
+            <button id="mobile-header-routes-btn" type="button" class="mobile-header-action hidden">Rutas</button>
+            <button id="mobile-login-btn" type="button" class="mobile-auth-trigger">Login</button>
+            <div id="mobile-auth-menu" class="mobile-auth-menu hidden">
+                <span id="mobile-auth-user-label"></span>
+                <button id="mobile-logout-btn" type="button">Cerrar sesión</button>
+            </div>
+        </div>
     </header>
+
+    <div id="mobile-modal-backdrop" class="mobile-modal-backdrop hidden"></div>
+
+    <div id="routes-panel" class="routes-panel hidden">
+        <h3>Recorridos de servicios</h3>
+        <label for="route-service-select">Servicio</label>
+        <select id="route-service-select">
+            <option value="">Seleccione servicio</option>
+            <option value="Ranger-357">Ranger-357</option>
+            <option value="Ranger-356">Ranger-356</option>
+            <option value="Ranger-553">Ranger-553</option>
+            <option value="Ranger-554">Ranger-554</option>
+            <option value="RIG-351">RIG-351</option>
+            <option value="RIG-352">RIG-352</option>
+            <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+            <option value="Ranger-151">Ranger-151</option>
+            <option value="CT">CT</option>
+            <option value="WT">WT</option>
+        </select>
+
+        <label for="route-name-input">Nombre de ruta</label>
+        <input id="route-name-input" type="text" placeholder="Ej: Posible ruta 1 - RIG-351">
+
+        <label for="route-color-input">Color del trazo</label>
+        <input id="route-color-input" type="color" value="#f59e0b">
+
+        <div class="route-actions">
+            <button id="route-new-btn" type="button">Nueva ruta</button>
+            <button id="route-save-btn" type="button">Guardar ruta</button>
+            <button id="route-cancel-btn" type="button">Cancelar</button>
+        </div>
+
+        <hr>
+        <div id="routes-list"></div>
+    </div>
 
     <aside id="stats-panel" class="stats-panel">
         <div class="stats-header">
@@ -195,6 +241,172 @@
                 <button type="button" id="form-cancel">Cancelar</button>
             </div>
         </form>
+    </div>
+
+    <!-- formulario móvil de edición de pozo -->
+    <div id="mobile-pozo-edit-sheet" class="mobile-bottom-sheet hidden">
+        <div class="mobile-sheet-header">
+            <h3>Editar pozo</h3>
+            <button id="mobile-pozo-edit-close" type="button">×</button>
+        </div>
+
+        <form id="mobile-pozo-edit-form" class="mobile-form-grid">
+            <div class="mobile-form-field">
+                <label>ID</label>
+                <input type="text" id="mobile-form-id" required readonly>
+            </div>
+            <div class="mobile-form-field">
+                <label>Estado</label>
+                <select id="mobile-form-estado">
+                    <option value="activo">Activo</option>
+                    <option value="inactivo-servicio">En espera de servicio</option>
+                    <option value="en-servicio">En servicio</option>
+                    <option value="diagnostico">En diagnóstico</option>
+                    <option value="candidato">Candidato</option>
+                    <option value="diferido">Diferido</option>
+                </select>
+            </div>
+            <div class="mobile-form-field" id="mobile-form-diferido-cause-wrapper" class="hidden">
+                <label>Causa diferido</label>
+                <input type="text" id="mobile-form-diferido-cause" placeholder="Ej: arenamiento">
+            </div>
+            <div class="mobile-form-field">
+                <label>Zona de perímetro</label>
+                <select id="mobile-form-zona">
+                    <option value="">Sin zona</option>
+                    <option value="la orleana">La Orleana</option>
+                    <option value="bare 5">Bare 5</option>
+                    <option value="macolla venezuela">Macolla Venezuela</option>
+                    <option value="bare 6">Bare 6</option>
+                    <option value="bare 4">Bare 4</option>
+                    <option value="bare 1">Bare 1</option>
+                    <option value="bare 8">Bare 8</option>
+                    <option value="bare 7">Bare 7</option>
+                    <option value="bare 3">Bare 3</option>
+                    <option value="la floresta">La Floresta</option>
+                    <option value="trilla">Trilla</option>
+                    <option value="asfaltada y tigra">Asfaltada y Tigra</option>
+                    <option value="rancho grande">Rancho Grande</option>
+                </select>
+            </div>
+            <div class="mobile-form-field">
+                <label>Diagrama</label>
+                <select id="mobile-form-diagrama">
+                    <option value="sin-asignar">Sin asignar</option>
+                    <option value="bare-tradicional">BARE tradicional</option>
+                    <option value="bare-6">BARE 6</option>
+                    <option value="bare-6-norte">BARE 6-Norte</option>
+                    <option value="bare-este">Bare Este</option>
+                </select>
+            </div>
+            <div class="mobile-form-field">
+                <label>Nota</label>
+                <input type="text" id="mobile-form-nota" placeholder="Ej: espera RIG-351">
+            </div>
+            <div class="mobile-form-field">
+                <label>Cabezal</label>
+                <select id="mobile-form-cabezal">
+                    <option value="">Ninguno</option>
+                    <option value="Weatherford">Weatherford</option>
+                    <option value="tiger">Tiger</option>
+                    <option value="hebei jerry">Hebei Jerry</option>
+                    <option value="kudu">Kudu</option>
+                    <option value="altan">Altan</option>
+                    <option value="netzsch">Netzsch</option>
+                    <option value="nov">NOV</option>
+                    <option value="lifteq">Lifteq</option>
+                    <option value="baker-hughes">Baker Hughes</option>
+                    <option value="pcm">PCM</option>
+                    <option value="cavallino">Cavallino</option>
+                    <option value="combest">Combest</option>
+                    <option value="vipower">Vipower</option>
+                    <option value="inpegas">INPEGAS</option>
+                    <option value="api">Al Pro International</option>
+                </select>
+            </div>
+            <div class="mobile-form-field">
+                <label>Variador</label>
+                <select id="mobile-form-variador">
+                    <option value="">Ninguno</option>
+                    <option value="usfull">Usfull</option>
+                    <option value="hebei jerry">Hebei Jerry</option>
+                    <option value="matin dustrie">Matin Dustrie</option>
+                    <option value="wsc">WSC</option>
+                    <option value="wg">WG</option>
+                    <option value="yaskawa">Yaskawa</option>
+                    <option value="delta">Delta</option>
+                    <option value="abb">ABB</option>
+                    <option value="altan">ALTAN</option>
+                    <option value="combest">Combest</option>
+                </select>
+            </div>
+            <div class="mobile-form-field">
+                <label>VO (RPM)</label>
+                <input type="number" id="mobile-form-vo" min="0" step="0.01" placeholder="80">
+            </div>
+            <div class="mobile-form-field">
+                <label>Potencial (barriles)</label>
+                <input type="number" id="mobile-form-potencial" min="0" step="0.01">
+            </div>
+            <div class="mobile-form-field">
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="mobile-form-alto-corte-agua"> Mostrar gota alto corte
+                </label>
+            </div>
+            <div class="mobile-form-field">
+                <label>Fecha de arranque</label>
+                <input type="date" id="mobile-form-fecha-ultimo-servicio">
+            </div>
+            <div class="mobile-form-actions">
+                <button type="submit">Guardar cambios</button>
+                <button type="button" id="mobile-pozo-edit-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- panel móvil de recorridos -->
+    <div id="mobile-routes-panel" class="mobile-bottom-sheet hidden">
+        <div class="mobile-sheet-header">
+            <h3>Recorridos</h3>
+            <button id="mobile-routes-close" type="button">×</button>
+        </div>
+
+        <div class="mobile-form-grid">
+            <div class="mobile-form-field">
+                <label>Servicio</label>
+                <select id="mobile-route-service-select">
+                    <option value="">Seleccione servicio</option>
+                    <option value="Ranger-357">Ranger-357</option>
+                    <option value="Ranger-356">Ranger-356</option>
+                    <option value="Ranger-553">Ranger-553</option>
+                    <option value="Ranger-554">Ranger-554</option>
+                    <option value="RIG-351">RIG-351</option>
+                    <option value="RIG-352">RIG-352</option>
+                    <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+                    <option value="Ranger-151">Ranger-151</option>
+                    <option value="CT">CT</option>
+                    <option value="WT">WT</option>
+                </select>
+            </div>
+
+            <div class="mobile-form-field">
+                <label>Nombre de ruta</label>
+                <input id="mobile-route-name-input" type="text" placeholder="Ej: Posible ruta 1">
+            </div>
+
+            <div class="mobile-form-field">
+                <label>Color del trazo</label>
+                <input id="mobile-route-color-input" type="color" value="#f59e0b">
+            </div>
+        </div>
+
+        <div class="route-actions">
+            <button id="mobile-route-new-btn" type="button">Nueva</button>
+            <button id="mobile-route-save-btn" type="button">Guardar</button>
+            <button id="mobile-route-cancel-btn" type="button">Cancelar</button>
+        </div>
+
+        <div id="mobile-routes-list"></div>
     </div>
 
     <!-- formulario asignar servicio -->
@@ -343,7 +555,7 @@
         })();
     </script>
     <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=31"></script>
+    <script src="js/main.js?v=32"></script>
     <script src="js/sw-register.js?v=4" defer></script>
 
     <!-- Botón flotante de búsqueda para móvil -->
@@ -371,6 +583,11 @@
     <div id="floating-view-container">
         <button id="floating-view-btn" class="floating-view-btn" type="button" aria-label="Cambiar a vista mapa">MAPA</button>
     </div>
+
+    <!-- Botón flotante para recorridos en móvil -->
+    <button id="mobile-routes-btn" class="mobile-floating-route-btn hidden" type="button">
+        Recorridos
+    </button>
 
     <div id="mobile-map-filters" class="mobile-map-filters hidden" aria-label="Filtrar pozos por estado">
         <button type="button" class="stats-item mobile-filter-chip is-active" data-filter-type="status" data-filter="all">Todos</button>
