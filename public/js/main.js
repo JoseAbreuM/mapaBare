@@ -15,36 +15,6 @@ const zones = {
     'bare-este': 'assets/mapas/trilla-asfaltada.jpg',
 };
 
-const ZONE_SUMMARY_DEFINITIONS = [
-    {
-        key: 'bare-tradicional',
-        label: 'BARE tradicional',
-        variants: ['bare tradicional', 'bare-tradicional']
-    },
-    {
-        key: 'trilla',
-        label: 'Trilla',
-        variants: ['trilla']
-    },
-    {
-        key: 'asfaltada-y-tigra',
-        label: 'Asfaltada y Tigra',
-        variants: ['asfaltada y tigra', 'asfaltada-tigra', 'tigra y asfaltada', 'tigra']
-    },
-    {
-        key: 'bare-6',
-        label: 'BARE 6',
-        variants: ['bare 6', 'bare-6', 'bare 6 norte', 'bare 6-norte', 'bare-6-norte']
-    }
-];
-
-const ZONE_ORDER = ZONE_SUMMARY_DEFINITIONS.map(def => def.key);
-
-const ZONE_LABELS = ZONE_SUMMARY_DEFINITIONS.reduce((acc, def) => {
-    acc[def.key] = def.label;
-    return acc;
-}, {});
-
 let pozoData = [];
 let markers = {};
 let markerDecorators = [];
@@ -55,13 +25,9 @@ let currentCategoryFilter = 'all';
 let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
-let bulkSelectModeEnabled = false;
-let bulkSelectionDragStart = null;
-let bulkSelectionRect = null;
-let bulkSelectionPozoIds = [];
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.23';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v35';
+const APP_VERSION = 'v1.17';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v29';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -80,157 +46,6 @@ const MAP_ROUTE_STYLES = {
         weight: 2.4
     }
 };
-
-const SERVICE_ROUTES_KEY = 'serviceRoutes';
-const SERVICE_ROUTES_DIRTY_KEY = 'serviceRoutesDirty';
-const SERVICE_ROUTE_SERVICES = [
-    'Ranger-357',
-    'Ranger-356',
-    'Ranger-553',
-    'Ranger-554',
-    'RIG-351',
-    'RIG-352',
-    'RIG-RANGER-555',
-    'Ranger-151',
-    'CT',
-    'WT'
-];
-
-let serviceRoutes = [];
-let routeLayers = {};
-let routeDrawingMode = false;
-let currentRouteDraft = null;
-let routeDrawingDragStart = null;
-let routeDrawingDragged = false;
-let selectedRouteService = null;
-let serviceRoutesUnsubscribe = null;
-
-function getServiceRoutesDocRef() {
-  return window.db.collection('serviceRoutes').doc('data');
-}
-
-function normalizeServiceRoute(route) {
-  return {
-    id: route.id || `route-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    servicio: route.servicio || '',
-    nombre: route.nombre || 'Ruta sin nombre',
-    diagrama: route.diagrama || getSelectedDiagram(),
-    points: Array.isArray(route.points) ? route.points : [],
-    color: route.color || getServiceRouteColor(route.servicio),
-    weight: Number(route.weight) || 4,
-    visible: route.visible !== false,
-    createdAt: route.createdAt || new Date().toISOString(),
-    updatedAt: route.updatedAt || new Date().toISOString()
-  };
-}
-
-function normalizeServiceRoutes(routes) {
-  return Array.isArray(routes) ? routes.map(normalizeServiceRoute) : [];
-}
-
-async function markServiceRoutesDirty() {
-  await localforage.setItem(SERVICE_ROUTES_DIRTY_KEY, true);
-}
-
-async function clearServiceRoutesDirty() {
-  await localforage.setItem(SERVICE_ROUTES_DIRTY_KEY, false);
-}
-
-function mergeServiceRoutes(localRoutes, remoteRoutes) {
-  const byId = new Map();
-
-  normalizeServiceRoutes(remoteRoutes).forEach(route => {
-    byId.set(route.id, route);
-  });
-
-  normalizeServiceRoutes(localRoutes).forEach(route => {
-    const existing = byId.get(route.id);
-
-    if (!existing) {
-      byId.set(route.id, route);
-      return;
-    }
-
-    const localTime = new Date(route.updatedAt || route.createdAt || 0).getTime();
-    const remoteTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
-
-    byId.set(route.id, localTime >= remoteTime ? route : existing);
-  });
-
-  return Array.from(byId.values());
-}
-
-async function syncServiceRoutes() {
-  if (!navigator.onLine || !isDbReady()) return;
-
-  const docRef = getServiceRoutesDocRef();
-
-  const localRoutes = normalizeServiceRoutes(await localforage.getItem(SERVICE_ROUTES_KEY));
-  const isDirty = await localforage.getItem(SERVICE_ROUTES_DIRTY_KEY);
-
-  if (isDirty && localRoutes.length) {
-    await docRef.set({
-      routes: localRoutes,
-      updatedAt: new Date().toISOString()
-    });
-    await clearServiceRoutesDirty();
-  }
-
-  const snap = await docRef.get();
-
-  if (snap.exists) {
-    const remoteData = snap.data() || {};
-    const remoteRoutes = normalizeServiceRoutes(remoteData.routes || []);
-    const mergedRoutes = mergeServiceRoutes(localRoutes, remoteRoutes);
-
-    serviceRoutes = mergedRoutes;
-
-    await localforage.setItem(SERVICE_ROUTES_KEY, serviceRoutes);
-
-    const mergedChangedRemote =
-      JSON.stringify(mergedRoutes) !== JSON.stringify(remoteRoutes);
-
-    if (mergedChangedRemote && navigator.onLine && isDbReady()) {
-      await docRef.set({
-        routes: mergedRoutes,
-        updatedAt: new Date().toISOString()
-      });
-    }
-  } else {
-    serviceRoutes = localRoutes;
-
-    if (serviceRoutes.length) {
-      await docRef.set({
-        routes: serviceRoutes,
-        updatedAt: new Date().toISOString()
-      });
-      await clearServiceRoutesDirty();
-    }
-  }
-}
-
-function setupServiceRoutesRealtimeListener() {
-  if (!isDbReady() || serviceRoutesUnsubscribe) return;
-
-  serviceRoutesUnsubscribe = getServiceRoutesDocRef().onSnapshot(async (snap) => {
-    if (!snap.exists) return;
-
-    const remoteRoutes = normalizeServiceRoutes((snap.data() || {}).routes || []);
-    const localRoutes = normalizeServiceRoutes(await localforage.getItem(SERVICE_ROUTES_KEY));
-
-    const merged = mergeServiceRoutes(localRoutes, remoteRoutes);
-
-    serviceRoutes = merged;
-
-    await localforage.setItem(SERVICE_ROUTES_KEY, merged);
-
-    renderServiceRoutes();
-    renderRoutesList();
-  }, error => {
-    console.warn('Listener de rutas de servicio falló:', error);
-  });
-}
-
 const MAP_STATION_DEFINITIONS = [
     {
         id: 'bare-9',
@@ -247,30 +62,6 @@ const MAP_STATION_DEFINITIONS = [
         colorFondo: '#123b2c',
         colorBorde: '#2ecc71',
         colorIcono: '#2ecc71'
-    },
-    {
-        id: 'ranger-356',
-        nombre: 'Ranger 356',
-        aliases: ['356', 'ranger-356', 'ranger 356', 'servicio 356'],
-        colorFondo: '#1a3a5c',
-        colorBorde: '#3498db',
-        colorIcono: '#3498db'
-    },
-    {
-        id: 'ranger-553',
-        nombre: 'Ranger 553',
-        aliases: ['553', 'ranger-553', 'ranger 553', 'servicio 553'],
-        colorFondo: '#5c3a1a',
-        colorBorde: '#e67e22',
-        colorIcono: '#e67e22'
-    },
-    {
-        id: 'ranger-554',
-        nombre: 'Ranger 554',
-        aliases: ['554', 'ranger-554', 'ranger 554', 'servicio 554'],
-        colorFondo: '#3a1a5c',
-        colorBorde: '#9b59b6',
-        colorIcono: '#9b59b6'
     }
 ];
 const SERVICE_SEARCH_CONFIG = [
@@ -279,9 +70,6 @@ const SERVICE_SEARCH_CONFIG = [
     { taladro: 'RIG-352', tags: ['352', 'rig-352', 'rig 352', 'servicio 352'] },
     { taladro: 'RIG-RANGER-555', tags: ['555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
     { taladro: 'Ranger-151', tags: ['151', 'ranger-151', 'ranger 151', 'servicio 151'] },
-    { taladro: 'Ranger-356', tags: ['356', 'ranger-356', 'ranger 356', 'servicio 356'] },
-    { taladro: 'Ranger-553', tags: ['553', 'ranger-553', 'ranger 553', 'servicio 553'] },
-    { taladro: 'Ranger-554', tags: ['554', 'ranger-554', 'ranger 554', 'servicio 554'] },
     {
         taladro: 'CT',
         tags: [
@@ -315,6 +103,7 @@ const SIDEBAR_COMPACT_KEY = 'sidebarCompact';
 const POZO_DIRTY_KEY = 'pozoDataDirty';
 const AUTH_CONFIG_KEY = 'authConfig';
 const AUTH_SESSION_KEY = 'authSession';
+const API_PENDING_SYNC_KEY = 'pwaApiPendingSync';
 const AUTH_SEED_USER = {
     usuario: 'optimizacion',
     nombre: 'Optimizacion',
@@ -350,7 +139,7 @@ let pendingMapRenderFrame = null;
 
 function normalizeEstado(estado) {
     const value = (estado || '').toString().trim().toLowerCase();
-    if (value === 'inactivo' || value === 'inactivo por servicio' || value === 'en espera de servicio' || value === 'espera de servicio') return STATUS.INACTIVO_SERVICIO;
+    if (value === 'inactivo' || value === 'inactivo por servicio' || value === 'en espera de servicio' || value === 'espera de servicio' || value === 'inactivo en espera por servicio') return STATUS.INACTIVO_SERVICIO;
     if (value === 'revision' || value === 'revisión' || value === 'en revision' || value === 'en revisión' || value === 'diagnostico' || value === 'diagnóstico') {
         return STATUS.DIAGNOSTICO;
     }
@@ -421,46 +210,6 @@ function normalizePozo(pozo) {
 function isDesktop() {
     return window.innerWidth > 768;
 }
-
-function isMobile() {
-    return !isDesktop();
-}
-
-function canUseDesktopCrud() {
-    return isDesktop() && isAuthenticated;
-}
-
-function canUseMobileCrud() {
-    return !isDesktop() && isAuthenticated;
-}
-
-function canEditPozos() {
-    return isAuthenticated;
-}
-
-function canUseServiceRoutes() {
-    return isAuthenticated;
-}
-
-function requireAuthForCapability(capabilityName) {
-    if (isAuthenticated) return true;
-
-    openLoginForm();
-
-    const messages = {
-        editPozos: 'Debes iniciar sesión para editar datos del pozo.',
-        serviceRoutes: 'Debes iniciar sesión para usar recorridos de servicios.',
-        default: 'Debes iniciar sesión para usar esta función.'
-    };
-
-    alert(messages[capabilityName] || messages.default);
-    return false;
-}
-
-function requireCrudAuth() {
-    return requireAuthForCapability('editPozos');
-}
-
 
 function normalizeText(value) {
     return (value || '')
@@ -537,516 +286,6 @@ function getSelectedDiagram() {
 
 function getSelectedZone() {
     return getSelectedDiagram();
-}
-
-// ==============================
-// EDICIÓN MÓVIL DE POZOS
-// ==============================
-
-function openMobilePozoEdit(pozoId) {
-    if (!requireAuthForCapability('editPozos')) return;
-
-    const pozo = pozoData.find(p => p.id === pozoId);
-    if (!pozo) {
-        alert('Pozo no encontrado');
-        return;
-    }
-
-    // Llenar el formulario con datos actuales
-    document.getElementById('mobile-form-id').value = pozo.id;
-    document.getElementById('mobile-form-estado').value = pozo.estado;
-    document.getElementById('mobile-form-zona').value = pozo.zona || '';
-    document.getElementById('mobile-form-diagrama').value = pozo.diagrama;
-    document.getElementById('mobile-form-nota').value = pozo.nota || '';
-    document.getElementById('mobile-form-cabezal').value = pozo.cabezal || '';
-    document.getElementById('mobile-form-variador').value = pozo.variador || '';
-    document.getElementById('mobile-form-vo').value = pozo.velocidadOperacional || '';
-    document.getElementById('mobile-form-potencial').value = pozo.potencial || '';
-    document.getElementById('mobile-form-alto-corte-agua').checked = parseBooleanFlag(pozo.altoCorteAgua);
-    document.getElementById('mobile-form-fecha-ultimo-servicio').value = pozo.fechaUltimoServicio || '';
-
-    // Mostrar/ocultar causa diferido
-    const diferidoCauseWrapper = document.getElementById('mobile-form-diferido-cause-wrapper');
-    if (diferidoCauseWrapper) {
-        diferidoCauseWrapper.classList.toggle('hidden', pozo.estado !== STATUS.DIFERIDO);
-        if (pozo.estado === STATUS.DIFERIDO) {
-            document.getElementById('mobile-form-diferido-cause').value = pozo.causaDiferido || '';
-        }
-    }
-
-    // Mostrar el sheet
-    document.getElementById('mobile-pozo-edit-sheet').classList.remove('hidden');
-    showModalBackdrop();
-    editId = pozoId; // Para compatibilidad con funciones existentes
-}
-
-function closeMobilePozoEdit() {
-    document.getElementById('mobile-pozo-edit-sheet').classList.add('hidden');
-    editId = null;
-    hideModalBackdrop();
-}
-
-async function submitMobilePozoEdit(e) {
-    e.preventDefault();
-    if (!editId) return;
-
-    const pozo = pozoData.find(p => p.id === editId);
-    if (!pozo) return;
-
-    // Recopilar datos del formulario
-    const updatedPozo = {
-        ...pozo,
-        estado: document.getElementById('mobile-form-estado').value,
-        zona: document.getElementById('mobile-form-zona').value || null,
-        diagrama: document.getElementById('mobile-form-diagrama').value,
-        nota: document.getElementById('mobile-form-nota').value.trim() || null,
-        cabezal: document.getElementById('mobile-form-cabezal').value || null,
-        variador: document.getElementById('mobile-form-variador').value || null,
-        velocidadOperacional: document.getElementById('mobile-form-vo').value ? Number(document.getElementById('mobile-form-vo').value) : null,
-        potencial: document.getElementById('mobile-form-potencial').value ? Number(document.getElementById('mobile-form-potencial').value) : null,
-        altoCorteAgua: document.getElementById('mobile-form-alto-corte-agua').checked,
-        fechaUltimoServicio: document.getElementById('mobile-form-fecha-ultimo-servicio').value || null,
-        causaDiferido: pozo.estado === STATUS.DIFERIDO ? document.getElementById('mobile-form-diferido-cause').value.trim() || null : null,
-        updatedAt: new Date().toISOString()
-    };
-
-    // Aplicar normalización
-    Object.assign(updatedPozo, normalizePozo(updatedPozo));
-
-    // Actualizar en pozoData
-    const index = pozoData.findIndex(p => p.id === editId);
-    if (index !== -1) {
-        pozoData[index] = updatedPozo;
-    }
-
-    // Persistir y refrescar
-    await persistPozosAndRefresh();
-
-    // Cerrar formulario
-    closeMobilePozoEdit();
-
-    alert('Pozo actualizado correctamente');
-}
-
-async function loadServiceRoutes() {
-  const localRoutes = normalizeServiceRoutes(await localforage.getItem(SERVICE_ROUTES_KEY));
-  serviceRoutes = localRoutes;
-
-  if (navigator.onLine && isDbReady()) {
-    try {
-      await syncServiceRoutes();
-    } catch (error) {
-      console.warn('No se pudieron sincronizar rutas de servicio:', error);
-    }
-  }
-
-  renderServiceRoutes();
-  renderRoutesList();
-
-  return serviceRoutes;
-}
-
-async function persistServiceRoutes() {
-  serviceRoutes = normalizeServiceRoutes(serviceRoutes);
-
-  await localforage.setItem(SERVICE_ROUTES_KEY, serviceRoutes);
-  await markServiceRoutesDirty();
-
-  if (navigator.onLine && isDbReady()) {
-    try {
-      await syncServiceRoutes();
-    } catch (error) {
-      console.warn('No se pudieron subir rutas de servicio:', error);
-    }
-  }
-}
-
-function getServiceRouteColor(servicio) {
-    const colors = {
-        'Ranger-357': '#0ea5e9',
-        'Ranger-356': '#3b82f6',
-        'Ranger-553': '#f97316',
-        'Ranger-554': '#a855f7',
-        'RIG-351': '#f59e0b',
-        'RIG-352': '#ef4444',
-        'RIG-RANGER-555': '#22c55e',
-        'Ranger-151': '#14b8a6',
-        'CT': '#8b5cf6',
-        'WT': '#06b6d4'
-    };
-    return colors[servicio] || '#f59e0b';
-}
-
-function openRoutesPanel() {
-    if (!requireAuthForCapability('serviceRoutes')) return;
-
-    const desktopPanel = document.getElementById('routes-panel');
-    const mobilePanel = document.getElementById('mobile-routes-panel');
-
-    if (isDesktop()) {
-        if (desktopPanel) desktopPanel.classList.remove('hidden');
-        if (mobilePanel) mobilePanel.classList.add('hidden');
-    } else {
-        if (mobilePanel) mobilePanel.classList.remove('hidden');
-        if (desktopPanel) desktopPanel.classList.add('hidden');
-    }
-
-    showModalBackdrop();
-    renderRoutesList();
-}
-
-function closeRoutesPanel() {
-    const desktopPanel = document.getElementById('routes-panel');
-    const mobilePanel = document.getElementById('mobile-routes-panel');
-    if (desktopPanel) desktopPanel.classList.add('hidden');
-    if (mobilePanel) mobilePanel.classList.add('hidden');
-    if (!routeDrawingMode || !currentRouteDraft) {
-        cancelRouteDraft();
-    }
-    hideModalBackdrop();
-}
-
-function setRouteDrawingMode(enabled) {
-    routeDrawingMode = !!enabled;
-    const mapContainer = map && typeof map.getContainer === 'function' ? map.getContainer() : null;
-    if (mapContainer) {
-        mapContainer.classList.toggle('route-drawing-active', routeDrawingMode);
-    }
-    const routeModeBtn = document.getElementById('route-mode-btn');
-    if (routeModeBtn) {
-        routeModeBtn.classList.toggle('active', routeDrawingMode);
-    }
-}
-
-function isElementVisible(el) {
-    return !!el && !el.classList.contains('hidden') && !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-}
-
-function getActiveRouteServiceSelect() {
-    const mobileSelect = document.getElementById('mobile-route-service-select');
-    const desktopSelect = document.getElementById('route-service-select');
-
-    if (isMobile() && mobileSelect) return mobileSelect;
-    if (!isMobile() && desktopSelect) return desktopSelect;
-    if (isElementVisible(mobileSelect)) return mobileSelect;
-    if (isElementVisible(desktopSelect)) return desktopSelect;
-    return desktopSelect || mobileSelect;
-}
-
-function getActiveRouteNameInput() {
-    const mobileInput = document.getElementById('mobile-route-name-input');
-    const desktopInput = document.getElementById('route-name-input');
-
-    if (isMobile() && mobileInput) return mobileInput;
-    if (!isMobile() && desktopInput) return desktopInput;
-    if (isElementVisible(mobileInput)) return mobileInput;
-    if (isElementVisible(desktopInput)) return desktopInput;
-    return desktopInput || mobileInput;
-}
-
-function getActiveRouteColorInput() {
-    const mobileInput = document.getElementById('mobile-route-color-input');
-    const desktopInput = document.getElementById('route-color-input');
-
-    if (isMobile() && mobileInput) return mobileInput;
-    if (!isMobile() && desktopInput) return desktopInput;
-    if (isElementVisible(mobileInput)) return mobileInput;
-    if (isElementVisible(desktopInput)) return desktopInput;
-    return desktopInput || mobileInput;
-}
-
-function startNewServiceRouteDraft() {
-    const serviceSelect = getActiveRouteServiceSelect();
-    const service = serviceSelect ? serviceSelect.value : '';
-    if (!service) {
-        alert('Seleccione un servicio antes de iniciar una nueva ruta.');
-        return;
-    }
-
-    setRouteDrawingMode(true);
-
-    const routeNameInput = getActiveRouteNameInput();
-    const routeName = routeNameInput ? routeNameInput.value.trim() : '';
-
-    const routeColorInput = getActiveRouteColorInput();
-    const routeColor = routeColorInput ? routeColorInput.value : getServiceRouteColor(service);
-
-    if (currentRouteDraft && currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
-        map.removeLayer(currentRouteDraft.layer);
-    }
-
-    currentRouteDraft = {
-        id: `route-${Date.now()}`,
-        servicio: service,
-        nombre: routeName || '',
-        diagrama: getSelectedDiagram(),
-        points: [],
-        color: routeColor,
-        weight: 4,
-        visible: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        layer: null
-    };
-    selectedRouteService = service;
-    selectedRouteId = null;
-    if (routeNameInput) routeNameInput.value = routeName;
-    alert('Haz clic en el diagrama para agregar puntos a la ruta.');
-}
-
-function addPointToRouteDraft(latlng) {
-    if (!routeDrawingMode || !currentRouteDraft) return;
-
-    currentRouteDraft.points.push([latlng.lat, latlng.lng]);
-    currentRouteDraft.updatedAt = new Date().toISOString();
-
-    if (currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
-        map.removeLayer(currentRouteDraft.layer);
-    }
-
-    const style = {
-        color: currentRouteDraft.color,
-        weight: currentRouteDraft.weight,
-        opacity: 0.85,
-        dashArray: '6,6',
-        interactive: false
-    };
-    currentRouteDraft.layer = L.polyline(currentRouteDraft.points, style).addTo(map);
-}
-
-async function saveCurrentRouteDraft() {
-    if (!currentRouteDraft) {
-        alert('No hay ninguna ruta en borrador para guardar.');
-        return;
-    }
-    if (!currentRouteDraft.points || currentRouteDraft.points.length < 2) {
-        alert('La ruta debe tener al menos 2 puntos para poder guardarla.');
-        return;
-    }
-
-    const existingCount = serviceRoutes.filter(r => r.servicio === currentRouteDraft.servicio && r.diagrama === currentRouteDraft.diagrama).length;
-    if (!currentRouteDraft.nombre) {
-        currentRouteDraft.nombre = `Posible ruta ${existingCount + 1} - ${currentRouteDraft.servicio}`;
-    }
-
-    const routeToSave = {
-        id: currentRouteDraft.id,
-        servicio: currentRouteDraft.servicio,
-        nombre: currentRouteDraft.nombre,
-        diagrama: currentRouteDraft.diagrama,
-        points: currentRouteDraft.points.slice(),
-        color: currentRouteDraft.color,
-        weight: currentRouteDraft.weight,
-        visible: true,
-        createdAt: currentRouteDraft.createdAt,
-        updatedAt: new Date().toISOString()
-    };
-
-    if (currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
-        map.removeLayer(currentRouteDraft.layer);
-    }
-
-    serviceRoutes.push(routeToSave);
-    await persistServiceRoutes();
-    currentRouteDraft = null;
-    selectedRouteId = routeToSave.id;
-    renderServiceRoutes();
-    renderRoutesList();
-    alert('Ruta guardada correctamente.');
-}
-
-function cancelRouteDraft() {
-    if (currentRouteDraft && currentRouteDraft.layer && map && map.hasLayer(currentRouteDraft.layer)) {
-        map.removeLayer(currentRouteDraft.layer);
-    }
-    currentRouteDraft = null;
-    routeDrawingMode = false;
-    if (map && typeof map.getContainer === 'function') {
-        map.getContainer().classList.remove('route-drawing-active');
-    }
-    const helpText = document.getElementById('route-drawing-help');
-    if (helpText) helpText.classList.add('hidden');
-    const mobileHelpText = document.getElementById('mobile-route-drawing-help');
-    if (mobileHelpText) mobileHelpText.classList.add('hidden');
-}
-
-function renderServiceRoutes() {
-    Object.entries(routeLayers).forEach(([routeId, layer]) => {
-        if (layer && map && map.hasLayer(layer)) {
-            map.removeLayer(layer);
-        }
-    });
-    routeLayers = {};
-
-    if (!map || mapMode !== 'diagram') return;
-
-    const selectedDiagram = getSelectedDiagram();
-    const visibleRoutes = serviceRoutes.filter(route => route.diagrama === selectedDiagram && route.visible);
-
-    visibleRoutes.forEach(route => {
-        if (!route.points || route.points.length < 2) return;
-        const layer = L.polyline(route.points, {
-            color: route.color || getServiceRouteColor(route.servicio),
-            weight: route.weight || 4,
-            opacity: 0.8,
-            lineCap: 'round',
-            lineJoin: 'round'
-        });
-        layer.bindPopup(`<strong>${route.nombre}</strong><br>Servicio: ${route.servicio}<br>Puntos: ${route.points.length}`);
-        layer.addTo(map);
-        routeLayers[route.id] = layer;
-    });
-}
-
-function renderRoutesList() {
-    const desktopListContainer = document.getElementById('routes-list');
-    const mobileListContainer = document.getElementById('mobile-routes-list');
-
-    const selectedDiagram = getSelectedDiagram();
-    const activeServiceSelect = getActiveRouteServiceSelect();
-    const serviceFilter = activeServiceSelect ? activeServiceSelect.value : '';
-    const filteredRoutes = serviceRoutes.filter(route => {
-        if (route.diagrama !== selectedDiagram) return false;
-        if (serviceFilter && route.servicio !== serviceFilter) return false;
-        return true;
-    });
-
-    const noRoutesHtml = '<div class="no-routes">No hay rutas guardadas para este diagrama y servicio.</div>';
-
-    if (!filteredRoutes.length) {
-        if (desktopListContainer) desktopListContainer.innerHTML = noRoutesHtml;
-        if (mobileListContainer) mobileListContainer.innerHTML = noRoutesHtml;
-        return;
-    }
-
-    const routesHtml = filteredRoutes.map(route => {
-        const visibleLabel = route.visible ? 'Visible' : 'Oculta';
-        return `
-            <div class="route-item">
-                <h4>${route.nombre}</h4>
-                <p>Servicio: ${route.servicio}</p>
-                <p>Puntos: ${route.points?.length || 0}</p>
-                <p>Estado: ${visibleLabel}</p>
-                <label>Color: <input type="color" class="route-color-picker" data-route-id="${route.id}" value="${route.color || '#f59e0b'}"></label>
-                <div class="route-buttons">
-                    <button type="button" class="route-show-only-btn" data-route-id="${route.id}">Ver solo</button>
-                    <button type="button" class="route-toggle-visibility-btn" data-route-id="${route.id}">${route.visible ? 'Ocultar' : 'Mostrar'}</button>
-                    <button type="button" class="route-delete-btn" data-route-id="${route.id}">Eliminar</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    if (desktopListContainer) desktopListContainer.innerHTML = routesHtml;
-    if (mobileListContainer) mobileListContainer.innerHTML = routesHtml;
-
-    // Agregar event listeners a ambos contenedores
-    [desktopListContainer, mobileListContainer].forEach(container => {
-        if (!container) return;
-        container.querySelectorAll('.route-show-only-btn').forEach(button => {
-            button.addEventListener('click', async () => {
-                const routeId = button.dataset.routeId;
-                await showOnlyServiceRoute(routeId);
-            });
-        });
-        container.querySelectorAll('.route-toggle-visibility-btn').forEach(button => {
-            button.addEventListener('click', async () => {
-                const routeId = button.dataset.routeId;
-                await toggleServiceRouteVisibility(routeId);
-            });
-        });
-        container.querySelectorAll('.route-delete-btn').forEach(button => {
-            button.addEventListener('click', async () => {
-                const routeId = button.dataset.routeId;
-                await deleteServiceRoute(routeId);
-            });
-        });
-        container.querySelectorAll('.route-color-picker').forEach(input => {
-            input.addEventListener('change', async (e) => {
-                const routeId = input.dataset.routeId;
-                const newColor = e.target.value;
-                await updateServiceRouteColor(routeId, newColor);
-            });
-        });
-    });
-}
-
-async function showOnlyServiceRoute(routeId) {
-    const selectedDiagram = getSelectedDiagram();
-    let changed = false;
-    serviceRoutes = serviceRoutes.map(route => {
-        if (route.diagrama !== selectedDiagram) return route;
-        const nextVisible = route.id === routeId;
-        if (route.visible !== nextVisible) {
-            changed = true;
-            return { ...route, visible: nextVisible, updatedAt: new Date().toISOString() };
-        }
-        return route;
-    });
-    if (changed) {
-        await persistServiceRoutes();
-    }
-    renderServiceRoutes();
-    renderRoutesList();
-}
-
-async function toggleServiceRouteVisibility(routeId) {
-    let changed = false;
-    serviceRoutes = serviceRoutes.map(route => {
-        if (route.id !== routeId) return route;
-        changed = true;
-        return { ...route, visible: !route.visible, updatedAt: new Date().toISOString() };
-    });
-    if (!changed) return;
-    await persistServiceRoutes();
-    renderServiceRoutes();
-    renderRoutesList();
-}
-
-async function showOnlyRoutesByService(servicio) {
-    const selectedDiagram = getSelectedDiagram();
-    let changed = false;
-    serviceRoutes = serviceRoutes.map(route => {
-        if (route.diagrama !== selectedDiagram) return route;
-        const nextVisible = route.servicio === servicio;
-        if (route.visible !== nextVisible) {
-            changed = true;
-            return { ...route, visible: nextVisible, updatedAt: new Date().toISOString() };
-        }
-        return route;
-    });
-    if (changed) {
-        await persistServiceRoutes();
-    }
-    renderServiceRoutes();
-    renderRoutesList();
-}
-
-async function deleteServiceRoute(routeId) {
-    if (!confirm('¿Eliminar esta ruta de servicio? Esta acción no se puede deshacer.')) return;
-    const route = serviceRoutes.find(r => r.id === routeId);
-    if (!route) return;
-    serviceRoutes = serviceRoutes.filter(r => r.id !== routeId);
-    if (routeLayers[routeId] && map && map.hasLayer(routeLayers[routeId])) {
-        map.removeLayer(routeLayers[routeId]);
-    }
-    delete routeLayers[routeId];
-    await persistServiceRoutes();
-    renderServiceRoutes();
-    renderRoutesList();
-}
-
-async function updateServiceRouteColor(routeId, newColor) {
-    let changed = false;
-    serviceRoutes = serviceRoutes.map(route => {
-        if (route.id !== routeId) return route;
-        changed = true;
-        return { ...route, color: newColor, updatedAt: new Date().toISOString() };
-    });
-    if (!changed) return;
-    await persistServiceRoutes();
-    renderServiceRoutes();
-    renderRoutesList();
 }
 
 function isKnownDiagram(value) {
@@ -1129,7 +368,6 @@ async function migrateLegacyDiagramByCoords(rawPozos) {
 
         const legacyZone = (nextPozo.zona || '').toString().trim().toLowerCase();
         if (diagramCoords && isKnownDiagram(legacyZone)) {
-            // Migración legacy de una sola vez para registros históricos de diagrama.
             nextPozo.diagrama = legacyZone;
             changed = true;
         }
@@ -1218,166 +456,11 @@ function isCoordsInsideViewport(coords, bounds) {
 function attachMapEvents() {
     if (!map) return;
     map.on('click', onMapClick);
-    map.on('mousedown', onMapMouseDown);
-    map.on('mousemove', onMapMouseMove);
-    map.on('mouseup', onMapMouseUp);
     map.on('moveend', () => {
         if (mapMode === 'mapa') {
             scheduleMapRender();
         }
     });
-}
-
-function syncBulkSelectUi() {
-    const toggleBtn = document.getElementById('bulk-zone-select-toggle');
-    if (!toggleBtn) return;
-
-    const enabledForView = isDesktop() && mapMode === 'diagram';
-    toggleBtn.disabled = !enabledForView;
-    toggleBtn.classList.toggle('is-active', enabledForView && bulkSelectModeEnabled);
-    toggleBtn.setAttribute('aria-pressed', enabledForView && bulkSelectModeEnabled ? 'true' : 'false');
-
-    const mapContainer = map && typeof map.getContainer === 'function' ? map.getContainer() : null;
-    if (mapContainer) {
-        mapContainer.classList.toggle('bulk-select-active', enabledForView && bulkSelectModeEnabled);
-    }
-}
-
-function clearBulkSelectionVisual() {
-    bulkSelectionDragStart = null;
-    if (bulkSelectionRect && map && map.hasLayer(bulkSelectionRect)) {
-        map.removeLayer(bulkSelectionRect);
-    }
-    bulkSelectionRect = null;
-    if (map && map.dragging) {
-        map.dragging.enable();
-    }
-}
-
-function applyBulkSelectionHighlight() {
-    const canHighlight = mapMode === 'diagram' && bulkSelectModeEnabled && bulkSelectionPozoIds.length > 0;
-    const selectedIds = canHighlight ? new Set(bulkSelectionPozoIds) : null;
-    Object.entries(markers).forEach(([pozoId, marker]) => {
-        if (!marker || typeof marker.setOpacity !== 'function') return;
-        if (!canHighlight) {
-            marker.setOpacity(1);
-            return;
-        }
-        marker.setOpacity(selectedIds.has(pozoId) ? 1 : 0.35);
-    });
-}
-
-function setBulkSelectMode(enabled) {
-    const nextEnabled = !!enabled;
-
-    if (nextEnabled) {
-        if (!isDesktop() || mapMode !== 'diagram') {
-            bulkSelectModeEnabled = false;
-            syncBulkSelectUi();
-            return;
-        }
-        if (!requireCrudAuth()) {
-            bulkSelectModeEnabled = false;
-            syncBulkSelectUi();
-            return;
-        }
-        const editMode = document.getElementById('edit-mode');
-        const assignMode = document.getElementById('assign-existing-mode');
-        if (editMode) editMode.checked = false;
-        if (assignMode) assignMode.checked = false;
-        closeAssignDiagramForm();
-    } else {
-        closeBulkZoneForm();
-        bulkSelectionPozoIds = [];
-        clearBulkSelectionVisual();
-    }
-
-    bulkSelectModeEnabled = nextEnabled;
-    syncBulkSelectUi();
-    applyBulkSelectionHighlight();
-}
-
-function onMapMouseDown(e) {
-    if (routeDrawingMode && e && e.latlng) {
-        routeDrawingDragStart = e.latlng;
-        routeDrawingDragged = false;
-    }
-    if (!bulkSelectModeEnabled || mapMode !== 'diagram') return;
-    if (!e || !e.latlng) return;
-    if (e.originalEvent && e.originalEvent.button !== 0) return;
-
-    bulkSelectionDragStart = e.latlng;
-    clearBulkSelectionVisual();
-    bulkSelectionDragStart = e.latlng;
-    bulkSelectionPozoIds = [];
-    closeBulkZoneForm();
-
-    bulkSelectionRect = L.rectangle(L.latLngBounds(e.latlng, e.latlng), {
-        color: '#7d88ff',
-        weight: 1.2,
-        fillColor: '#7d88ff',
-        fillOpacity: 0.18,
-        interactive: false
-    }).addTo(map);
-
-    if (map.dragging) {
-        map.dragging.disable();
-    }
-
-    applyBulkSelectionHighlight();
-}
-
-function onMapMouseMove(e) {
-    if (routeDrawingMode && routeDrawingDragStart && e && e.latlng) {
-        const deltaLat = Math.abs(routeDrawingDragStart.lat - e.latlng.lat);
-        const deltaLng = Math.abs(routeDrawingDragStart.lng - e.latlng.lng);
-        if (deltaLat > 0.001 || deltaLng > 0.001) {
-            routeDrawingDragged = true;
-        }
-    }
-    if (!bulkSelectModeEnabled || mapMode !== 'diagram') return;
-    if (!bulkSelectionDragStart || !bulkSelectionRect || !e || !e.latlng) return;
-    bulkSelectionRect.setBounds(L.latLngBounds(bulkSelectionDragStart, e.latlng));
-}
-
-function onMapMouseUp(e) {
-    if (routeDrawingMode) {
-        routeDrawingDragStart = null;
-        return;
-    }
-    if (!bulkSelectionDragStart) return;
-
-    const start = bulkSelectionDragStart;
-    const end = (e && e.latlng) ? e.latlng : start;
-    const selectionBounds = L.latLngBounds(start, end);
-    const minDelta = 2;
-
-    clearBulkSelectionVisual();
-
-    if (Math.abs(start.lat - end.lat) < minDelta && Math.abs(start.lng - end.lng) < minDelta) {
-        bulkSelectionPozoIds = [];
-        applyBulkSelectionHighlight();
-        return;
-    }
-
-    const selectedDiagram = getSelectedDiagram();
-    bulkSelectionPozoIds = pozoData
-        .filter(pozo => {
-            const coords = getDiagramCoords(pozo);
-            return !!coords
-                && getPozoDiagram(pozo) === selectedDiagram
-                && selectionBounds.contains(L.latLng(Number(coords[0]), Number(coords[1])));
-        })
-        .map(pozo => pozo.id);
-
-    if (!bulkSelectionPozoIds.length) {
-        applyBulkSelectionHighlight();
-        alert('No hay pozos dentro del área seleccionada.');
-        return;
-    }
-
-    applyBulkSelectionHighlight();
-    openBulkZoneForm();
 }
 
 function closeFloatingPanels(exceptId = null) {
@@ -1400,12 +483,10 @@ function updateResponsiveControls() {
     const floatingViewBtn = document.getElementById('floating-view-btn');
     const floatingZoneContainer = document.getElementById('floating-zone-container');
     const mobileMapFilters = document.getElementById('mobile-map-filters');
-    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
     if (!floatingViewBtn || !floatingZoneContainer || !mobileMapFilters) return;
 
     const mobile = !isDesktop();
     const showingMap = mapMode === 'mapa';
-    const showingDiagram = mapMode === 'diagram';
 
     if (body) {
         body.classList.toggle('mobile-map-view', mobile && showingMap);
@@ -1416,13 +497,6 @@ function updateResponsiveControls() {
 
     floatingZoneContainer.classList.toggle('hidden', !mobile || showingMap);
     mobileMapFilters.classList.toggle('hidden', !mobile || !showingMap);
-
-    // Mostrar botón de recorridos solo en móvil, diagrama, con sesión
-    if (mobileHeaderRoutesBtn) {
-        const shouldShow = mobile && showingDiagram && isAuthenticated;
-        mobileHeaderRoutesBtn.classList.toggle('hidden', !shouldShow);
-    }
-    updateMobileHeaderActionButtons();
 }
 
 function getRouteStyle(filePath) {
@@ -1610,63 +684,6 @@ function closeAssignDiagramForm() {
     pendingDiagramReassignPozoId = null;
 }
 
-function closeBulkZoneForm() {
-    const container = document.getElementById('bulk-zone-form-container');
-    const form = document.getElementById('bulk-zone-form');
-    if (container) container.classList.add('hidden');
-    if (form) form.reset();
-}
-
-function openBulkZoneForm() {
-    const sourceSelect = document.getElementById('form-zona');
-    const targetSelect = document.getElementById('bulk-zone-select');
-    const countLabel = document.getElementById('bulk-zone-selection-count');
-    const container = document.getElementById('bulk-zone-form-container');
-
-    if (!sourceSelect || !targetSelect || !countLabel || !container) return;
-
-    targetSelect.innerHTML = '';
-    Array.from(sourceSelect.options).forEach(option => {
-        targetSelect.appendChild(option.cloneNode(true));
-    });
-    targetSelect.value = '';
-
-    countLabel.textContent = `Pozos seleccionados: ${bulkSelectionPozoIds.length}`;
-    container.classList.remove('hidden');
-    targetSelect.focus();
-}
-
-async function submitBulkZoneForm(e) {
-    e.preventDefault();
-    if (!requireCrudAuth()) return;
-
-    if (!bulkSelectionPozoIds.length) {
-        closeBulkZoneForm();
-        return;
-    }
-
-    const targetZoneValue = (document.getElementById('bulk-zone-select').value || '').trim().toLowerCase();
-    let updatedCount = 0;
-
-    bulkSelectionPozoIds.forEach(pozoId => {
-        const pozo = pozoData.find(item => item.id === pozoId);
-        if (!pozo) return;
-        pozo.zona = targetZoneValue || null;
-        Object.assign(pozo, normalizePozo(pozo));
-        updatedCount += 1;
-    });
-
-    if (!updatedCount) {
-        alert('No se pudo actualizar la zona de los pozos seleccionados.');
-        return;
-    }
-
-    await persistPozosAndRefresh();
-    closeBulkZoneForm();
-    updateDatalist();
-    alert(`Zona actualizada para ${updatedCount} pozo(s).`);
-}
-
 function openAssignDiagramForm(lat, lng) {
     const input = document.getElementById('assign-diagram-pozo-input');
     const list = document.getElementById('assign-diagram-pozo-list');
@@ -1823,12 +840,10 @@ window.addEventListener('DOMContentLoaded', init);
 // antes de usar localforage asegurarnos de que existe (posible carga desde CDN)
 async function ensureLocalForage() {
     if (typeof localforage !== 'undefined') return;
-    // esperamos un corto periodo para ver si el script externo termina de cargar
     for (let i = 0; i < 20; i++) {
         if (typeof localforage !== 'undefined') return;
         await new Promise(r => setTimeout(r, 100));
     }
-    // si aún no está definido hacemos un envoltorio mínimo usando localStorage
     if (typeof localforage === 'undefined') {
         console.warn('localforage no disponible; usando localStorage como respaldo');
         window.localforage = {
@@ -1952,17 +967,8 @@ function updateAuthUi() {
     const assignButton = document.getElementById('assign-taladro-btn');
     const assignExistingToggle = document.getElementById('assign-existing-toggle');
     const assignExistingMode = document.getElementById('assign-existing-mode');
-    const bulkSelectToggle = document.getElementById('bulk-zone-select-toggle');
-
-    const mobileAuthBtn = document.getElementById('mobile-auth-btn');
-    const mobileLoginBtn = document.getElementById('mobile-login-btn');
-    const mobileAuthMenu = document.getElementById('mobile-auth-menu');
-    const mobileAuthUserLabel = document.getElementById('mobile-auth-user-label');
-    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
 
     if (isDesktop()) {
-        // Desktop: mostrar controles normales
         if (isAuthenticated && authenticatedUser) {
             loginBtn.classList.add('hidden');
             logoutBtn.classList.remove('hidden');
@@ -1971,7 +977,6 @@ function updateAuthUi() {
             editSwitch.classList.remove('hidden');
             assignButton.classList.remove('hidden');
             assignExistingToggle.classList.remove('hidden');
-            if (bulkSelectToggle) bulkSelectToggle.classList.remove('hidden');
         } else {
             loginBtn.classList.remove('hidden');
             logoutBtn.classList.add('hidden');
@@ -1980,74 +985,26 @@ function updateAuthUi() {
             editSwitch.classList.add('hidden');
             assignButton.classList.add('hidden');
             assignExistingToggle.classList.add('hidden');
-            if (bulkSelectToggle) bulkSelectToggle.classList.add('hidden');
             document.getElementById('edit-mode').checked = false;
             if (assignExistingMode) assignExistingMode.checked = false;
-            setBulkSelectMode(false);
             closeForm();
             closeAssignForm();
             closeAssignDiagramForm();
             pendingServiceAssignment = null;
             closeServiceVerification();
         }
-
-        // Ocultar controles móviles en desktop
-        if (mobileAuthBtn) mobileAuthBtn.classList.add('hidden');
-    } else {
-        // Móvil: ocultar controles desktop, mostrar controles móviles
-        loginBtn.classList.add('hidden');
-        logoutBtn.classList.add('hidden');
-        userLabel.classList.add('hidden');
-        editSwitch.classList.add('hidden');
-        assignButton.classList.add('hidden');
-        assignExistingToggle.classList.add('hidden');
-        if (bulkSelectToggle) bulkSelectToggle.classList.add('hidden');
-        document.getElementById('edit-mode').checked = false;
-        if (assignExistingMode) assignExistingMode.checked = false;
-        setBulkSelectMode(false);
-        closeAssignDiagramForm();
-
-        // Mostrar controles móviles
-        if (mobileAuthBtn) mobileAuthBtn.classList.remove('hidden');
-
-        if (isAuthenticated && authenticatedUser) {
-            if (mobileLoginBtn) mobileLoginBtn.classList.add('hidden');
-            if (mobileAuthMenu) mobileAuthMenu.classList.remove('hidden');
-            if (mobileAuthUserLabel) {
-                mobileAuthUserLabel.textContent = authenticatedUser.nombre;
-                mobileAuthUserLabel.classList.remove('hidden');
-            }
-            if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('hidden');
-            if (mobileHeaderRoutesBtn) mobileHeaderRoutesBtn.classList.remove('hidden');
-        } else {
-            if (mobileLoginBtn) mobileLoginBtn.classList.remove('hidden');
-            if (mobileAuthMenu) mobileAuthMenu.classList.add('hidden');
-            if (mobileAuthUserLabel) mobileAuthUserLabel.classList.add('hidden');
-            if (mobileLogoutBtn) mobileLogoutBtn.classList.add('hidden');
-            if (mobileHeaderRoutesBtn) mobileHeaderRoutesBtn.classList.add('hidden');
-        }
+        return;
     }
-    updateMobileHeaderActionButtons();
-}
 
-function updateMobileHeaderActionButtons() {
-  const routesBtn = document.getElementById('mobile-header-routes-btn');
-  const serviceBtn = document.getElementById('mobile-header-service-btn');
-
-  const shouldShowMobileAuthActions =
-    !isDesktop() &&
-    isAuthenticated;
-
-  if (routesBtn) {
-    routesBtn.classList.toggle(
-      'hidden',
-      !(shouldShowMobileAuthActions && mapMode === 'diagram')
-    );
-  }
-
-  if (serviceBtn) {
-    serviceBtn.classList.toggle('hidden', !shouldShowMobileAuthActions);
-  }
+    loginBtn.classList.add('hidden');
+    logoutBtn.classList.add('hidden');
+    userLabel.classList.add('hidden');
+    editSwitch.classList.add('hidden');
+    assignButton.classList.add('hidden');
+    assignExistingToggle.classList.add('hidden');
+    document.getElementById('edit-mode').checked = false;
+    if (assignExistingMode) assignExistingMode.checked = false;
+    closeAssignDiagramForm();
 }
 
 async function initAuth() {
@@ -2067,55 +1024,16 @@ function showLoginError(message) {
     errorEl.classList.remove('hidden');
 }
 
-function showModalBackdrop() {
-    const backdrop = document.getElementById('mobile-modal-backdrop');
-    if (backdrop) {
-        backdrop.classList.remove('hidden');
-    }
-    document.body.classList.add('modal-open');
-}
-
-function hideModalBackdrop() {
-    const backdrop = document.getElementById('mobile-modal-backdrop');
-    if (backdrop) {
-        backdrop.classList.add('hidden');
-    }
-    document.body.classList.remove('modal-open');
-}
-
-function closeAnyMobileModal() {
-    const safeHide = (id) => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-    };
-    safeHide('login-panel');
-    safeHide('mobile-pozo-edit-sheet');
-    safeHide('mobile-routes-panel');
-    safeHide('routes-panel');
-    safeHide('mobile-assign-service-panel');
-    if (!routeDrawingMode || !currentRouteDraft) {
-        cancelRouteDraft();
-    } else {
-        hideModalBackdrop();
-    }
-}
-
 function openLoginForm() {
     showLoginError('');
-    const loginPanel = document.getElementById('login-panel');
-    if (loginPanel) loginPanel.classList.remove('hidden');
-    showModalBackdrop();
-    const loginUsername = document.getElementById('login-username');
-    if (loginUsername) loginUsername.focus();
+    document.getElementById('login-form-container').classList.remove('hidden');
+    document.getElementById('login-username').focus();
 }
 
 function closeLoginForm() {
-    const loginPanel = document.getElementById('login-panel');
-    if (loginPanel) loginPanel.classList.add('hidden');
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) loginForm.reset();
+    document.getElementById('login-form-container').classList.add('hidden');
+    document.getElementById('login-form').reset();
     showLoginError('');
-    hideModalBackdrop();
 }
 
 async function submitLogin(e) {
@@ -2164,38 +1082,159 @@ async function logout() {
 }
 
 function requireCrudAuth() {
-    return requireAuthForCapability('editPozos');
+    if (!isDesktop()) {
+        return false;
+    }
+    if (isAuthenticated) {
+        return true;
+    }
+    openLoginForm();
+    alert('Debes iniciar sesión para usar funciones de edición');
+    return false;
+}
+
+async function loadPozosFromPwaApi() {
+    if (!window.MapaApi || !navigator.onLine) {
+        return null;
+    }
+
+    try {
+        const pozosFromApi = await window.MapaApi.getPozos();
+
+        if (!Array.isArray(pozosFromApi) || !pozosFromApi.length) {
+            throw new Error('La API no devolvió pozos.');
+        }
+
+        const migration = await migrateLegacyDiagramByCoords(pozosFromApi);
+        pozoData = migration.pozos.map(normalizePozo);
+
+        await localforage.setItem(POZO_DATA_KEY, pozoData);
+        await clearDataDirty();
+
+        console.info('[MapaBare] Pozos cargados desde PWA API:', pozoData.length);
+
+        return pozoData;
+    } catch (error) {
+        console.warn('[MapaBare] No se pudo cargar desde PWA API. Usando fallback local/Firebase:', error);
+        return null;
+    }
+}
+
+async function loadInitialPozosData() {
+    const apiPozos = await loadPozosFromPwaApi();
+
+    if (apiPozos && apiPozos.length) {
+        return apiPozos;
+    }
+
+    const localData = await localforage.getItem(POZO_DATA_KEY);
+
+    if (Array.isArray(localData) && localData.length) {
+        const migration = await migrateLegacyDiagramByCoords(localData);
+        pozoData = migration.pozos.map(normalizePozo);
+
+        if (migration.changed) {
+            await localforage.setItem(POZO_DATA_KEY, pozoData);
+            await markDataDirty();
+        }
+
+        console.info('[MapaBare] Pozos cargados desde localforage:', pozoData.length);
+        return pozoData;
+    }
+
+    if (Array.isArray(window.POZOS_SEED) && window.POZOS_SEED.length > 0) {
+        const migration = await migrateLegacyDiagramByCoords(window.POZOS_SEED);
+        pozoData = migration.pozos.map(normalizePozo);
+        await localforage.setItem(POZO_DATA_KEY, pozoData);
+
+        if (migration.changed) {
+            await markDataDirty();
+        } else {
+            await clearDataDirty();
+        }
+
+        console.info('[MapaBare] Pozos cargados desde POZOS_SEED:', pozoData.length);
+        return pozoData;
+    }
+
+    pozoData = [];
+    console.warn('[MapaBare] No se encontraron pozos para cargar.');
+    return pozoData;
+}
+
+async function getPendingApiSync() {
+    const pending = await localforage.getItem(API_PENDING_SYNC_KEY);
+    return Array.isArray(pending) ? pending : [];
+}
+
+async function setPendingApiSync(pending) {
+    await localforage.setItem(API_PENDING_SYNC_KEY, Array.isArray(pending) ? pending : []);
+}
+
+async function enqueueApiSync(operation) {
+    const pending = await getPendingApiSync();
+    pending.push({
+        ...operation,
+        queuedAt: new Date().toISOString()
+    });
+    await setPendingApiSync(pending);
+}
+
+async function syncPozoToPwaApi(pozo) {
+    if (!window.MapaApi || !navigator.onLine || !pozo) return null;
+
+    try {
+        const updatedPozo = await window.MapaApi.updatePozo(pozo);
+        return normalizePozo(updatedPozo);
+    } catch (error) {
+        console.warn('[MapaBare] Error sincronizando pozo con PWA API:', pozo?.id, error);
+        throw error;
+    }
+}
+
+async function flushPendingApiSync() {
+    if (!window.MapaApi || !navigator.onLine) return;
+
+    const pending = await getPendingApiSync();
+    if (!pending.length) return;
+
+    const remaining = [];
+
+    for (const operation of pending) {
+        try {
+            if (operation.type === 'pozo-update') {
+                const pozo = pozoData.find(p => p.id === operation.pozoId) || operation.pozo;
+                if (pozo) {
+                    await syncPozoToPwaApi(pozo);
+                }
+            }
+
+            if (operation.type === 'servicio-asignar') {
+                await window.MapaApi.asignarServicio(operation.payload);
+            }
+        } catch (error) {
+            console.warn('[MapaBare] Operación pendiente no sincronizada:', operation, error);
+            remaining.push(operation);
+        }
+    }
+
+    await setPendingApiSync(remaining);
+
+    if (!remaining.length) {
+        await clearDataDirty();
+    }
 }
 
 async function init() {
-    // garantizar que localforage esté listo antes de intentar usarlo
     await ensureLocalForage();
     await initAuth();
 
-    // Cargar datos desde local storage primero
     try {
-        const localData = await localforage.getItem(POZO_DATA_KEY);
-        if (localData && Array.isArray(localData)) {
-            const migration = await migrateLegacyDiagramByCoords(localData);
-            pozoData = migration.pozos.map(normalizePozo);
-            if (migration.changed) {
-                await localforage.setItem(POZO_DATA_KEY, pozoData);
-                await markDataDirty();
-            }
-        } else if (Array.isArray(window.POZOS_SEED) && window.POZOS_SEED.length > 0) {
-            // Fallback opcional: snapshot embebido para primer uso offline.
-            const migration = await migrateLegacyDiagramByCoords(window.POZOS_SEED);
-            pozoData = migration.pozos.map(normalizePozo);
-            await localforage.setItem(POZO_DATA_KEY, pozoData);
-            if (migration.changed) {
-                await markDataDirty();
-            } else {
-                await clearDataDirty();
-            }
-        } else if (!navigator.onLine) {
-            // Primera carga sin internet
+        await loadInitialPozosData();
+
+        if (!pozoData.length && !navigator.onLine) {
             document.getElementById('map').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:18px;">Requiere conexión a internet para la primera carga</div>';
-            return; // No continuar
+            return;
         }
     } catch (e) {
         console.log('No hay datos locales', e);
@@ -2206,10 +1245,6 @@ async function init() {
     }
 
     await setupMap();
-    if (navigator.onLine && isDbReady()) {
-      setupServiceRoutesRealtimeListener();
-    }
-    await loadServiceRoutes();
     const savedMode = await localforage.getItem(MAP_MODE_KEY);
     if (savedMode === 'mapa') {
         mapMode = 'mapa';
@@ -2219,13 +1254,19 @@ async function init() {
     attachControls();
     await applyViewMode(mapMode, true);
 
-    // Render inicial usando lo que ya esté en memoria local/remota
     renderActiveMarkers();
     updateDatalist();
     updateStats();
 
-    // Si está online y Firestore está disponible, sincronizar en arranque.
-    if (navigator.onLine && isDbReady()) {
+    if (navigator.onLine) {
+        try {
+            await flushPendingApiSync();
+        } catch (e) {
+            console.log('Error sincronizando pendientes con PWA API', e);
+        }
+    }
+
+    if (navigator.onLine && !window.MapaApi && isDbReady()) {
         try {
             await syncData();
         } catch (e) {
@@ -2233,13 +1274,12 @@ async function init() {
         }
     }
 
-    // Listener en tiempo real solo cuando Firestore está disponible.
-    if (navigator.onLine && isDbReady()) {
+    if (navigator.onLine && !window.MapaApi && isDbReady()) {
         const docRef = getPozosDocRef();
         docRef.onSnapshot(async (doc) => {
             if (doc.exists) {
                 const isDirty = await localforage.getItem(POZO_DIRTY_KEY);
-                if (isDirty) return; // evita pisar cambios locales pendientes
+                if (isDirty) return;
                 const migration = await migrateLegacyDiagramByCoords(doc.data().pozos || []);
                 pozoData = migration.pozos.map(normalizePozo);
                 await localforage.setItem(POZO_DATA_KEY, pozoData);
@@ -2250,60 +1290,67 @@ async function init() {
         });
     }
 
-    // Listeners para online/offline
     window.addEventListener('online', async () => {
-      await syncData();
-      await syncServiceRoutes();
-      await loadServiceRoutes();
+        if (window.MapaApi) {
+            await flushPendingApiSync();
+            await loadPozosFromPwaApi();
+            renderActiveMarkers();
+            updateDatalist();
+            updateStats();
+            return;
+        }
+
+        syncData();
     });
+
     window.addEventListener('resize', () => {
         updateAuthUi();
         updateResponsiveControls();
         renderActiveMarkers();
     });
 
-        // Precalentar cache para que la app instalada abra offline de forma robusta.
-        warmOfflineResources();
+    warmOfflineResources();
 
     setupUpdateUi();
 }
 
-    async function warmOfflineResources() {
-        if (!('caches' in window)) return;
-        const resources = [
-            '/index.html',
-            '/css/styles.css?v=28',
-            '/css/leaflet.css',
-            '/js/leaflet.js?v=3',
-            '/js/localforage.min.js?v=3',
-            '/js/main.js?v=35',
-            '/js/sw-register.js?v=5',
-            '/js/firebase-init.js?v=3',
-            '/js/pozos-data.js?v=1',
-            '/manifest.json',
-            '/icons/icono.png',
-            '/icons/header.png',
-            '/assets/mapas/bare-tradicional.jpg',
-            '/assets/mapas/bare6-1.jpg',
-            '/assets/mapas/bare6-2.jpg',
-            '/assets/mapas/trilla-asfaltada.jpg',
-            '/assets/mapas/Prueba1.gpx',
-            '/assets/mapas/2do.gpx',
-            '/assets/mapas/trillas.gpx',
-            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
-            'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
-            'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
-        ];
-        try {
-            const cache = await caches.open(OFFLINE_CACHE_NAME);
-            await Promise.allSettled(resources.map(url => cache.add(url)));
-            const scheduleWarmTiles = window.requestIdleCallback
-                ? () => window.requestIdleCallback(() => { warmBareMapTiles().catch(() => {}); }, { timeout: 2500 })
-                : () => window.setTimeout(() => { warmBareMapTiles().catch(() => {}); }, 1200);
-            scheduleWarmTiles();
-        } catch (e) {
-            console.log('No se pudo completar warmup de cache offline', e);
-        }
+async function warmOfflineResources() {
+    if (!('caches' in window)) return;
+    const resources = [
+        '/index.html',
+        '/css/styles.css?v=21',
+        '/css/leaflet.css',
+        '/js/leaflet.js?v=3',
+        '/js/localforage.min.js?v=3',
+        '/js/api-client.js?v=20260523-01',
+        '/js/main.js?v=29',
+        '/js/sw-register.js?v=4',
+        '/js/firebase-init.js?v=3',
+        '/js/pozos-data.js?v=1',
+        '/manifest.json',
+        '/icons/icono.png',
+        '/icons/header.png',
+        '/assets/mapas/bare-tradicional.jpg',
+        '/assets/mapas/bare6-1.jpg',
+        '/assets/mapas/bare6-2.jpg',
+        '/assets/mapas/trilla-asfaltada.jpg',
+        '/assets/mapas/Prueba1.gpx',
+        '/assets/mapas/2do.gpx',
+        '/assets/mapas/trillas.gpx',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
+        'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
+        'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js'
+    ];
+    try {
+        const cache = await caches.open(OFFLINE_CACHE_NAME);
+        await Promise.allSettled(resources.map(url => cache.add(url)));
+        const scheduleWarmTiles = window.requestIdleCallback
+            ? () => window.requestIdleCallback(() => { warmBareMapTiles().catch(() => {}); }, { timeout: 2500 })
+            : () => window.setTimeout(() => { warmBareMapTiles().catch(() => {}); }, 1200);
+        scheduleWarmTiles();
+    } catch (e) {
+        console.log('No se pudo completar warmup de cache offline', e);
+    }
 }
 
 function isDbReady() {
@@ -2370,32 +1417,21 @@ async function applyViewMode(mode, skipPersist = false) {
     }
     updateStatsFilterUi();
     updateResponsiveControls();
-    if (mapMode !== 'diagram' && bulkSelectModeEnabled) {
-        setBulkSelectMode(false);
-    }
 
     if (modeChanged) {
         ensureMapForMode();
         attachMapEvents();
         markers = {};
         currentOverlay = null;
-        syncBulkSelectUi();
     }
 
     if (mapMode === 'diagram') {
         const diagram = getSelectedDiagram();
         await loadZone(diagram, true);
         renderMarkers(diagram);
-        renderServiceRoutes();
-        renderRoutesList();
         return;
     }
 
-    if (routeDrawingMode) {
-        setRouteDrawingMode(false);
-    }
-
-    renderServiceRoutes();
     await loadRealMap();
     renderMarkers('mapa');
 }
@@ -2596,7 +1632,6 @@ function updateDatalist(filter = '') {
 }
 
 function renderMarkers(zone) {
-    // eliminar anteriores
     Object.values(markers).forEach(m => map.removeLayer(m));
     markerDecorators.forEach(layer => map.removeLayer(layer));
     markers = {};
@@ -2631,8 +1666,6 @@ function renderMarkers(zone) {
         });
         markers[p.id] = marker;
     });
-
-    applyBulkSelectionHighlight();
 }
 
 function matchesCurrentFilter(pozo) {
@@ -2651,9 +1684,7 @@ function matchesCurrentCategoryFilter(pozo) {
     return String(derived) === currentCategoryFilter;
 }
 
-// Función para crear el icono de servicio con color personalizado, número opcional y borde
 function crearIconoServicio(colorPrincipal, numero = null, colorBorde = '#000000', colorNumero = '#ffffff') {
-    // Se usan atributos inline para que cada icono conserve su color sin ser sobrescrito por otro marcador.
     let fullSvg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" style="filter: drop-shadow(0 0 1px rgba(255,255,255,0.3));">
             <path fill="${colorPrincipal}" stroke="${colorBorde}" stroke-width="8" d="M91.6 73.8C79.3 68.8 65.3 74.7 60.4 87C47.2 119.5 40 154.9 40 192C40 229.1 47.2 264.5 60.4 297C65.4 309.3 79.4 315.2 91.7 310.2C104 305.2 109.9 291.2 104.9 278.9C94 252.2 88 222.8 88 192C88 161.2 94 131.8 104.9 105C109.9 92.7 103.9 78.7 91.7 73.7zM548.4 73.8C536.1 78.8 530.2 92.8 535.2 105.1C546.1 131.9 552.1 161.3 552.1 192.1C552.1 222.9 546.1 252.3 535.2 279.1C530.2 291.4 536.2 305.4 548.4 310.4C560.6 315.4 574.7 309.4 579.7 297.2C592.8 264.7 600.1 229.3 600.1 192.2C600.1 155.1 592.9 119.7 579.7 87.2C574.7 74.9 560.7 69 548.4 74zM372.1 229.2C379.6 218.7 384 205.9 384 192C384 156.7 355.3 128 320 128C284.7 128 256 156.7 256 192C256 205.9 260.4 218.7 267.9 229.2L130.9 530.8C123.6 546.9 130.7 565.9 146.8 573.2C162.9 580.5 181.9 573.4 189.2 557.3L209.8 512.1L430.4 512.1L451 557.3C458.3 573.4 477.3 580.5 493.4 573.2C509.5 565.9 516.6 546.9 509.3 530.8L372.1 229.2zM408.5 464L231.5 464L253.3 416L386.6 416L408.4 464zM320 269.3L364.8 368L275.1 368L319.9 269.3zM195.3 137.6C200.6 125.5 195.1 111.3 182.9 106C170.7 100.7 156.6 106.2 151.3 118.4C141.5 141 136 165.9 136 192C136 218.1 141.5 243 151.3 265.6C156.6 277.7 170.8 283.3 182.9 278C195 272.7 200.6 258.5 195.3 246.4C188 229.8 184 211.4 184 192C184 172.6 188 154.2 195.3 137.6zM488.7 118.4C483.4 106.3 469.2 100.7 457.1 106C445 111.3 439.4 125.5 444.7 137.6C452 154.2 456 172.6 456 192C456 211.4 452 229.8 444.7 246.4C439.4 258.5 444.9 272.7 457.1 278C469.3 283.3 483.4 277.8 488.7 265.6C498.5 243 504 218.1 504 192C504 165.9 498.5 141 488.7 118.4z"/>
@@ -2673,7 +1704,6 @@ function crearIconoServicio(colorPrincipal, numero = null, colorBorde = '#000000
     });
 }
 
-// Función para crear el icono de gotas (droplets) para WT
 function crearIconoWT() {
     const svgDroplets = `
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-droplets-icon lucide-droplets">
@@ -2771,12 +1801,8 @@ function createMarker(p, markerCoords, mapRenderConfig = null) {
         } else if (p.taladro === 'CT') {
             icon = crearIconoCT();
         } else {
-            // Mapear servicios a colores y números
             const servicioConfig = {
                 'Ranger-357': { color: '#000000', numero: 7, borde: '#ffcc00', numeroColor: '#ffcc00' },
-                'Ranger-356': { color: '#1a3a5c', numero: 6, borde: '#3498db', numeroColor: '#ffffff' },
-                'Ranger-553': { color: '#5c3a1a', numero: 3, borde: '#e67e22', numeroColor: '#ffffff' },
-                'Ranger-554': { color: '#3a1a5c', numero: 4, borde: '#9b59b6', numeroColor: '#ffffff' },
                 'RIG-351': { color: '#e53935', numero: 1, borde: '#000000', numeroColor: '#ffffff' },
                 'RIG-352': { color: '#3388ff', numero: 2, borde: '#000000', numeroColor: '#ffffff' },
                 'RIG-RANGER-555': { color: '#00BD3E', numero: null, borde: '#000000', numeroColor: '#ffffff' },
@@ -2800,7 +1826,6 @@ function createMarker(p, markerCoords, mapRenderConfig = null) {
                 });
             }
         } else {
-            // Hacer los marcadores de pozos más sutiles
             marker = L.circleMarker(markerCoords, {
                 radius: 4,
                 color: color,
@@ -2885,30 +1910,14 @@ function popupContent(p) {
     if (p.fechaUltimoServicio) content += `<br>Fecha de arranque: ${p.fechaUltimoServicio}`;
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
-    // Solo mostrar botones CRUD cuando el usuario está autenticado
-    if (isAuthenticated) {
-        if (isDesktop()) {
-            content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
-        } else {
-            content += `<br><div class="mobile-pozo-actions"><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="openMobileAssignService('${p.id}')">Servicio</button></div>`;
-        }
+    if (isDesktop() && isAuthenticated) {
+        content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
     }
     return content;
 }
 
 function onMapClick(e) {
     if (mapMode !== 'diagram') return;
-    if (bulkSelectModeEnabled) return;
-    if (routeDrawingMode) {
-        if (routeDrawingDragged) {
-            routeDrawingDragged = false;
-            return;
-        }
-        if (e && e.latlng) {
-            addPointToRouteDraft(e.latlng);
-        }
-        return;
-    }
     const assignMode = document.getElementById('assign-existing-mode');
     if (assignMode && assignMode.checked) {
         if (!requireCrudAuth()) {
@@ -2955,7 +1964,6 @@ function openForm(lat = null, lng = null, id = null) {
         if (unassignBtn) unassignBtn.classList.remove('hidden');
         if (toggleHighWaterCutBtn) toggleHighWaterCutBtn.classList.remove('hidden');
         syncHighWaterCutButtonLabel();
-        // no setear coords para edición
     } else {
         editId = null;
         document.getElementById('form-title').textContent = 'Nuevo Pozo';
@@ -3047,7 +2055,7 @@ async function unassignPozoFromDiagramFromEdit() {
     }
     Object.assign(pozo, normalizePozo(pozo));
 
-    await persistPozosAndRefresh();
+    await persistPozosAndRefresh(pozo);
     updateDatalist();
     closeForm();
 }
@@ -3069,141 +2077,8 @@ function openAssignForm() {
 
 function closeAssignForm() {
     document.getElementById('assign-form-container').classList.add('hidden');
-    const assignForm = document.getElementById('assign-taladro-form');
-    if (assignForm) assignForm.reset();
+    document.getElementById('assign-taladro-form').reset();
 }
-
-function openMobileAssignServiceGeneral() {
-  if (!requireAuthForCapability('editPozos')) return;
-
-  const panel = document.getElementById('mobile-assign-service-panel');
-  if (!panel) return;
-
-  const idInput = document.getElementById('mobile-assign-pozo-id');
-  const pozoInput = document.getElementById('mobile-assign-pozo-input');
-  const pozoInputWrapper = document.getElementById('mobile-assign-pozo-input-wrapper');
-  const pozoLabel = document.getElementById('mobile-assign-pozo-label');
-  const currentServiceLabel = document.getElementById('mobile-current-service-label');
-
-  if (idInput) idInput.value = '';
-  if (pozoInput) pozoInput.value = '';
-  if (pozoInputWrapper) pozoInputWrapper.classList.remove('hidden');
-  if (pozoLabel) pozoLabel.textContent = 'Seleccione un pozo';
-  if (currentServiceLabel) currentServiceLabel.textContent = '';
-
-  const serviceSelect = document.getElementById('mobile-assign-service-select');
-  if (serviceSelect) serviceSelect.value = '';
-
-  panel.classList.remove('hidden');
-  showModalBackdrop();
-
-  if (pozoInput) pozoInput.focus();
-}
-
-function openMobileAssignService(pozoId) {
-    if (!requireAuthForCapability('editPozos')) return;
-    const pozo = pozoData.find(p => p.id === pozoId);
-    if (!pozo) {
-        alert('Pozo no encontrado.');
-        return;
-    }
-
-    const panel = document.getElementById('mobile-assign-service-panel');
-    if (!panel) return;
-
-    const pozoInputWrapper = document.getElementById('mobile-assign-pozo-input-wrapper');
-    if (pozoInputWrapper) pozoInputWrapper.classList.add('hidden');
-
-    document.getElementById('mobile-assign-pozo-id').value = pozo.id;
-    document.getElementById('mobile-assign-pozo-label').textContent = `Pozo: ${pozo.id}`;
-    document.getElementById('mobile-current-service-label').textContent = pozo.taladro ? `Servicio actual: ${pozo.taladro}` : 'Sin servicio asignado';
-    document.getElementById('mobile-assign-service-select').value = pozo.taladro || '';
-    document.getElementById('mobile-assign-next-status').value = pozo.estado || STATUS.ACTIVO;
-
-    panel.classList.remove('hidden');
-    showModalBackdrop();
-}
-
-function closeMobileAssignService() {
-    const panel = document.getElementById('mobile-assign-service-panel');
-    if (panel) panel.classList.add('hidden');
-    hideModalBackdrop();
-}
-
-async function submitMobileAssignService(e) {
-    e.preventDefault();
-    if (!requireAuthForCapability('editPozos')) return;
-
-    const hiddenPozoId = (document.getElementById('mobile-assign-pozo-id')?.value || '').trim();
-    const typedPozoId = (document.getElementById('mobile-assign-pozo-input')?.value || '').trim();
-    const service = document.getElementById('mobile-assign-service-select').value;
-
-    const pozo =
-      hiddenPozoId
-        ? pozoData.find(p => p.id === hiddenPozoId)
-        : (
-            resolvePozoFromInput(typedPozoId, getSelectedDiagram()) ||
-            resolvePozoFromInput(typedPozoId)
-          );
-
-    if (!pozo) {
-        alert('Pozo no encontrado.');
-        return;
-    }
-
-    if (!service) {
-        alert('Seleccione un servicio.');
-        return;
-    }
-
-    const assignmentValidation = validatePozoForServiceAssignment(pozo);
-    if (!assignmentValidation.isValid) {
-        alert(assignmentValidation.message);
-        return;
-    }
-
-    const previousPozo = pozoData.find(p => p.taladro === service && p.id !== pozo.id);
-    if (previousPozo) {
-        pendingServiceAssignment = { pozoId: pozo.id, taladro: service, previousPozoId: previousPozo.id };
-        closeMobileAssignService();
-        openServiceVerification(previousPozo.id);
-        showModalBackdrop();
-        return;
-    }
-
-    pozo.taladro = service;
-    pozo.estado = STATUS.EN_SERVICIO;
-    pozo.causaDiferido = null;
-    Object.assign(pozo, normalizePozo(pozo));
-
-    await persistPozosAndRefresh();
-    closeMobileAssignService();
-    alert(`Servicio ${service} asignado al pozo ${pozo.id}.`);
-}
-
-async function unassignMobileService() {
-    if (!requireAuthForCapability('editPozos')) return;
-
-    const pozoId = document.getElementById('mobile-assign-pozo-id').value;
-    const pozo = pozoData.find(p => p.id === pozoId);
-
-    if (!pozo) {
-        alert('Pozo no encontrado.');
-        return;
-    }
-
-    if (!pozo.taladro) {
-        alert('Este pozo no tiene servicio asignado.');
-        return;
-    }
-
-    pendingServiceAssignment = { mode: 'manual-unassign', previousPozoId: pozo.id };
-    closeMobileAssignService();
-    openServiceVerification(pozo.id);
-    showModalBackdrop();
-}
-
-window.openMobileAssignService = openMobileAssignService;
 
 async function assignTaladro(e) {
     e.preventDefault();
@@ -3234,7 +2109,15 @@ async function assignTaladro(e) {
     p.causaDiferido = null;
     Object.assign(p, normalizePozo(p));
 
-    await persistPozosAndRefresh();
+    await enqueueApiSync({
+        type: 'servicio-asignar',
+        payload: {
+            pozo: p,
+            servicio: taladro
+        }
+    });
+
+    await persistPozosAndRefresh(p);
     closeAssignForm();
 }
 
@@ -3268,7 +2151,6 @@ function closeServiceVerification() {
     document.getElementById('service-verification-container').classList.add('hidden');
     document.getElementById('service-verification-form').reset();
     document.getElementById('verification-cause-wrapper').classList.add('hidden');
-    hideModalBackdrop();
 }
 
 async function submitServiceVerification(e) {
@@ -3308,7 +2190,7 @@ async function submitServiceVerification(e) {
         Object.assign(previousPozo, normalizePozo(previousPozo));
 
         pendingServiceAssignment = null;
-        await persistPozosAndRefresh();
+        await persistPozosAndRefresh(previousPozo);
         closeServiceVerification();
         closeAssignForm();
         return;
@@ -3341,8 +2223,18 @@ async function submitServiceVerification(e) {
     currentPozo.causaDiferido = null;
     Object.assign(currentPozo, normalizePozo(currentPozo));
 
+    await enqueueApiSync({
+        type: 'servicio-asignar',
+        payload: {
+            pozo: currentPozo,
+            servicio: taladro,
+            estadoAnterior: selectedEstado,
+            causaDiferido: cause || null
+        }
+    });
+
     pendingServiceAssignment = null;
-    await persistPozosAndRefresh();
+    await persistPozosAndRefresh(currentPozo);
     closeServiceVerification();
     closeAssignForm();
 }
@@ -3358,14 +2250,44 @@ function toggleVerificationCause() {
     causeWrapper.classList.add('hidden');
 }
 
-async function persistPozosAndRefresh() {
-    // Guardar en local siempre
+async function persistPozosAndRefresh(changedPozo = null) {
     await localforage.setItem(POZO_DATA_KEY, pozoData);
     await markDataDirty();
-    // Guardar en Firestore solo si está online
-    if (navigator.onLine && isDbReady()) {
+
+    if (navigator.onLine && window.MapaApi) {
+        try {
+            const pozoToSync = changedPozo || (editId ? pozoData.find(p => p.id === editId) : null);
+
+            if (pozoToSync) {
+                const updatedPozo = await syncPozoToPwaApi(pozoToSync);
+
+                if (updatedPozo) {
+                    const index = pozoData.findIndex(p => p.id === updatedPozo.id);
+                    if (index !== -1) {
+                        pozoData[index] = normalizePozo(updatedPozo);
+                    }
+
+                    await localforage.setItem(POZO_DATA_KEY, pozoData);
+                    await clearDataDirty();
+                }
+            }
+
+            await flushPendingApiSync();
+        } catch (error) {
+            console.warn('[MapaBare] No se pudo guardar en PWA API. Queda pendiente local:', error);
+            if (changedPozo) {
+                await enqueueApiSync({
+                    type: 'pozo-update',
+                    pozoId: changedPozo.id,
+                    pozo: changedPozo
+                });
+            }
+            await markDataDirty();
+        }
+    } else if (navigator.onLine && isDbReady()) {
         await syncData();
     }
+
     const diagram = document.getElementById('zone-select').value;
     loadZone(diagram);
     renderMarkers(diagram);
@@ -3423,7 +2345,7 @@ async function submitAssignDiagramForm(e) {
     }
     Object.assign(pozo, normalizePozo(pozo));
 
-    await persistPozosAndRefresh();
+    await persistPozosAndRefresh(pozo);
     document.getElementById('zone-select').value = targetDiagram;
     document.getElementById('mobile-zone-select').value = targetDiagram;
     if (mapMode === 'diagram') {
@@ -3433,25 +2355,18 @@ async function submitAssignDiagramForm(e) {
     closeAssignDiagramForm();
 }
 
-// funciones globales para popup
 window.editPozo = function(id) {
     if (!requireCrudAuth()) return;
-    if (!isDesktop()) {
-        openMobilePozoEdit(id);
-    } else {
-        openForm(null, null, id);
-    }
+    openForm(null, null, id);
 };
 
 window.deletePozo = async function(id) {
     if (!requireCrudAuth()) return;
     if (!confirm('¿Eliminar pozo ' + id + '?')) return;
     pozoData = pozoData.filter(p => p.id !== id);
-    // Guardar en local siempre
     await localforage.setItem(POZO_DATA_KEY, pozoData);
     await markDataDirty();
-    // Guardar en Firestore solo si está online
-    if (navigator.onLine && isDbReady()) {
+    if (navigator.onLine && isDbReady() && !window.MapaApi) {
         await syncData();
     }
     const diagram = document.getElementById('zone-select').value;
@@ -3475,6 +2390,7 @@ async function savePozo(e) {
     const formHighWaterCut = document.getElementById('form-alto-corte-agua').checked;
     const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
     const pozo = {
+        ...(previousPozo || {}),
         id: document.getElementById('form-id').value.trim().toUpperCase(),
         zona: formZona || null,
         diagrama: targetDiagram,
@@ -3526,13 +2442,24 @@ async function savePozo(e) {
     } else {
         pozoData.push(normalizedPozo);
     }
-    // Guardar en local siempre
+
     await localforage.setItem(POZO_DATA_KEY, pozoData);
     await markDataDirty();
-    // Guardar en Firestore solo si está online
-    if (navigator.onLine && isDbReady()) {
+
+    if (navigator.onLine && window.MapaApi) {
+        try {
+            await persistPozosAndRefresh(normalizedPozo);
+        } catch (error) {
+            await enqueueApiSync({
+                type: 'pozo-update',
+                pozoId: normalizedPozo.id,
+                pozo: normalizedPozo
+            });
+        }
+    } else if (navigator.onLine && isDbReady()) {
         await syncData();
     }
+
     const savedDiagram = getPozoDiagram(normalizedPozo);
     if (savedDiagram !== 'sin-asignar') {
         loadZone(savedDiagram);
@@ -3564,10 +2491,6 @@ function updateStats() {
 
     pozoData.forEach(p => {
         const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
-        if (normalizedEstado === STATUS.EN_SERVICIO) {
-            counts['en-servicio']++;
-            return;
-        }
         if (Object.prototype.hasOwnProperty.call(counts, normalizedEstado)) {
             counts[normalizedEstado]++;
         }
@@ -3592,7 +2515,6 @@ function updateStats() {
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
     updateFloatingLegendCounts(counts);
-    updateZoneSummaries();
 }
 
 function updateFloatingLegendCounts(counts) {
@@ -3620,186 +2542,6 @@ function updateFloatingLegendCounts(counts) {
         const item = document.querySelector(`[data-legend-category="${category}"] .legend-count`);
         if (item) item.textContent = `(${value})`;
     });
-}
-
-function getZoneSummaryKey(rawZone) {
-    if (!rawZone) return null;
-    const normalized = normalizeText(rawZone).replace(/[\s\-]+/g, ' ').trim();
-    for (const def of ZONE_SUMMARY_DEFINITIONS) {
-        if (def.variants.includes(normalized)) return def.key;
-    }
-    return null;
-}
-
-function getActiveZoneSummary() {
-    const result = {};
-    ZONE_ORDER.forEach(zone => {
-        result[zone] = {
-            count: 0,
-            ids: []
-        };
-    });
-
-    pozoData.forEach(p => {
-        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
-        if (normalizedEstado !== STATUS.ACTIVO) return;
-        const zoneKey = getZoneSummaryKey(p.zona);
-        if (!zoneKey) return;
-        result[zoneKey].count += 1;
-        result[zoneKey].ids.push(p.id);
-    });
-
-    return result;
-}
-
-function renderZoneDetailList(zone, ids) {
-    const list = document.getElementById(`zone-list-${zone}`);
-    if (!list) return;
-
-    if (!ids.length) {
-        list.innerHTML = `
-            <div class="zone-detail-panel-header">
-                <span>${ZONE_LABELS[zone]} — 0 pozos</span>
-                <div class="zone-detail-controls">
-                    <button type="button" class="zone-detail-minimize" data-zone="${zone}">−</button>
-                    <button type="button" class="zone-detail-close" data-zone="${zone}">×</button>
-                </div>
-            </div>
-            <div class="zone-detail-scroll">
-                <div class="zone-detail-empty">Sin pozos activos</div>
-            </div>
-        `;
-        return;
-    }
-
-    const items = ids.map(id => `
-        <button type="button" class="zone-detail-item" data-zone="${zone}" data-pozo="${id}">
-            ${id}
-        </button>
-    `);
-
-    list.innerHTML = `
-        <div class="zone-detail-panel-header">
-            <span>${ZONE_LABELS[zone]} — ${ids.length} pozos</span>
-            <div class="zone-detail-controls">
-                <button type="button" class="zone-detail-minimize" data-zone="${zone}">−</button>
-                <button type="button" class="zone-detail-close" data-zone="${zone}">×</button>
-            </div>
-        </div>
-        <div class="zone-detail-scroll">
-            ${items.join('')}
-        </div>
-    `;
-}
-
-function updateZoneSummaries() {
-    const summary = getActiveZoneSummary();
-    ZONE_ORDER.forEach(zone => {
-        const countEl = document.getElementById(`zone-count-${zone}`);
-        const mobileCountEl = document.getElementById(`mobile-zone-count-${zone}`);
-        const zoneData = summary[zone];
-        const countText = zoneData ? zoneData.count : 0;
-        if (countEl) countEl.textContent = countText;
-        if (mobileCountEl) mobileCountEl.textContent = `(${countText})`;
-        renderZoneDetailList(zone, zoneData ? zoneData.ids : []);
-    });
-}
-
-function closeAllZoneDetailPanels() {
-    document.querySelectorAll('.zone-detail-list').forEach(list => list.classList.add('hidden'));
-    document.querySelectorAll('.zone-summary-item').forEach(btn => btn.classList.remove('is-expanded'));
-}
-
-function openZoneDetailPanel(zone) {
-    closeAllZoneDetailPanels();
-    const target = document.getElementById(`zone-list-${zone}`);
-    const button = document.querySelector(`.zone-summary-item[data-zone="${zone}"]`);
-    if (!target) return;
-    target.classList.remove('hidden');
-    if (button) button.classList.add('is-expanded');
-}
-
-function toggleZoneDetailList(e) {
-    const btn = e.currentTarget;
-    const zone = btn.dataset.zone;
-    if (!zone) return;
-    const target = document.getElementById(`zone-list-${zone}`);
-    if (!target) return;
-
-    if (target.classList.contains('hidden')) {
-        openZoneDetailPanel(zone);
-    } else {
-        target.classList.add('hidden');
-        btn.classList.remove('is-expanded');
-    }
-}
-
-function attachZoneSummaryEvents() {
-    document.querySelectorAll('.zone-summary-item').forEach(btn => {
-        btn.addEventListener('click', toggleZoneDetailList);
-    });
-
-    document.addEventListener('click', event => {
-        const target = event.target;
-        if (!(target instanceof HTMLElement)) return;
-
-        if (target.matches('.zone-detail-close')) {
-            const zone = target.dataset.zone;
-            if (!zone) return;
-            const panel = document.getElementById(`zone-list-${zone}`);
-            if (panel) panel.classList.add('hidden');
-            const button = document.querySelector(`.zone-summary-item[data-zone="${zone}"]`);
-            if (button) button.classList.remove('is-expanded');
-            return;
-        }
-
-        if (target.matches('.zone-detail-minimize')) {
-            const zone = target.dataset.zone;
-            if (!zone) return;
-            const panel = document.getElementById(`zone-list-${zone}`);
-            if (panel) panel.classList.toggle('minimized');
-            return;
-        }
-
-        if (target.matches('.zone-detail-item')) {
-            const pozoId = target.dataset.pozo;
-            if (pozoId) {
-                flyToPozo(pozoId);
-            }
-        }
-    });
-}
-
-function flyToPozo(pozoId) {
-    const pozo = pozoData.find(p => p.id === pozoId || p.id.toString() === pozoId.toString());
-    if (!pozo || !map) return;
-
-    let coords;
-    if (mapMode === 'diagram') {
-        coords = getDiagramCoords(pozo);
-        if (!coords) {
-            // Si no hay coords diagrama, cambiar a mapa y usar coords mapa
-            setMapMode('map');
-            coords = getMapaCoords(pozo);
-        }
-    } else {
-        coords = getMapaCoords(pozo);
-    }
-
-    if (!coords) return;
-
-    map.flyTo(coords, map.getZoom(), {
-        duration: 1.0
-    });
-
-    // Mostrar la ficha del pozo
-    if (markers[pozoId] && markers[pozoId].openPopup) {
-        markers[pozoId].openPopup();
-    }
-
-    if (typeof highlightPozoMarker === 'function') {
-        highlightPozoMarker(pozoId);
-    }
 }
 
 function updateStatsFilterUi() {
@@ -3986,8 +2728,6 @@ function attachControls() {
         if (mapMode !== 'diagram') return;
         await loadZone(e.target.value);
         renderMarkers(e.target.value);
-        renderServiceRoutes();
-        renderRoutesList();
     });
 
     const viewModeSelect = document.getElementById('view-mode-select');
@@ -4020,79 +2760,8 @@ function attachControls() {
     document.getElementById('edit-mode').addEventListener('change', (e) => {
         if (e.target.checked && !requireCrudAuth()) {
             e.target.checked = false;
-            return;
-        }
-        if (e.target.checked) {
-            setBulkSelectMode(false);
         }
     });
-
-    const bulkSelectToggle = document.getElementById('bulk-zone-select-toggle');
-    if (bulkSelectToggle) {
-        bulkSelectToggle.addEventListener('click', () => {
-            setBulkSelectMode(!bulkSelectModeEnabled);
-        });
-    }
-
-    const routeModeBtn = document.getElementById('route-mode-btn');
-    if (routeModeBtn) {
-        routeModeBtn.addEventListener('click', (event) => {
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            openRoutesPanel();
-        });
-    }
-
-    const routeServiceSelect = document.getElementById('route-service-select');
-    if (routeServiceSelect) {
-        routeServiceSelect.addEventListener('change', () => {
-            selectedRouteService = routeServiceSelect.value || null;
-            renderRoutesList();
-        });
-    }
-
-    const mobileRouteServiceSelect = document.getElementById('mobile-route-service-select');
-    if (mobileRouteServiceSelect) {
-        mobileRouteServiceSelect.addEventListener('change', () => {
-            selectedRouteService = mobileRouteServiceSelect.value || null;
-            const colorInput = getActiveRouteColorInput();
-            if (colorInput && selectedRouteService) {
-                colorInput.value = getServiceRouteColor(selectedRouteService);
-            }
-            renderRoutesList();
-        });
-    }
-
-    const routeNewBtn = document.getElementById('route-new-btn');
-    if (routeNewBtn) {
-        routeNewBtn.addEventListener('click', startNewServiceRouteDraft);
-    }
-
-    const routeSaveBtn = document.getElementById('route-save-btn');
-    if (routeSaveBtn) {
-        routeSaveBtn.addEventListener('click', saveCurrentRouteDraft);
-    }
-
-    const routeCancelBtn = document.getElementById('route-cancel-btn');
-    if (routeCancelBtn) {
-        routeCancelBtn.addEventListener('click', cancelRouteDraft);
-    }
-
-    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
-    if (mobileHeaderRoutesBtn) {
-        mobileHeaderRoutesBtn.addEventListener('click', openRoutesPanel);
-    }
-
-    const mobileHeaderServiceBtn = document.getElementById('mobile-header-service-btn');
-    if (mobileHeaderServiceBtn) {
-        mobileHeaderServiceBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            openMobileAssignServiceGeneral();
-        });
-    }
 
     document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
     document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
@@ -4107,7 +2776,6 @@ function attachControls() {
                     return;
                 }
                 document.getElementById('edit-mode').checked = false;
-                setBulkSelectMode(false);
             }
             if (!e.target.checked) {
                 closeAssignDiagramForm();
@@ -4116,8 +2784,6 @@ function attachControls() {
     }
     document.getElementById('assign-diagram-form').addEventListener('submit', submitAssignDiagramForm);
     document.getElementById('assign-diagram-cancel').addEventListener('click', closeAssignDiagramForm);
-    document.getElementById('bulk-zone-form').addEventListener('submit', submitBulkZoneForm);
-    document.getElementById('bulk-zone-cancel').addEventListener('click', closeBulkZoneForm);
     document.getElementById('form-reassign-diagram').addEventListener('click', startDiagramReassignFromEdit);
     document.getElementById('form-unassign-diagram').addEventListener('click', unassignPozoFromDiagramFromEdit);
     document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
@@ -4133,9 +2799,7 @@ function attachControls() {
     document.getElementById('logout-btn').addEventListener('click', logout);
     document.getElementById('login-form').addEventListener('submit', submitLogin);
     document.getElementById('login-cancel').addEventListener('click', closeLoginForm);
-    document.getElementById('export-json-btn').addEventListener('click', exportCurrentPozos);
 
-    // Botón flotante de búsqueda para móvil
     document.getElementById('floating-search-btn').addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-search-input');
         const shouldShow = inputDiv.classList.contains('hidden');
@@ -4157,7 +2821,6 @@ function attachControls() {
         }
     });
 
-    // Botón flotante de zona para móvil
     document.getElementById('floating-zone-btn').addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-zone-input');
         const shouldShow = inputDiv.classList.contains('hidden');
@@ -4221,162 +2884,22 @@ function attachControls() {
         });
     });
 
-    attachZoneSummaryEvents();
     updateStatsFilterUi();
     updateResponsiveControls();
-    syncBulkSelectUi();
-
-    // Event listeners para elementos móviles
-    const mobileLoginBtn = document.getElementById('mobile-login-btn');
-    if (mobileLoginBtn) {
-        mobileLoginBtn.addEventListener('click', openLoginForm);
-    }
-
-    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-    if (mobileLogoutBtn) {
-        mobileLogoutBtn.addEventListener('click', logout);
-    }
-
-    const mobilePozoEditClose = document.getElementById('mobile-pozo-edit-close');
-    if (mobilePozoEditClose) {
-        mobilePozoEditClose.addEventListener('click', closeMobilePozoEdit);
-    }
-
-    const mobilePozoEditCancel = document.getElementById('mobile-pozo-edit-cancel');
-    if (mobilePozoEditCancel) {
-        mobilePozoEditCancel.addEventListener('click', closeMobilePozoEdit);
-    }
-
-    const mobilePozoEditForm = document.getElementById('mobile-pozo-edit-form');
-    if (mobilePozoEditForm) {
-        mobilePozoEditForm.addEventListener('submit', submitMobilePozoEdit);
-    }
-
-    const mobileRoutesBtn = document.getElementById('mobile-header-routes-btn');
-    if (mobileRoutesBtn) {
-        mobileRoutesBtn.addEventListener('click', openRoutesPanel);
-    }
-
-    const mobileRoutesClose = document.getElementById('mobile-routes-close');
-    if (mobileRoutesClose) {
-        mobileRoutesClose.addEventListener('click', closeRoutesPanel);
-    }
-
-    [
-        'login-panel',
-        'mobile-pozo-edit-sheet',
-        'mobile-routes-panel',
-        'routes-panel',
-        'mobile-assign-service-panel'
-    ].forEach((id) => {
-        const panel = document.getElementById(id);
-        if (panel) {
-            panel.addEventListener('click', event => event.stopPropagation());
-        }
-    });
-
-    const modalBackdrop = document.getElementById('mobile-modal-backdrop');
-    if (modalBackdrop) {
-        modalBackdrop.addEventListener('click', closeAnyMobileModal);
-    }
-
-    // Event listeners para panel móvil de rutas
-    const mobileRouteNewBtn = document.getElementById('mobile-route-new-btn');
-    if (mobileRouteNewBtn) {
-        mobileRouteNewBtn.addEventListener('click', startNewServiceRouteDraft);
-    }
-
-    const mobileRouteSaveBtn = document.getElementById('mobile-route-save-btn');
-    if (mobileRouteSaveBtn) {
-        mobileRouteSaveBtn.addEventListener('click', saveCurrentRouteDraft);
-    }
-
-    const mobileRouteCancelBtn = document.getElementById('mobile-route-cancel-btn');
-    if (mobileRouteCancelBtn) {
-        mobileRouteCancelBtn.addEventListener('click', cancelRouteDraft);
-    }
-
-    const mobileAssignServiceForm = document.getElementById('mobile-assign-service-form');
-    if (mobileAssignServiceForm) {
-        mobileAssignServiceForm.addEventListener('submit', submitMobileAssignService);
-    }
-
-    const mobileAssignServiceClose = document.getElementById('mobile-assign-service-close');
-    if (mobileAssignServiceClose) {
-        mobileAssignServiceClose.addEventListener('click', closeMobileAssignService);
-    }
-
-    const mobileAssignServiceCancel = document.getElementById('mobile-assign-service-cancel');
-    if (mobileAssignServiceCancel) {
-        mobileAssignServiceCancel.addEventListener('click', closeMobileAssignService);
-    }
-
-    const mobileUnassignServiceBtn = document.getElementById('mobile-unassign-service-btn');
-    if (mobileUnassignServiceBtn) {
-        mobileUnassignServiceBtn.addEventListener('click', unassignMobileService);
-    }
 }
 
-async function exportCurrentPozos() {
-    const downloadBlob = (blob, filename) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
-
-    if (navigator.onLine) {
-        const functionUrl = 'https://us-central1-mapa-trillas-bare.cloudfunctions.net/exportFirestoreJson';
-        try {
-            const response = await fetch(functionUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-
-            if (!response.ok) {
-                throw new Error(`Export failed: ${response.status} ${response.statusText}`);
-            }
-
-            const filenameHeader = response.headers.get('Content-Disposition');
-            let filename = `firestore-full-backup-${Date.now()}.json`;
-            if (filenameHeader) {
-                const match = /filename="?([^";]+)"?/.exec(filenameHeader);
-                if (match && match[1]) {
-                    filename = match[1];
-                }
-            }
-
-            const blob = await response.blob();
-            downloadBlob(blob, filename);
-            return;
-        } catch (error) {
-            console.warn('No se pudo exportar desde Firestore completo:', error);
-        }
-    }
-
-    const exportData = {
-        exportedAt: new Date().toISOString(),
-        projectId: 'mapa-trillas-bare',
-        data: {
-            pozos: pozoData,
-            mapa: {
-                mode: mapMode,
-                bounds: map ? map.getBounds() : null
-            }
-        }
-    };
-
-    const json = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    downloadBlob(blob, `pozos-backup-${Date.now()}.json`);
-}
-
-// para depuración
-window.debug = { pozoData, markers, map };
+window.debug = {
+    get pozoData() {
+        return pozoData;
+    },
+    get markers() {
+        return markers;
+    },
+    get map() {
+        return map;
+    },
+    loadPozosFromPwaApi,
+    loadInitialPozosData,
+    flushPendingApiSync,
+    getPendingApiSync
+};

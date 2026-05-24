@@ -1,680 +1,743 @@
 <!DOCTYPE html>
 <meta name="theme-color" content="#020499">
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS Pozos - Offline</title>
-    <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPS Pozos - Offline</title>
+  <link rel="manifest" href="manifest.json">
 
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="css/leaflet.css?v=3">
-    <link rel="stylesheet" href="css/styles.css?v=28">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/leaflet.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=28">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="js/firebase-init.js?v=3"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="js/firebase-init.js?v=3"></script>
 </head>
+
 <body>
-    <header class="app-header">
-        <div class="controls">
-            <select id="view-mode-select" class="desktop-only">
-                <option value="diagram">Vista diagrama</option>
-                <option value="mapa">Vista MAPA</option>
-            </select>
+  <header class="app-header">
+    <div class="controls">
+      <select id="view-mode-select" class="desktop-only">
+        <option value="diagram">Vista diagrama</option>
+        <option value="mapa">Vista MAPA</option>
+      </select>
 
-            <input id="search-input" class="desktop-only" list="pozos-list" placeholder="Buscar pozo o servicio..." autocomplete="off">
-            <datalist id="pozos-list"></datalist>
+      <input id="search-input" class="desktop-only" list="pozos-list" placeholder="Buscar pozo o servicio..."
+        autocomplete="off">
+      <datalist id="pozos-list"></datalist>
 
-            <select id="zone-select" class="mobile-show">
-                <option value="bare-tradicional">BARE tradicional</option>
-                <option value="bare-6">BARE 6</option>
-                <option value="bare-6-norte">BARE 6-Norte</option>
-                <option value="bare-este">Bare Este</option>
-            </select>
+      <select id="zone-select" class="mobile-show">
+        <option value="bare-tradicional">BARE tradicional</option>
+        <option value="bare-6">BARE 6</option>
+        <option value="bare-6-norte">BARE 6-Norte</option>
+        <option value="bare-este">Bare Este</option>
+      </select>
 
-            <label class="switch">
-                <input type="checkbox" id="edit-mode">
-                <span class="slider"></span>
-                <span class="label">Modo edición</span>
-            </label>
-            <button id="assign-taladro-btn">Asignar Servicio</button>
-            <label id="assign-existing-toggle" class="switch hidden">
-                <input type="checkbox" id="assign-existing-mode">
-                <span class="slider"></span>
-                <span class="label">Modo asignación</span>
-            </label>
-            <button id="route-mode-btn" type="button">Modo recorridos</button>
-            <button id="bulk-zone-select-toggle" type="button" class="desktop-only hidden" aria-pressed="false">Selección múltiple</button>
-            <button id="export-json-btn" type="button">Exportar JSON</button>
-            <span id="auth-user-label" class="auth-user-label hidden"></span>
-            <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
-            <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
-        </div>
+      <label class="switch">
+        <input type="checkbox" id="edit-mode">
+        <span class="slider"></span>
+        <span class="label">Modo edición</span>
+      </label>
+      <button id="assign-taladro-btn">Asignar Servicio</button>
+      <label id="assign-existing-toggle" class="switch hidden">
+        <input type="checkbox" id="assign-existing-mode">
+        <span class="slider"></span>
+        <span class="label">Modo asignación</span>
+      </label>
+      <button id="route-mode-btn" type="button">Modo recorridos</button>
+      <button id="bulk-zone-select-toggle" type="button" class="desktop-only hidden" aria-pressed="false">Selección
+        múltiple</button>
+      <button id="export-json-btn" type="button">Exportar JSON</button>
+      <span id="auth-user-label" class="auth-user-label hidden"></span>
+      <button id="login-btn" type="button" class="auth-btn">Iniciar sesión</button>
+      <button id="logout-btn" type="button" class="auth-btn hidden">Cerrar sesión</button>
+    </div>
 
-        <!-- Botón móvil de auth -->
-        <div id="mobile-auth-btn" class="mobile-auth-btn hidden">
-            <button id="mobile-header-routes-btn" type="button" class="mobile-header-action hidden">Rutas</button>
-            <button id="mobile-header-service-btn" type="button" class="mobile-header-action hidden">Servicio</button>
-            <button id="mobile-login-btn" type="button" class="mobile-auth-trigger">Login</button>
-            <div id="mobile-auth-menu" class="mobile-auth-menu hidden">
-                <span id="mobile-auth-user-label"></span>
-                <button id="mobile-logout-btn" type="button">Cerrar sesión</button>
-            </div>
-        </div>
-    </header>
+    <!-- Botón móvil de auth -->
+    <div id="mobile-auth-btn" class="mobile-auth-btn hidden">
+      <button id="mobile-header-routes-btn" type="button" class="mobile-header-action hidden">Rutas</button>
+      <button id="mobile-header-service-btn" type="button" class="mobile-header-action hidden">Servicio</button>
+      <button id="mobile-login-btn" type="button" class="mobile-auth-trigger">Login</button>
+      <div id="mobile-auth-menu" class="mobile-auth-menu hidden">
+        <span id="mobile-auth-user-label"></span>
+        <button id="mobile-logout-btn" type="button">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
 
-    <div id="mobile-modal-backdrop" class="mobile-modal-backdrop hidden"></div>
+  <div id="mobile-modal-backdrop" class="mobile-modal-backdrop hidden"></div>
 
-    <div id="routes-panel" class="routes-panel hidden">
-        <h3>Recorridos de servicios</h3>
-        <label for="route-service-select">Servicio</label>
-        <select id="route-service-select">
-            <option value="">Seleccione servicio</option>
-            <option value="Ranger-357">Ranger-357</option>
-            <option value="Ranger-356">Ranger-356</option>
-            <option value="Ranger-553">Ranger-553</option>
-            <option value="Ranger-554">Ranger-554</option>
-            <option value="RIG-351">RIG-351</option>
-            <option value="RIG-352">RIG-352</option>
-            <option value="RIG-RANGER-555">RIG-RANGER-555</option>
-            <option value="Ranger-151">Ranger-151</option>
-            <option value="CT">CT</option>
-            <option value="WT">WT</option>
+  <div id="routes-panel" class="routes-panel hidden">
+    <h3>Recorridos de servicios</h3>
+    <label for="route-service-select">Servicio</label>
+    <select id="route-service-select">
+      <option value="">Seleccione servicio</option>
+      <option value="Ranger-357">Ranger-357</option>
+      <option value="Ranger-356">Ranger-356</option>
+      <option value="Ranger-553">Ranger-553</option>
+      <option value="Ranger-554">Ranger-554</option>
+      <option value="RIG-351">RIG-351</option>
+      <option value="RIG-352">RIG-352</option>
+      <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+      <option value="Ranger-151">Ranger-151</option>
+      <option value="CT">CT</option>
+      <option value="WT">WT</option>
+    </select>
+
+    <label for="route-name-input">Nombre de ruta</label>
+    <input id="route-name-input" type="text" placeholder="Ej: Posible ruta 1 - RIG-351">
+
+    <label for="route-color-input">Color del trazo</label>
+    <input id="route-color-input" type="color" value="#f59e0b">
+
+    <div class="route-actions">
+      <button id="route-new-btn" type="button">Nueva ruta</button>
+      <button id="route-save-btn" type="button">Guardar ruta</button>
+      <button id="route-cancel-btn" type="button">Cancelar</button>
+    </div>
+
+    <hr>
+    <div id="routes-list"></div>
+  </div>
+
+  <aside id="stats-panel" class="stats-panel">
+    <div class="stats-header">
+      <h2>Estadísticas</h2>
+      <button id="sidebar-mode-btn" class="sidebar-mode-btn" type="button" aria-pressed="false"
+        title="Alternar modo compacto">Compactar</button>
+    </div>
+    <button type="button" class="stats-item is-active" data-filter-type="status" data-filter="all">Total pozos: <span
+        id="count-total">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="status" data-filter="activo"><span
+        class="status-dot status-dot-activo" aria-hidden="true"></span>Activos: <span
+        id="count-active">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="status" data-filter="inactivo-servicio"><span
+        class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio: <span
+        id="count-inactive-service">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="status" data-filter="en-servicio"><span
+        class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio: <span
+        id="count-in-service">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="status" data-filter="diagnostico"><span
+        class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico: <span
+        id="count-diagnostic">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="status" data-filter="candidato"><span
+        class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos: <span
+        id="count-candidate">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="status" data-filter="diferido"><span
+        class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido: <span
+        id="count-deferred">0</span></button>
+    <hr class="stats-divider">
+    <h3 class="stats-subtitle">Categorías</h3>
+    <button type="button" class="stats-item is-active" data-filter-type="category" data-category="all">Todas
+      categorías</button>
+    <button type="button" class="stats-item" data-filter-type="category" data-category="1"><span
+        class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1: <span
+        id="count-category-1">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="category" data-category="2"><span
+        class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2: <span
+        id="count-category-2">0</span></button>
+    <button type="button" class="stats-item" data-filter-type="category" data-category="3"><span
+        class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3: <span
+        id="count-category-3">0</span></button>
+    <hr class="stats-divider">
+    <h3 class="stats-subtitle">Pozos activos por zona</h3>
+    <div id="zone-summary-container" class="stats-zone-summary">
+      <button type="button" class="stats-item zone-summary-item" data-zone="bare-tradicional">
+        <span>BARE tradicional</span>
+        <span class="zone-summary-meta"><span id="zone-count-bare-tradicional">0</span> <span
+            class="zone-summary-toggle">▾</span></span>
+      </button>
+      <div id="zone-list-bare-tradicional" class="zone-detail-list hidden"></div>
+      <button type="button" class="stats-item zone-summary-item" data-zone="trilla">
+        <span>Trilla</span>
+        <span class="zone-summary-meta"><span id="zone-count-trilla">0</span> <span
+            class="zone-summary-toggle">▾</span></span>
+      </button>
+      <div id="zone-list-trilla" class="zone-detail-list hidden"></div>
+      <button type="button" class="stats-item zone-summary-item" data-zone="asfaltada-y-tigra">
+        <span>Asfaltada y Tigra</span>
+        <span class="zone-summary-meta"><span id="zone-count-asfaltada-y-tigra">0</span> <span
+            class="zone-summary-toggle">▾</span></span>
+      </button>
+      <div id="zone-list-asfaltada-y-tigra" class="zone-detail-list hidden"></div>
+      <button type="button" class="stats-item zone-summary-item" data-zone="bare-6">
+        <span>BARE 6</span>
+        <span class="zone-summary-meta"><span id="zone-count-bare-6">0</span> <span
+            class="zone-summary-toggle">▾</span></span>
+      </button>
+      <div id="zone-list-bare-6" class="zone-detail-list hidden"></div>
+    </div>
+  </aside>
+
+  <main>
+    <div id="map" class="map-container"></div>
+  </main>
+
+  <!-- formulario oculto -->
+  <div id="form-container" class="form-container hidden">
+    <form id="pozo-form" class="pozo-form-grid">
+      <h3 id="form-title">Nuevo Pozo</h3>
+      <input type="hidden" id="form-lat">
+      <input type="hidden" id="form-lng">
+      <label>ID<br><input type="text" id="form-id" required></label>
+      <label class="field-wide">Estado<br>
+        <select id="form-estado">
+          <option value="activo">Activo</option>
+          <option value="inactivo-servicio">En espera de servicio</option>
+          <option value="en-servicio">En servicio</option>
+          <option value="diagnostico">En diagnóstico</option>
+          <option value="candidato">Candidato</option>
+          <option value="diferido">Diferido</option>
         </select>
+      </label>
+      <label id="form-diferido-cause-wrapper" class="hidden field-wide">Causa diferido<br><input type="text"
+          id="form-diferido-cause" placeholder="Ej: arenamiento"></label>
+      <label class="field-wide">Zona de perimetro<br>
+        <select id="form-zona">
+          <option value="">Sin zona</option>
+          <option value="la orleana">La Orleana</option>
+          <option value="bare 5">Bare 5</option>
+          <option value="macolla venezuela">Macolla Venezuela</option>
+          <option value="bare 6">Bare 6</option>
+          <option value="bare 4">Bare 4</option>
+          <option value="bare 1">Bare 1</option>
+          <option value="bare 8">Bare 8</option>
+          <option value="bare 7">Bare 7</option>
+          <option value="bare 3">Bare 3</option>
+          <option value="la floresta">La Floresta</option>
+          <option value="trilla">Trilla</option>
+          <option value="asfaltada y tigra">Asfaltada y Tigra</option>
+          <option value="rancho grande">Rancho Grande</option>
+        </select>
+      </label>
+      <label class="field-wide">Diagrama<br>
+        <select id="form-diagrama">
+          <option value="sin-asignar">Sin asignar</option>
+          <option value="bare-tradicional">BARE tradicional</option>
+          <option value="bare-6">BARE 6</option>
+          <option value="bare-6-norte">BARE 6-Norte</option>
+          <option value="bare-este">Bare Este</option>
+        </select>
+      </label>
+      <label class="field-full">Nota<br><input type="text" id="form-nota"
+          placeholder="Ej: espera RIG-351 / en diagnostico por bomba"></label>
+      <label>Cabezal<br>
+        <select id="form-cabezal">
+          <option value="">Ninguno</option>
+          <option value="Weatherford">Weatherford</option>
+          <option value="tiger">Tiger</option>
+          <option value="hebei jerry">Hebei Jerry</option>
+          <option value="kudu">Kudu</option>
+          <option value="altan">Altan</option>
+          <option value="netzsch">Netzsch</option>
+          <option value="nov">NOV</option>
+          <option value="lifteq">Lifteq</option>
+          <option value="baker-hughes">Baker Hughes</option>
+          <option value="pcm">PCM</option>
+          <option value="cavallino">Cavallino</option>
+          <option value="combest">Combest</option>
+          <option value="vipower">Vipower</option>
+          <option value="inpegas">INPEGAS</option>
+          <option value="api">Al Pro International</option>
+        </select>
+      </label>
+      <label>Variador<br>
+        <select id="form-variador">
+          <option value="">Ninguno</option>
+          <option value="usfull">Usfull</option>
+          <option value="hebei jerry">Hebei Jerry</option>
+          <option value="matin dustrie">Matin Dustrie</option>
+          <option value="wsc">WSC</option>
+          <option value="wg">WG</option>
+          <option value="yaskawa">Yaskawa</option>
+          <option value="delta">Delta</option>
+          <option value="abb">ABB</option>
+          <option value="altan">ALTAN</option>
+          <option value="combest">Combest</option>
+        </select>
+      </label>
+      <label>VO (RPM)<br><input type="number" id="form-vo" min="0" step="0.01" placeholder="80"></label>
+      <label>Potencial (barriles)<br><input type="number" id="form-potencial" min="0" step="0.01"></label>
+      <label class="field-wide checkbox-inline"><input type="checkbox" id="form-alto-corte-agua"> Mostrar gota de alto
+        corte de agua</label>
+      <label>Fecha de arranque<br><input type="date" id="form-fecha-ultimo-servicio"></label>
+      <div class="form-actions field-full">
+        <button type="submit">Guardar</button>
+        <button type="button" id="form-toggle-alto-corte" class="btn-secondary hidden">Agregar gota alto corte</button>
+        <button type="button" id="form-reassign-diagram" class="btn-secondary hidden">Reasignar en diagrama</button>
+        <button type="button" id="form-unassign-diagram" class="btn-danger hidden">Desasignar del diagrama</button>
+        <button type="button" id="form-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-        <label for="route-name-input">Nombre de ruta</label>
-        <input id="route-name-input" type="text" placeholder="Ej: Posible ruta 1 - RIG-351">
-
-        <label for="route-color-input">Color del trazo</label>
-        <input id="route-color-input" type="color" value="#f59e0b">
-
-        <div class="route-actions">
-            <button id="route-new-btn" type="button">Nueva ruta</button>
-            <button id="route-save-btn" type="button">Guardar ruta</button>
-            <button id="route-cancel-btn" type="button">Cancelar</button>
-        </div>
-
-        <hr>
-        <div id="routes-list"></div>
+  <!-- formulario móvil de edición de pozo -->
+  <div id="mobile-pozo-edit-sheet" class="mobile-bottom-sheet hidden">
+    <div class="mobile-sheet-header">
+      <h3>Editar pozo</h3>
+      <button id="mobile-pozo-edit-close" type="button">×</button>
     </div>
 
-    <aside id="stats-panel" class="stats-panel">
-        <div class="stats-header">
-            <h2>Estadísticas</h2>
-            <button id="sidebar-mode-btn" class="sidebar-mode-btn" type="button" aria-pressed="false" title="Alternar modo compacto">Compactar</button>
-        </div>
-        <button type="button" class="stats-item is-active" data-filter-type="status" data-filter="all">Total pozos: <span id="count-total">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="status" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos: <span id="count-active">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="status" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio: <span id="count-inactive-service">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="status" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio: <span id="count-in-service">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="status" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico: <span id="count-diagnostic">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="status" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos: <span id="count-candidate">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="status" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido: <span id="count-deferred">0</span></button>
-        <hr class="stats-divider">
-        <h3 class="stats-subtitle">Categorías</h3>
-        <button type="button" class="stats-item is-active" data-filter-type="category" data-category="all">Todas categorías</button>
-        <button type="button" class="stats-item" data-filter-type="category" data-category="1"><span class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1: <span id="count-category-1">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="category" data-category="2"><span class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2: <span id="count-category-2">0</span></button>
-        <button type="button" class="stats-item" data-filter-type="category" data-category="3"><span class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3: <span id="count-category-3">0</span></button>
-        <hr class="stats-divider">
-        <h3 class="stats-subtitle">Pozos activos por zona</h3>
-        <div id="zone-summary-container" class="stats-zone-summary">
-            <button type="button" class="stats-item zone-summary-item" data-zone="bare-tradicional">
-                <span>BARE tradicional</span>
-                <span class="zone-summary-meta"><span id="zone-count-bare-tradicional">0</span> <span class="zone-summary-toggle">▾</span></span>
-            </button>
-            <div id="zone-list-bare-tradicional" class="zone-detail-list hidden"></div>
-            <button type="button" class="stats-item zone-summary-item" data-zone="trilla">
-                <span>Trilla</span>
-                <span class="zone-summary-meta"><span id="zone-count-trilla">0</span> <span class="zone-summary-toggle">▾</span></span>
-            </button>
-            <div id="zone-list-trilla" class="zone-detail-list hidden"></div>
-            <button type="button" class="stats-item zone-summary-item" data-zone="asfaltada-y-tigra">
-                <span>Asfaltada y Tigra</span>
-                <span class="zone-summary-meta"><span id="zone-count-asfaltada-y-tigra">0</span> <span class="zone-summary-toggle">▾</span></span>
-            </button>
-            <div id="zone-list-asfaltada-y-tigra" class="zone-detail-list hidden"></div>
-            <button type="button" class="stats-item zone-summary-item" data-zone="bare-6">
-                <span>BARE 6</span>
-                <span class="zone-summary-meta"><span id="zone-count-bare-6">0</span> <span class="zone-summary-toggle">▾</span></span>
-            </button>
-            <div id="zone-list-bare-6" class="zone-detail-list hidden"></div>
-        </div>
-    </aside>
+    <form id="mobile-pozo-edit-form" class="mobile-form-grid">
+      <div class="mobile-form-field">
+        <label>ID</label>
+        <input type="text" id="mobile-form-id" required readonly>
+      </div>
+      <div class="mobile-form-field">
+        <label>Estado</label>
+        <select id="mobile-form-estado">
+          <option value="activo">Activo</option>
+          <option value="inactivo-servicio">En espera de servicio</option>
+          <option value="en-servicio">En servicio</option>
+          <option value="diagnostico">En diagnóstico</option>
+          <option value="candidato">Candidato</option>
+          <option value="diferido">Diferido</option>
+        </select>
+      </div>
+      <div class="mobile-form-field" id="mobile-form-diferido-cause-wrapper" class="hidden">
+        <label>Causa diferido</label>
+        <input type="text" id="mobile-form-diferido-cause" placeholder="Ej: arenamiento">
+      </div>
+      <div class="mobile-form-field">
+        <label>Zona de perímetro</label>
+        <select id="mobile-form-zona">
+          <option value="">Sin zona</option>
+          <option value="la orleana">La Orleana</option>
+          <option value="bare 5">Bare 5</option>
+          <option value="macolla venezuela">Macolla Venezuela</option>
+          <option value="bare 6">Bare 6</option>
+          <option value="bare 4">Bare 4</option>
+          <option value="bare 1">Bare 1</option>
+          <option value="bare 8">Bare 8</option>
+          <option value="bare 7">Bare 7</option>
+          <option value="bare 3">Bare 3</option>
+          <option value="la floresta">La Floresta</option>
+          <option value="trilla">Trilla</option>
+          <option value="asfaltada y tigra">Asfaltada y Tigra</option>
+          <option value="rancho grande">Rancho Grande</option>
+        </select>
+      </div>
+      <div class="mobile-form-field">
+        <label>Diagrama</label>
+        <select id="mobile-form-diagrama">
+          <option value="sin-asignar">Sin asignar</option>
+          <option value="bare-tradicional">BARE tradicional</option>
+          <option value="bare-6">BARE 6</option>
+          <option value="bare-6-norte">BARE 6-Norte</option>
+          <option value="bare-este">Bare Este</option>
+        </select>
+      </div>
+      <div class="mobile-form-field">
+        <label>Nota</label>
+        <input type="text" id="mobile-form-nota" placeholder="Ej: espera RIG-351">
+      </div>
+      <div class="mobile-form-field">
+        <label>Cabezal</label>
+        <select id="mobile-form-cabezal">
+          <option value="">Ninguno</option>
+          <option value="Weatherford">Weatherford</option>
+          <option value="tiger">Tiger</option>
+          <option value="hebei jerry">Hebei Jerry</option>
+          <option value="kudu">Kudu</option>
+          <option value="altan">Altan</option>
+          <option value="netzsch">Netzsch</option>
+          <option value="nov">NOV</option>
+          <option value="lifteq">Lifteq</option>
+          <option value="baker-hughes">Baker Hughes</option>
+          <option value="pcm">PCM</option>
+          <option value="cavallino">Cavallino</option>
+          <option value="combest">Combest</option>
+          <option value="vipower">Vipower</option>
+          <option value="inpegas">INPEGAS</option>
+          <option value="api">Al Pro International</option>
+        </select>
+      </div>
+      <div class="mobile-form-field">
+        <label>Variador</label>
+        <select id="mobile-form-variador">
+          <option value="">Ninguno</option>
+          <option value="usfull">Usfull</option>
+          <option value="hebei jerry">Hebei Jerry</option>
+          <option value="matin dustrie">Matin Dustrie</option>
+          <option value="wsc">WSC</option>
+          <option value="wg">WG</option>
+          <option value="yaskawa">Yaskawa</option>
+          <option value="delta">Delta</option>
+          <option value="abb">ABB</option>
+          <option value="altan">ALTAN</option>
+          <option value="combest">Combest</option>
+        </select>
+      </div>
+      <div class="mobile-form-field">
+        <label>VO (RPM)</label>
+        <input type="number" id="mobile-form-vo" min="0" step="0.01" placeholder="80">
+      </div>
+      <div class="mobile-form-field">
+        <label>Potencial (barriles)</label>
+        <input type="number" id="mobile-form-potencial" min="0" step="0.01">
+      </div>
+      <div class="mobile-form-field">
+        <label class="checkbox-inline">
+          <input type="checkbox" id="mobile-form-alto-corte-agua"> Mostrar gota alto corte
+        </label>
+      </div>
+      <div class="mobile-form-field">
+        <label>Fecha de arranque</label>
+        <input type="date" id="mobile-form-fecha-ultimo-servicio">
+      </div>
+      <div class="mobile-form-actions">
+        <button type="submit">Guardar cambios</button>
+        <button type="button" id="mobile-pozo-edit-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-    <main>
-        <div id="map" class="map-container"></div>
-    </main>
-
-    <!-- formulario oculto -->
-    <div id="form-container" class="form-container hidden">
-        <form id="pozo-form" class="pozo-form-grid">
-            <h3 id="form-title">Nuevo Pozo</h3>
-            <input type="hidden" id="form-lat">
-            <input type="hidden" id="form-lng">
-            <label>ID<br><input type="text" id="form-id" required></label>
-            <label class="field-wide">Estado<br>
-                <select id="form-estado">
-                    <option value="activo">Activo</option>
-                    <option value="inactivo-servicio">En espera de servicio</option>
-                    <option value="en-servicio">En servicio</option>
-                    <option value="diagnostico">En diagnóstico</option>
-                    <option value="candidato">Candidato</option>
-                    <option value="diferido">Diferido</option>
-                </select>
-            </label>
-            <label id="form-diferido-cause-wrapper" class="hidden field-wide">Causa diferido<br><input type="text" id="form-diferido-cause" placeholder="Ej: arenamiento"></label>
-            <label class="field-wide">Zona de perimetro<br>
-                <select id="form-zona">
-                    <option value="">Sin zona</option>
-                    <option value="la orleana">La Orleana</option>
-                    <option value="bare 5">Bare 5</option>
-                    <option value="macolla venezuela">Macolla Venezuela</option>
-                    <option value="bare 6">Bare 6</option>
-                    <option value="bare 4">Bare 4</option>
-                    <option value="bare 1">Bare 1</option>
-                    <option value="bare 8">Bare 8</option>
-                    <option value="bare 7">Bare 7</option>
-                    <option value="bare 3">Bare 3</option>
-                    <option value="la floresta">La Floresta</option>
-                    <option value="trilla">Trilla</option>
-                    <option value="asfaltada y tigra">Asfaltada y Tigra</option>
-                    <option value="rancho grande">Rancho Grande</option>
-                </select>
-            </label>
-            <label class="field-wide">Diagrama<br>
-                <select id="form-diagrama">
-                    <option value="sin-asignar">Sin asignar</option>
-                    <option value="bare-tradicional">BARE tradicional</option>
-                    <option value="bare-6">BARE 6</option>
-                    <option value="bare-6-norte">BARE 6-Norte</option>
-                    <option value="bare-este">Bare Este</option>
-                </select>
-            </label>
-            <label class="field-full">Nota<br><input type="text" id="form-nota" placeholder="Ej: espera RIG-351 / en diagnostico por bomba"></label>
-            <label>Cabezal<br>
-                <select id="form-cabezal">
-                    <option value="">Ninguno</option>
-                    <option value="Weatherford">Weatherford</option>
-                    <option value="tiger">Tiger</option>
-                    <option value="hebei jerry">Hebei Jerry</option>
-                    <option value="kudu">Kudu</option>
-                    <option value="altan">Altan</option>
-                    <option value="netzsch">Netzsch</option>
-                    <option value="nov">NOV</option>
-                    <option value="lifteq">Lifteq</option>
-                    <option value="baker-hughes">Baker Hughes</option>
-                    <option value="pcm">PCM</option>
-                    <option value="cavallino">Cavallino</option>
-                    <option value="combest">Combest</option>
-                    <option value="vipower">Vipower</option>
-                    <option value="inpegas">INPEGAS</option>
-                    <option value="api">Al Pro International</option>
-                </select>
-            </label>
-            <label>Variador<br>
-                <select id="form-variador">
-                    <option value="">Ninguno</option>
-                    <option value="usfull">Usfull</option>
-                    <option value="hebei jerry">Hebei Jerry</option>
-                    <option value="matin dustrie">Matin Dustrie</option>
-                    <option value="wsc">WSC</option>
-                    <option value="wg">WG</option>
-                    <option value="yaskawa">Yaskawa</option>
-                    <option value="delta">Delta</option>
-                    <option value="abb">ABB</option>
-                    <option value="altan">ALTAN</option>
-                    <option value="combest">Combest</option>
-                </select>
-            </label>
-            <label>VO (RPM)<br><input type="number" id="form-vo" min="0" step="0.01" placeholder="80"></label>
-            <label>Potencial (barriles)<br><input type="number" id="form-potencial" min="0" step="0.01"></label>
-            <label class="field-wide checkbox-inline"><input type="checkbox" id="form-alto-corte-agua"> Mostrar gota de alto corte de agua</label>
-            <label>Fecha de arranque<br><input type="date" id="form-fecha-ultimo-servicio"></label>
-            <div class="form-actions field-full">
-                <button type="submit">Guardar</button>
-                <button type="button" id="form-toggle-alto-corte" class="btn-secondary hidden">Agregar gota alto corte</button>
-                <button type="button" id="form-reassign-diagram" class="btn-secondary hidden">Reasignar en diagrama</button>
-                <button type="button" id="form-unassign-diagram" class="btn-danger hidden">Desasignar del diagrama</button>
-                <button type="button" id="form-cancel">Cancelar</button>
-            </div>
-        </form>
+  <!-- panel móvil de recorridos -->
+  <div id="mobile-routes-panel" class="mobile-bottom-sheet hidden">
+    <div class="mobile-sheet-header">
+      <h3>Recorridos</h3>
+      <button id="mobile-routes-close" type="button">×</button>
     </div>
 
-    <!-- formulario móvil de edición de pozo -->
-    <div id="mobile-pozo-edit-sheet" class="mobile-bottom-sheet hidden">
-        <div class="mobile-sheet-header">
-            <h3>Editar pozo</h3>
-            <button id="mobile-pozo-edit-close" type="button">×</button>
-        </div>
+    <div class="mobile-form-grid">
+      <div class="mobile-form-field">
+        <label>Servicio</label>
+        <select id="mobile-route-service-select">
+          <option value="">Seleccione servicio</option>
+          <option value="Ranger-357">Ranger-357</option>
+          <option value="Ranger-356">Ranger-356</option>
+          <option value="Ranger-553">Ranger-553</option>
+          <option value="Ranger-554">Ranger-554</option>
+          <option value="RIG-351">RIG-351</option>
+          <option value="RIG-352">RIG-352</option>
+          <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+          <option value="Ranger-151">Ranger-151</option>
+          <option value="CT">CT</option>
+          <option value="WT">WT</option>
+        </select>
+      </div>
 
-        <form id="mobile-pozo-edit-form" class="mobile-form-grid">
-            <div class="mobile-form-field">
-                <label>ID</label>
-                <input type="text" id="mobile-form-id" required readonly>
-            </div>
-            <div class="mobile-form-field">
-                <label>Estado</label>
-                <select id="mobile-form-estado">
-                    <option value="activo">Activo</option>
-                    <option value="inactivo-servicio">En espera de servicio</option>
-                    <option value="en-servicio">En servicio</option>
-                    <option value="diagnostico">En diagnóstico</option>
-                    <option value="candidato">Candidato</option>
-                    <option value="diferido">Diferido</option>
-                </select>
-            </div>
-            <div class="mobile-form-field" id="mobile-form-diferido-cause-wrapper" class="hidden">
-                <label>Causa diferido</label>
-                <input type="text" id="mobile-form-diferido-cause" placeholder="Ej: arenamiento">
-            </div>
-            <div class="mobile-form-field">
-                <label>Zona de perímetro</label>
-                <select id="mobile-form-zona">
-                    <option value="">Sin zona</option>
-                    <option value="la orleana">La Orleana</option>
-                    <option value="bare 5">Bare 5</option>
-                    <option value="macolla venezuela">Macolla Venezuela</option>
-                    <option value="bare 6">Bare 6</option>
-                    <option value="bare 4">Bare 4</option>
-                    <option value="bare 1">Bare 1</option>
-                    <option value="bare 8">Bare 8</option>
-                    <option value="bare 7">Bare 7</option>
-                    <option value="bare 3">Bare 3</option>
-                    <option value="la floresta">La Floresta</option>
-                    <option value="trilla">Trilla</option>
-                    <option value="asfaltada y tigra">Asfaltada y Tigra</option>
-                    <option value="rancho grande">Rancho Grande</option>
-                </select>
-            </div>
-            <div class="mobile-form-field">
-                <label>Diagrama</label>
-                <select id="mobile-form-diagrama">
-                    <option value="sin-asignar">Sin asignar</option>
-                    <option value="bare-tradicional">BARE tradicional</option>
-                    <option value="bare-6">BARE 6</option>
-                    <option value="bare-6-norte">BARE 6-Norte</option>
-                    <option value="bare-este">Bare Este</option>
-                </select>
-            </div>
-            <div class="mobile-form-field">
-                <label>Nota</label>
-                <input type="text" id="mobile-form-nota" placeholder="Ej: espera RIG-351">
-            </div>
-            <div class="mobile-form-field">
-                <label>Cabezal</label>
-                <select id="mobile-form-cabezal">
-                    <option value="">Ninguno</option>
-                    <option value="Weatherford">Weatherford</option>
-                    <option value="tiger">Tiger</option>
-                    <option value="hebei jerry">Hebei Jerry</option>
-                    <option value="kudu">Kudu</option>
-                    <option value="altan">Altan</option>
-                    <option value="netzsch">Netzsch</option>
-                    <option value="nov">NOV</option>
-                    <option value="lifteq">Lifteq</option>
-                    <option value="baker-hughes">Baker Hughes</option>
-                    <option value="pcm">PCM</option>
-                    <option value="cavallino">Cavallino</option>
-                    <option value="combest">Combest</option>
-                    <option value="vipower">Vipower</option>
-                    <option value="inpegas">INPEGAS</option>
-                    <option value="api">Al Pro International</option>
-                </select>
-            </div>
-            <div class="mobile-form-field">
-                <label>Variador</label>
-                <select id="mobile-form-variador">
-                    <option value="">Ninguno</option>
-                    <option value="usfull">Usfull</option>
-                    <option value="hebei jerry">Hebei Jerry</option>
-                    <option value="matin dustrie">Matin Dustrie</option>
-                    <option value="wsc">WSC</option>
-                    <option value="wg">WG</option>
-                    <option value="yaskawa">Yaskawa</option>
-                    <option value="delta">Delta</option>
-                    <option value="abb">ABB</option>
-                    <option value="altan">ALTAN</option>
-                    <option value="combest">Combest</option>
-                </select>
-            </div>
-            <div class="mobile-form-field">
-                <label>VO (RPM)</label>
-                <input type="number" id="mobile-form-vo" min="0" step="0.01" placeholder="80">
-            </div>
-            <div class="mobile-form-field">
-                <label>Potencial (barriles)</label>
-                <input type="number" id="mobile-form-potencial" min="0" step="0.01">
-            </div>
-            <div class="mobile-form-field">
-                <label class="checkbox-inline">
-                    <input type="checkbox" id="mobile-form-alto-corte-agua"> Mostrar gota alto corte
-                </label>
-            </div>
-            <div class="mobile-form-field">
-                <label>Fecha de arranque</label>
-                <input type="date" id="mobile-form-fecha-ultimo-servicio">
-            </div>
-            <div class="mobile-form-actions">
-                <button type="submit">Guardar cambios</button>
-                <button type="button" id="mobile-pozo-edit-cancel">Cancelar</button>
-            </div>
-        </form>
+      <div class="mobile-form-field">
+        <label>Nombre de ruta</label>
+        <input id="mobile-route-name-input" type="text" placeholder="Ej: Posible ruta 1">
+      </div>
+
+      <div class="mobile-form-field">
+        <label>Color del trazo</label>
+        <input id="mobile-route-color-input" type="color" value="#f59e0b">
+      </div>
     </div>
 
-    <!-- panel móvil de recorridos -->
-    <div id="mobile-routes-panel" class="mobile-bottom-sheet hidden">
-        <div class="mobile-sheet-header">
-            <h3>Recorridos</h3>
-            <button id="mobile-routes-close" type="button">×</button>
-        </div>
-
-        <div class="mobile-form-grid">
-            <div class="mobile-form-field">
-                <label>Servicio</label>
-                <select id="mobile-route-service-select">
-                    <option value="">Seleccione servicio</option>
-                    <option value="Ranger-357">Ranger-357</option>
-                    <option value="Ranger-356">Ranger-356</option>
-                    <option value="Ranger-553">Ranger-553</option>
-                    <option value="Ranger-554">Ranger-554</option>
-                    <option value="RIG-351">RIG-351</option>
-                    <option value="RIG-352">RIG-352</option>
-                    <option value="RIG-RANGER-555">RIG-RANGER-555</option>
-                    <option value="Ranger-151">Ranger-151</option>
-                    <option value="CT">CT</option>
-                    <option value="WT">WT</option>
-                </select>
-            </div>
-
-            <div class="mobile-form-field">
-                <label>Nombre de ruta</label>
-                <input id="mobile-route-name-input" type="text" placeholder="Ej: Posible ruta 1">
-            </div>
-
-            <div class="mobile-form-field">
-                <label>Color del trazo</label>
-                <input id="mobile-route-color-input" type="color" value="#f59e0b">
-            </div>
-        </div>
-
-        <div class="route-actions">
-            <button id="mobile-route-new-btn" type="button">Nueva</button>
-            <button id="mobile-route-save-btn" type="button">Guardar</button>
-            <button id="mobile-route-cancel-btn" type="button">Cancelar</button>
-        </div>
-
-        <div id="mobile-routes-list"></div>
+    <div class="route-actions">
+      <button id="mobile-route-new-btn" type="button">Nueva</button>
+      <button id="mobile-route-save-btn" type="button">Guardar</button>
+      <button id="mobile-route-cancel-btn" type="button">Cancelar</button>
     </div>
 
-    <!-- formulario asignar servicio -->
-    <div id="assign-form-container" class="form-container hidden">
-        <form id="assign-taladro-form">
-            <h3>Asignar Servicio</h3>
-            <label>Pozo ID<br><input type="text" id="assign-pozo-id" required></label>
-            <label>Servicio<br>
-                <select id="assign-taladro-select">
-                    <option value="Ranger-357">Ranger-357</option>
-                    <option value="Ranger-356">Ranger-356</option>
-                    <option value="Ranger-553">Ranger-553</option>
-                    <option value="Ranger-554">Ranger-554</option>
-                    <option value="RIG-351">RIG-351</option>
-                    <option value="RIG-352">RIG-352</option>
-                    <option value="RIG-RANGER-555">RIG-RANGER-555</option>
-                    <option value="Ranger-151">Ranger-151</option>
-                    <option value="CT">CT (Coiled Tubing / Estimulación)</option>
-                    <option value="WT">WT</option>
-                </select>
-            </label>
-            <div class="form-actions">
-                <button type="submit">Asignar</button>
-                <button type="button" id="assign-unassign-btn">Desasignar servicio</button>
-                <button type="button" id="assign-cancel">Cancelar</button>
-            </div>
-        </form>
+    <div id="mobile-routes-list"></div>
+  </div>
+
+  <!-- formulario asignar servicio -->
+  <div id="assign-form-container" class="form-container hidden">
+    <form id="assign-taladro-form">
+      <h3>Asignar Servicio</h3>
+      <label>Pozo ID<br><input type="text" id="assign-pozo-id" required></label>
+      <label>Servicio<br>
+        <select id="assign-taladro-select">
+          <option value="Ranger-357">Ranger-357</option>
+          <option value="Ranger-356">Ranger-356</option>
+          <option value="Ranger-553">Ranger-553</option>
+          <option value="Ranger-554">Ranger-554</option>
+          <option value="RIG-351">RIG-351</option>
+          <option value="RIG-352">RIG-352</option>
+          <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+          <option value="Ranger-151">Ranger-151</option>
+          <option value="CT">CT (Coiled Tubing / Estimulación)</option>
+          <option value="WT">WT</option>
+        </select>
+      </label>
+      <div class="form-actions">
+        <button type="submit">Asignar</button>
+        <button type="button" id="assign-unassign-btn">Desasignar servicio</button>
+        <button type="button" id="assign-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- formulario móvil de asignación de servicios -->
+  <div id="mobile-assign-service-panel" class="mobile-bottom-sheet hidden">
+    <div class="mobile-sheet-header">
+      <div>
+        <h3>Asignar servicio</h3>
+        <p id="mobile-assign-pozo-label" class="mobile-sheet-subtitle"></p>
+        <p id="mobile-current-service-label" class="mobile-sheet-subtitle"></p>
+      </div>
+      <button id="mobile-assign-service-close" type="button">×</button>
     </div>
+    <form id="mobile-assign-service-form" class="mobile-form-grid">
+      <input type="hidden" id="mobile-assign-pozo-id">
+      <div id="mobile-assign-pozo-input-wrapper" class="mobile-form-field">
+        <label for="mobile-assign-pozo-input">Pozo</label>
+        <input id="mobile-assign-pozo-input" list="pozos-list" placeholder="Ej: 857">
+      </div>
+      <div class="mobile-form-field">
+        <label for="mobile-assign-service-select">Servicio</label>
+        <select id="mobile-assign-service-select" required>
+          <option value="">Seleccione servicio</option>
+          <option value="Ranger-357">Ranger-357</option>
+          <option value="Ranger-356">Ranger-356</option>
+          <option value="Ranger-553">Ranger-553</option>
+          <option value="Ranger-554">Ranger-554</option>
+          <option value="RIG-351">RIG-351</option>
+          <option value="RIG-352">RIG-352</option>
+          <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+          <option value="Ranger-151">Ranger-151</option>
+          <option value="CT">CT</option>
+          <option value="WT">WT</option>
+        </select>
+      </div>
+      <div class="mobile-form-field">
+        <label for="mobile-assign-next-status">Estado al desasignar</label>
+        <select id="mobile-assign-next-status">
+          <option value="activo">Activo</option>
+          <option value="inactivo-servicio">En espera de servicio</option>
+          <option value="diagnostico">En diagnóstico</option>
+          <option value="candidato">Candidato</option>
+          <option value="diferido">Diferido</option>
+        </select>
+      </div>
+      <div class="mobile-form-actions">
+        <button type="submit" class="primary">Asignar</button>
+        <button id="mobile-unassign-service-btn" type="button" class="secondary">Desasignar</button>
+        <button id="mobile-assign-service-cancel" type="button" class="ghost">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-    <!-- formulario móvil de asignación de servicios -->
-    <div id="mobile-assign-service-panel" class="mobile-bottom-sheet hidden">
-        <div class="mobile-sheet-header">
-            <div>
-                <h3>Asignar servicio</h3>
-                <p id="mobile-assign-pozo-label" class="mobile-sheet-subtitle"></p>
-                <p id="mobile-current-service-label" class="mobile-sheet-subtitle"></p>
-            </div>
-            <button id="mobile-assign-service-close" type="button">×</button>
-        </div>
-        <form id="mobile-assign-service-form" class="mobile-form-grid">
-            <input type="hidden" id="mobile-assign-pozo-id">
-            <div id="mobile-assign-pozo-input-wrapper" class="mobile-form-field">
-                <label for="mobile-assign-pozo-input">Pozo</label>
-                <input id="mobile-assign-pozo-input" list="pozos-list" placeholder="Ej: 857">
-            </div>
-            <div class="mobile-form-field">
-                <label for="mobile-assign-service-select">Servicio</label>
-                <select id="mobile-assign-service-select" required>
-                    <option value="">Seleccione servicio</option>
-                    <option value="Ranger-357">Ranger-357</option>
-                    <option value="Ranger-356">Ranger-356</option>
-                    <option value="Ranger-553">Ranger-553</option>
-                    <option value="Ranger-554">Ranger-554</option>
-                    <option value="RIG-351">RIG-351</option>
-                    <option value="RIG-352">RIG-352</option>
-                    <option value="RIG-RANGER-555">RIG-RANGER-555</option>
-                    <option value="Ranger-151">Ranger-151</option>
-                    <option value="CT">CT</option>
-                    <option value="WT">WT</option>
-                </select>
-            </div>
-            <div class="mobile-form-field">
-                <label for="mobile-assign-next-status">Estado al desasignar</label>
-                <select id="mobile-assign-next-status">
-                    <option value="activo">Activo</option>
-                    <option value="inactivo-servicio">En espera de servicio</option>
-                    <option value="diagnostico">En diagnóstico</option>
-                    <option value="candidato">Candidato</option>
-                    <option value="diferido">Diferido</option>
-                </select>
-            </div>
-            <div class="mobile-form-actions">
-                <button type="submit" class="primary">Asignar</button>
-                <button id="mobile-unassign-service-btn" type="button" class="secondary">Desasignar</button>
-                <button id="mobile-assign-service-cancel" type="button" class="ghost">Cancelar</button>
-            </div>
-        </form>
-    </div>
+  <!-- formulario asignar pozo ya creado al diagrama (modo asignación por click) -->
+  <div id="assign-diagram-form-container" class="form-container hidden">
+    <form id="assign-diagram-form">
+      <h3>Asignar Pozo Ya Creado</h3>
+      <p id="assign-diagram-point-label" class="verification-subtitle"></p>
+      <label>Pozo disponible (escribe ID para filtrar)<br>
+        <input type="text" id="assign-diagram-pozo-input" list="assign-diagram-pozo-list" placeholder="Ej: 857"
+          autocomplete="off" required>
+        <datalist id="assign-diagram-pozo-list"></datalist>
+      </label>
+      <p id="assign-diagram-remaining" class="verification-subtitle"></p>
+      <div class="form-actions">
+        <button type="submit">Asignar al punto</button>
+        <button type="button" id="assign-diagram-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-    <!-- formulario asignar pozo ya creado al diagrama (modo asignación por click) -->
-    <div id="assign-diagram-form-container" class="form-container hidden">
-        <form id="assign-diagram-form">
-            <h3>Asignar Pozo Ya Creado</h3>
-            <p id="assign-diagram-point-label" class="verification-subtitle"></p>
-            <label>Pozo disponible (escribe ID para filtrar)<br>
-                <input type="text" id="assign-diagram-pozo-input" list="assign-diagram-pozo-list" placeholder="Ej: 857" autocomplete="off" required>
-                <datalist id="assign-diagram-pozo-list"></datalist>
-            </label>
-            <p id="assign-diagram-remaining" class="verification-subtitle"></p>
-            <div class="form-actions">
-                <button type="submit">Asignar al punto</button>
-                <button type="button" id="assign-diagram-cancel">Cancelar</button>
-            </div>
-        </form>
-    </div>
+  <div id="bulk-zone-form-container" class="form-container hidden">
+    <form id="bulk-zone-form">
+      <h3>Editar Zona De Selección</h3>
+      <p id="bulk-zone-selection-count" class="verification-subtitle"></p>
+      <label>Zona de perimetro<br>
+        <select id="bulk-zone-select"></select>
+      </label>
+      <div class="form-actions">
+        <button type="submit">Aplicar zona</button>
+        <button type="button" id="bulk-zone-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-    <div id="bulk-zone-form-container" class="form-container hidden">
-        <form id="bulk-zone-form">
-            <h3>Editar Zona De Selección</h3>
-            <p id="bulk-zone-selection-count" class="verification-subtitle"></p>
-            <label>Zona de perimetro<br>
-                <select id="bulk-zone-select"></select>
-            </label>
-            <div class="form-actions">
-                <button type="submit">Aplicar zona</button>
-                <button type="button" id="bulk-zone-cancel">Cancelar</button>
-            </div>
-        </form>
-    </div>
+  <!-- formulario login -->
+  <div id="login-panel" class="form-container hidden">
+    <form id="login-form" autocomplete="on">
+      <h3>Iniciar sesión</h3>
+      <label>Usuario<br><input type="text" id="login-username" autocomplete="username" required></label>
+      <label>Contraseña<br><input type="password" id="login-password" autocomplete="current-password" required></label>
+      <p id="login-error" class="login-error hidden"></p>
+      <div class="form-actions">
+        <button type="submit">Entrar</button>
+        <button type="button" id="login-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-    <!-- formulario login -->
-    <div id="login-panel" class="form-container hidden">
-        <form id="login-form" autocomplete="on">
-            <h3>Iniciar sesión</h3>
-            <label>Usuario<br><input type="text" id="login-username" autocomplete="username" required></label>
-            <label>Contraseña<br><input type="password" id="login-password" autocomplete="current-password" required></label>
-            <p id="login-error" class="login-error hidden"></p>
-            <div class="form-actions">
-                <button type="submit">Entrar</button>
-                <button type="button" id="login-cancel">Cancelar</button>
-            </div>
-        </form>
-    </div>
+  <!-- verificacion del pozo que sale de servicio -->
+  <div id="service-verification-container" class="form-container hidden">
+    <form id="service-verification-form">
+      <h3>Verificación de servicio</h3>
+      <p id="verification-pozo-label" class="verification-subtitle"></p>
 
-    <!-- verificacion del pozo que sale de servicio -->
-    <div id="service-verification-container" class="form-container hidden">
-        <form id="service-verification-form">
-            <h3>Verificación de servicio</h3>
-            <p id="verification-pozo-label" class="verification-subtitle"></p>
+      <div class="radio-card-group">
+        <label class="radio-card">
+          <input type="radio" name="verification-estado" value="activo" checked>
+          <span>Activo</span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="verification-estado" value="candidato">
+          <span>Candidato</span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="verification-estado" value="diferido">
+          <span>Diferido</span>
+        </label>
+      </div>
 
-            <div class="radio-card-group">
-                <label class="radio-card">
-                    <input type="radio" name="verification-estado" value="activo" checked>
-                    <span>Activo</span>
-                </label>
-                <label class="radio-card">
-                    <input type="radio" name="verification-estado" value="candidato">
-                    <span>Candidato</span>
-                </label>
-                <label class="radio-card">
-                    <input type="radio" name="verification-estado" value="diferido">
-                    <span>Diferido</span>
-                </label>
-            </div>
+      <label id="verification-cause-wrapper" class="hidden">Causa diferido<br><input type="text" id="verification-cause"
+          placeholder="Ej: arenamiento"></label>
 
-            <label id="verification-cause-wrapper" class="hidden">Causa diferido<br><input type="text" id="verification-cause" placeholder="Ej: arenamiento"></label>
+      <div class="form-actions">
+        <button type="submit">Confirmar</button>
+        <button type="button" id="verification-cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 
-            <div class="form-actions">
-                <button type="submit">Confirmar</button>
-                <button type="button" id="verification-cancel">Cancelar</button>
-            </div>
-        </form>
-    </div>
-
-    <!-- scripts -->
-    <script src="js/leaflet.js?v=3"></script>
-    <!-- localForage se carga antes de main.js; se agrega un query string para
+  <!-- scripts -->
+  <script src="js/leaflet.js?v=3"></script>
+  <!-- localForage se carga antes de main.js; se agrega un query string para
          invalidar la cache cuando cambie de versión -->
-    <script src="js/localforage.min.js?v=3" onerror="console.error('No se pudo cargar localforage desde el archivo local')"></script>
-    <script>
-        // Si localforage no está disponible (por cache antigua o fallos de SW),
-        // tratamos de cargarlo desde un CDN y finalmente caer en un envoltorio
-        // basado en localStorage para que la aplicación no se rompa.
-        (function(){
-            function fallbackToStorage(){
-                console.warn('Usando fallback de localStorage');
-                window.localforage = {
-                    getItem: async function(key){
-                        var v = localStorage.getItem(key);
-                        return v ? JSON.parse(v) : null;
-                    },
-                    setItem: async function(key,value){
-                        localStorage.setItem(key, JSON.stringify(value));
-                        return value;
-                    },
-                    removeItem: async function(key){
-                        localStorage.removeItem(key);
-                    }
-                };
-            }
-            if(typeof localforage === 'undefined'){
-                var s = document.createElement('script');
-                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js';
-                s.onload = function(){
-                    if(typeof localforage === 'undefined'){
-                        console.error('localforage no se definió aun después de cargar CDN');
-                        fallbackToStorage();
-                    }
-                };
-                s.onerror = function(){
-                    console.error('Error cargando localforage desde CDN');
-                    fallbackToStorage();
-                };
-                document.head.appendChild(s);
-            }
-        })();
-    </script>
-    <script src="js/pozos-data.js?v=1"></script>
-    <script src="js/main.js?v=35"></script>
-    <script src="js/sw-register.js?v=5" defer></script>
+  <script src="js/localforage.min.js?v=3"
+    onerror="console.error('No se pudo cargar localforage desde el archivo local')"></script>
+  <script>
+    // Si localforage no está disponible (por cache antigua o fallos de SW),
+    // tratamos de cargarlo desde un CDN y finalmente caer en un envoltorio
+    // basado en localStorage para que la aplicación no se rompa.
+    (function () {
+      function fallbackToStorage() {
+        console.warn('Usando fallback de localStorage');
+        window.localforage = {
+          getItem: async function (key) {
+            var v = localStorage.getItem(key);
+            return v ? JSON.parse(v) : null;
+          },
+          setItem: async function (key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+            return value;
+          },
+          removeItem: async function (key) {
+            localStorage.removeItem(key);
+          }
+        };
+      }
+      if (typeof localforage === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js';
+        s.onload = function () {
+          if (typeof localforage === 'undefined') {
+            console.error('localforage no se definió aun después de cargar CDN');
+            fallbackToStorage();
+          }
+        };
+        s.onerror = function () {
+          console.error('Error cargando localforage desde CDN');
+          fallbackToStorage();
+        };
+        document.head.appendChild(s);
+      }
+    })();
+  </script>
+  <script src="js/pozos-data.js?v=1"></script>
+  <script src="js/api-client.js?v=20260523-01"></script>
+  <script src="js/main.js?v=20260523-01"></script>
+  <script src="js/sw-register.js?v=5" defer></script>
 
-    <!-- Botón flotante de búsqueda para móvil -->
-    <div id="floating-search-container">
-        <button id="floating-search-btn" class="floating-search-btn">🔍</button>
-        <div id="floating-search-input" class="floating-search-input hidden">
-            <input id="mobile-search" list="pozos-list" placeholder="Buscar pozo o servicio...">
-            <button id="mobile-search-btn">Buscar</button>
-        </div>
+  <!-- Botón flotante de búsqueda para móvil -->
+  <div id="floating-search-container">
+    <button id="floating-search-btn" class="floating-search-btn">🔍</button>
+    <div id="floating-search-input" class="floating-search-input hidden">
+      <input id="mobile-search" list="pozos-list" placeholder="Buscar pozo o servicio...">
+      <button id="mobile-search-btn">Buscar</button>
     </div>
+  </div>
 
-    <!-- Botón flotante para zona en móvil -->
-    <div id="floating-zone-container">
-        <button id="floating-zone-btn" class="floating-zone-btn">🗺️</button>
-        <div id="floating-zone-input" class="floating-zone-input hidden">
-            <select id="mobile-zone-select">
-                <option value="bare-tradicional">BARE tradicional</option>
-                <option value="bare-6">BARE 6</option>
-                <option value="bare-6-norte">BARE 6-Norte</option>
-                <option value="bare-este">Bare Este</option>
-            </select>
-        </div>
+  <!-- Botón flotante para zona en móvil -->
+  <div id="floating-zone-container">
+    <button id="floating-zone-btn" class="floating-zone-btn">🗺️</button>
+    <div id="floating-zone-input" class="floating-zone-input hidden">
+      <select id="mobile-zone-select">
+        <option value="bare-tradicional">BARE tradicional</option>
+        <option value="bare-6">BARE 6</option>
+        <option value="bare-6-norte">BARE 6-Norte</option>
+        <option value="bare-este">Bare Este</option>
+      </select>
     </div>
+  </div>
 
-    <div id="floating-view-container">
-        <button id="floating-view-btn" class="floating-view-btn" type="button" aria-label="Cambiar a vista mapa">MAPA</button>
+  <div id="floating-view-container">
+    <button id="floating-view-btn" class="floating-view-btn" type="button"
+      aria-label="Cambiar a vista mapa">MAPA</button>
+  </div>
+
+  <div id="mobile-map-filters" class="mobile-map-filters hidden" aria-label="Filtrar pozos por estado">
+    <button type="button" class="stats-item mobile-filter-chip is-active" data-filter-type="status"
+      data-filter="all">Todos</button>
+    <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="activo"><span
+        class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</button>
+    <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status"
+      data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio"
+        aria-hidden="true"></span>Espera</button>
+    <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status"
+      data-filter="en-servicio"><span class="status-dot status-dot-en-servicio"
+        aria-hidden="true"></span>Servicio</button>
+    <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status"
+      data-filter="diagnostico"><span class="status-dot status-dot-diagnostico"
+        aria-hidden="true"></span>Diagnóstico</button>
+    <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="candidato"><span
+        class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</button>
+    <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="diferido"><span
+        class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferidos</button>
+  </div>
+
+  <!-- Leyenda flotante para móvil -->
+  <div id="floating-legend-container">
+    <button id="floating-legend-btn" class="floating-legend-btn" aria-label="Mostrar leyenda">i</button>
+    <div id="floating-legend-box" class="floating-legend-box hidden" role="button" tabindex="0"
+      aria-label="Ocultar leyenda">
+      <div class="legend-item" data-legend-status="activo"><span class="status-dot status-dot-activo"
+          aria-hidden="true"></span>Activos <span class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-status="inactivo-servicio"><span
+          class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio <span
+          class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-status="en-servicio"><span class="status-dot status-dot-en-servicio"
+          aria-hidden="true"></span>En servicio <span class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-status="diagnostico"><span class="status-dot status-dot-diagnostico"
+          aria-hidden="true"></span>En diagnóstico <span class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-status="candidato"><span class="status-dot status-dot-candidato"
+          aria-hidden="true"></span>Candidatos <span class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-status="diferido"><span class="status-dot status-dot-diferido"
+          aria-hidden="true"></span>Diferido <span class="legend-count">(0)</span></div>
+      <div class="legend-subtitle">Categorías</div>
+      <div class="legend-item" data-legend-category="1"><span class="category-dot category-dot-1"
+          aria-hidden="true"></span>Categoría 1 <span class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-category="2"><span class="category-dot category-dot-2"
+          aria-hidden="true"></span>Categoría 2 <span class="legend-count">(0)</span></div>
+      <div class="legend-item" data-legend-category="3"><span class="category-dot category-dot-3"
+          aria-hidden="true"></span>Categoría 3 <span class="legend-count">(0)</span></div>
+      <div class="legend-subtitle">Activos por zona</div>
+      <div class="legend-zone-item" data-zone="bare-tradicional">BARE tradicional <span class="legend-count"
+          id="mobile-zone-count-bare-tradicional">(0)</span></div>
+      <div class="legend-zone-item" data-zone="trilla">Trilla <span class="legend-count"
+          id="mobile-zone-count-trilla">(0)</span></div>
+      <div class="legend-zone-item" data-zone="asfaltada-y-tigra">Asfaltada y Tigra <span class="legend-count"
+          id="mobile-zone-count-asfaltada-y-tigra">(0)</span></div>
+      <div class="legend-zone-item" data-zone="bare-6">BARE 6 <span class="legend-count"
+          id="mobile-zone-count-bare-6">(0)</span></div>
     </div>
+  </div>
 
-    <div id="mobile-map-filters" class="mobile-map-filters hidden" aria-label="Filtrar pozos por estado">
-        <button type="button" class="stats-item mobile-filter-chip is-active" data-filter-type="status" data-filter="all">Todos</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>Espera</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>Servicio</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>Diagnóstico</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos</button>
-        <button type="button" class="stats-item mobile-filter-chip" data-filter-type="status" data-filter="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferidos</button>
+  <div id="update-toast" class="update-toast hidden" role="status" aria-live="polite">
+    <p id="update-toast-text">Nueva actualización disponible (v1.2). ¿Desea actualizar ahora?</p>
+    <div class="update-toast-actions">
+      <button id="update-now-btn" type="button">Actualizar</button>
+      <button id="update-later-btn" type="button">Más tarde</button>
     </div>
+  </div>
 
-    <!-- Leyenda flotante para móvil -->
-    <div id="floating-legend-container">
-        <button id="floating-legend-btn" class="floating-legend-btn" aria-label="Mostrar leyenda">i</button>
-        <div id="floating-legend-box" class="floating-legend-box hidden" role="button" tabindex="0" aria-label="Ocultar leyenda">
-            <div class="legend-item" data-legend-status="activo"><span class="status-dot status-dot-activo" aria-hidden="true"></span>Activos <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-status="inactivo-servicio"><span class="status-dot status-dot-inactivo-servicio" aria-hidden="true"></span>En espera de servicio <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-status="en-servicio"><span class="status-dot status-dot-en-servicio" aria-hidden="true"></span>En servicio <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-status="diagnostico"><span class="status-dot status-dot-diagnostico" aria-hidden="true"></span>En diagnóstico <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-status="candidato"><span class="status-dot status-dot-candidato" aria-hidden="true"></span>Candidatos <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-status="diferido"><span class="status-dot status-dot-diferido" aria-hidden="true"></span>Diferido <span class="legend-count">(0)</span></div>
-            <div class="legend-subtitle">Categorías</div>
-            <div class="legend-item" data-legend-category="1"><span class="category-dot category-dot-1" aria-hidden="true"></span>Categoría 1 <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-category="2"><span class="category-dot category-dot-2" aria-hidden="true"></span>Categoría 2 <span class="legend-count">(0)</span></div>
-            <div class="legend-item" data-legend-category="3"><span class="category-dot category-dot-3" aria-hidden="true"></span>Categoría 3 <span class="legend-count">(0)</span></div>
-            <div class="legend-subtitle">Activos por zona</div>
-            <div class="legend-zone-item" data-zone="bare-tradicional">BARE tradicional <span class="legend-count" id="mobile-zone-count-bare-tradicional">(0)</span></div>
-            <div class="legend-zone-item" data-zone="trilla">Trilla <span class="legend-count" id="mobile-zone-count-trilla">(0)</span></div>
-            <div class="legend-zone-item" data-zone="asfaltada-y-tigra">Asfaltada y Tigra <span class="legend-count" id="mobile-zone-count-asfaltada-y-tigra">(0)</span></div>
-            <div class="legend-zone-item" data-zone="bare-6">BARE 6 <span class="legend-count" id="mobile-zone-count-bare-6">(0)</span></div>
-        </div>
-    </div>
-
-    <div id="update-toast" class="update-toast hidden" role="status" aria-live="polite">
-        <p id="update-toast-text">Nueva actualización disponible (v1.2). ¿Desea actualizar ahora?</p>
-        <div class="update-toast-actions">
-            <button id="update-now-btn" type="button">Actualizar</button>
-            <button id="update-later-btn" type="button">Más tarde</button>
-        </div>
-    </div>
-
-    <button id="update-fab" class="update-fab hidden" type="button">Actualización disponible (v1.2)</button>
+  <button id="update-fab" class="update-fab hidden" type="button">Actualización disponible (v1.2)</button>
 </body>
+
 </html>
