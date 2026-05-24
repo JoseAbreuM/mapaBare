@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.19';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v31';
+const APP_VERSION = 'v1.20';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v32';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -911,6 +911,138 @@ async function ensureLocalForage() {
     }
 }
 
+function serializeFirestoreValue(value) {
+    if (value === null || value === undefined) return value;
+
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+
+    if (typeof value === 'object' && typeof value.toDate === 'function') {
+        try {
+            return value.toDate().toISOString();
+        } catch (error) {
+            return value;
+        }
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(serializeFirestoreValue);
+    }
+
+    if (typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, nestedValue]) => [
+                key,
+                serializeFirestoreValue(nestedValue)
+            ])
+        );
+    }
+
+    return value;
+}
+
+function downloadJsonFile(filename, data) {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+}
+
+function getExportTimestamp() {
+    return new Date().toISOString()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .replaceAll('.', '-')
+        .replaceAll('Z', 'Z');
+}
+
+async function exportFirestorePozosJson(options = {}) {
+    const {
+        download = true,
+        includeLocalCopy = true,
+        filename = `firestore-pozos-full-${getExportTimestamp()}.json`
+    } = options;
+
+    if (!isDbReady()) {
+        throw new Error('Firestore no está disponible. Verifica que firebase-init.js haya cargado window.db.');
+    }
+
+    const docRef = getPozosDocRef();
+    let snap = null;
+    let source = 'server';
+
+    try {
+        snap = await docRef.get({ source: 'server' });
+    } catch (serverError) {
+        console.warn('[MapaBare] No se pudo leer Firestore desde servidor. Intentando cache/default:', serverError);
+        snap = await docRef.get();
+        source = 'default-or-cache';
+    }
+
+    if (!snap || !snap.exists) {
+        throw new Error('No existe el documento Firestore pozos/data.');
+    }
+
+    const rawDoc = serializeFirestoreValue(snap.data() || {});
+    const rawPozos = Array.isArray(rawDoc.pozos) ? rawDoc.pozos : [];
+
+    const payload = {
+        _export: {
+            app: 'mapaBare',
+            type: 'firestore-pozos-full',
+            source,
+            exportedAt: new Date().toISOString(),
+            firestorePath: 'pozos/data',
+            totalPozos: rawPozos.length,
+            keysDetected: rawPozos[0] ? Object.keys(rawPozos[0]).sort() : []
+        },
+        pozos: rawPozos,
+        rawDocument: rawDoc
+    };
+
+    if (includeLocalCopy) {
+        payload.localNormalizedCopy = pozoData.map(pozo => serializeFirestoreValue(pozo));
+    }
+
+    if (download) {
+        downloadJsonFile(filename, payload);
+    }
+
+    console.info('[MapaBare] Export Firestore pozos listo:', payload._export);
+    return payload;
+}
+
+async function exportFirestorePozosCompactJson(options = {}) {
+    const payload = await exportFirestorePozosJson({
+        ...options,
+        download: false,
+        includeLocalCopy: false
+    });
+
+    const compactPayload = {
+        _export: payload._export,
+        pozos: payload.pozos
+    };
+
+    if (options.download !== false) {
+        downloadJsonFile(
+            options.filename || `firestore-pozos-compact-${getExportTimestamp()}.json`,
+            compactPayload
+        );
+    }
+
+    return compactPayload;
+}
+
 async function loadAuthConfigFromDb() {
     /**
      * Si mapaBare está usando la PWA API como fuente principal,
@@ -1377,9 +1509,9 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=3',
         '/js/localforage.min.js?v=3',
-        '/js/api-client.js?v=20260524-02',
-        '/js/main.js?v=20260524-02',
-        '/js/sw-register.js?v=7',
+        '/js/api-client.js?v=20260524-03',
+        '/js/main.js?v=20260524-03',
+        '/js/sw-register.js?v=8',
         '/js/firebase-init.js?v=3',
         '/js/pozos-data.js?v=1',
         '/manifest.json',
@@ -3126,5 +3258,7 @@ window.debug = {
     loadPozosFromPwaApi,
     loadInitialPozosData,
     flushPendingApiSync,
-    getPendingApiSync
+    getPendingApiSync,
+    exportFirestorePozosJson,
+    exportFirestorePozosCompactJson
 };
