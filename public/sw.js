@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v35';
+const CACHE_NAME = 'pozos-cache-v37';
 const BARE_TILE_BOUNDS = {
     minLat: 8.5,
     maxLat: 8.7,
