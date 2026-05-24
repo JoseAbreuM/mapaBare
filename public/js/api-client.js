@@ -22,20 +22,15 @@
     );
   }
 
-  function buildHeaders(extraHeaders = {}) {
-    const token = getAuthToken();
+function buildHeaders(extraHeaders = {}) {
+  const token = getAuthToken();
 
-    return {
-      Accept: 'application/json',
-      ...extraHeaders,
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-            'x-api-key': token
-          }
-        : {})
-    };
-  }
+  return {
+    Accept: 'application/json',
+    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
 
   async function request(path, options = {}) {
     const apiBaseUrl = getApiBaseUrl();
