@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.20';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v32';
+const APP_VERSION = 'v1.21';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v33';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -190,6 +190,74 @@ function normalizeNumericValue(value) {
     return Number.isFinite(number) ? number : null;
 }
 
+function getFirstNonEmptyValue(...values) {
+    for (const value of values) {
+        if (value === null || value === undefined) continue;
+        if (typeof value === 'string' && value.trim() === '') continue;
+        return value;
+    }
+
+    return null;
+}
+
+function normalizeDateInputValue(value) {
+    const raw = getFirstNonEmptyValue(value);
+    if (!raw) return null;
+
+    const text = String(raw).trim();
+
+    // YYYY-MM-DD o ISO: 2026-05-18 / 2026-05-18T00:00:00.000Z
+    const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    }
+
+    // DD-MM-YYYY
+    const dmyDashMatch = text.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (dmyDashMatch) {
+        return `${dmyDashMatch[3]}-${dmyDashMatch[2]}-${dmyDashMatch[1]}`;
+    }
+
+    // DD/MM/YYYY
+    const dmySlashMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dmySlashMatch) {
+        return `${dmySlashMatch[3]}-${dmySlashMatch[2]}-${dmySlashMatch[1]}`;
+    }
+
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+        const day = String(parsed.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    return null;
+}
+
+function formatDateDdMmYyyy(value) {
+    const normalized = normalizeDateInputValue(value);
+
+    if (!normalized) {
+        const raw = getFirstNonEmptyValue(value);
+        return raw ? String(raw).trim() : null;
+    }
+
+    const [year, month, day] = normalized.split('-');
+    return `${day}-${month}-${year}`;
+}
+
+function getPozoFechaArranqueRaw(pozo) {
+    return getFirstNonEmptyValue(
+        pozo.fechaUltimoServicio,
+        pozo.fecha_arranque,
+        pozo.fechaArranque,
+        pozo.fecha_arranque_formateada,
+        pozo.fechaArranqueFormateada,
+        pozo.fecha_ultimo_servicio
+    );
+}
+
 function normalizePozo(pozo) {
     const normalizedEstado = normalizeEstado(pozo.estado);
     const normalizedZone = (pozo.zona || pozo.area || '').toString().trim().toLowerCase();
@@ -221,6 +289,10 @@ function normalizePozo(pozo) {
         null
     );
 
+    const fechaArranqueRaw = getPozoFechaArranqueRaw(pozo);
+    const fechaArranqueInput = normalizeDateInputValue(fechaArranqueRaw);
+    const fechaArranqueLabel = formatDateDdMmYyyy(fechaArranqueRaw);
+
     return {
         ...pozo,
 
@@ -247,7 +319,16 @@ function normalizePozo(pozo) {
          */
         velocidadActual,
         velocidadOperacional,
-        fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
+
+        /**
+         * La fecha se guarda internamente como YYYY-MM-DD para inputs/API,
+         * pero se muestra como DD-MM-YYYY en el popup.
+         */
+        fechaUltimoServicio: fechaArranqueInput,
+        fechaArranque: fechaArranqueInput,
+        fechaArranqueLabel,
+        fecha_arranque: fechaArranqueInput,
+        fecha_arranque_formateada: fechaArranqueLabel,
 
         altoCorteAgua: parseBooleanFlag(pozo.altoCorteAgua),
         vistaMapa: pozo.vistaMapa !== false,
@@ -1509,9 +1590,9 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=3',
         '/js/localforage.min.js?v=3',
-        '/js/api-client.js?v=20260524-03',
-        '/js/main.js?v=20260524-03',
-        '/js/sw-register.js?v=8',
+        '/js/api-client.js?v=20260524-04',
+        '/js/main.js?v=20260524-04',
+        '/js/sw-register.js?v=9',
         '/js/firebase-init.js?v=3',
         '/js/pozos-data.js?v=1',
         '/manifest.json',
@@ -2101,7 +2182,19 @@ function popupContent(p) {
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (hasHighWaterCut(p)) content += '<br>Alto corte de agua: si';
     if (p.taladro) content += `<br>Servicio: ${p.taladro}`;
-    if (p.fechaUltimoServicio) content += `<br>Fecha de arranque: ${p.fechaUltimoServicio}`;
+
+    const fechaArranqueLabel = formatDateDdMmYyyy(
+        p.fechaArranqueLabel ||
+        p.fechaUltimoServicio ||
+        p.fecha_arranque ||
+        p.fechaArranque ||
+        p.fecha_arranque_formateada
+    );
+
+    if (fechaArranqueLabel) {
+        content += `<br>Fecha de arranque: ${fechaArranqueLabel}`;
+    }
+
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
     if (isDesktop() && isAuthenticated) {
@@ -2153,7 +2246,12 @@ function openForm(lat = null, lng = null, id = null) {
         document.getElementById('form-vo').value = p.velocidadActual ?? '';
         document.getElementById('form-potencial').value = p.potencial || '';
         document.getElementById('form-alto-corte-agua').checked = !!p.altoCorteAgua;
-        document.getElementById('form-fecha-ultimo-servicio').value = p.fechaUltimoServicio || '';
+        document.getElementById('form-fecha-ultimo-servicio').value = normalizeDateInputValue(
+            p.fechaUltimoServicio ||
+            p.fecha_arranque ||
+            p.fechaArranque ||
+            p.fecha_arranque_formateada
+        ) || '';
         if (reassignBtn) reassignBtn.classList.remove('hidden');
         if (unassignBtn) unassignBtn.classList.remove('hidden');
         if (toggleHighWaterCutBtn) toggleHighWaterCutBtn.classList.remove('hidden');
@@ -2581,6 +2679,7 @@ async function savePozo(e) {
     const formNota = document.getElementById('form-nota').value.trim();
     const formHighWaterCut = document.getElementById('form-alto-corte-agua').checked;
     const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
+    const formFechaArranque = normalizeDateInputValue(document.getElementById('form-fecha-ultimo-servicio').value);
     const pozo = {
         ...(previousPozo || {}),
         id: document.getElementById('form-id').value.trim().toUpperCase(),
@@ -2606,7 +2705,11 @@ async function savePozo(e) {
         velocidadOperacional: previousPozo ? previousPozo.velocidadOperacional : null,
         potencial: document.getElementById('form-potencial').value || null,
         altoCorteAgua: formHighWaterCut,
-        fechaUltimoServicio: document.getElementById('form-fecha-ultimo-servicio').value || null,
+        fechaUltimoServicio: formFechaArranque || null,
+        fecha_arranque: formFechaArranque || null,
+        fechaArranque: formFechaArranque || null,
+        fechaArranqueLabel: formatDateDdMmYyyy(formFechaArranque),
+        fecha_arranque_formateada: formatDateDdMmYyyy(formFechaArranque),
         nota: formNota || null,
         taladro: previousPozo ? previousPozo.taladro : null,
         causaDiferido: formEstado === STATUS.DIFERIDO ? formCausaDiferido : null
@@ -3260,5 +3363,7 @@ window.debug = {
     flushPendingApiSync,
     getPendingApiSync,
     exportFirestorePozosJson,
-    exportFirestorePozosCompactJson
+    exportFirestorePozosCompactJson,
+    normalizeDateInputValue,
+    formatDateDdMmYyyy
 };
