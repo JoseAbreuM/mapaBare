@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.17';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v29';
+const APP_VERSION = 'v1.18';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v30';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -154,35 +154,29 @@ function normalizeEstado(estado) {
 function normalizeCategoria(pozo, normalizedEstado) {
     const rawCategoria = Number(pozo.categoria);
     const hasCategoria = Number.isFinite(rawCategoria);
-
-    /**
-     * Si la API/PWA ya trae categoría, se respeta.
-     * No se recalcula con base en taladro.
-     */
-    if (hasCategoria && [1, 2, 3].includes(rawCategoria)) {
-        return rawCategoria;
-    }
-
     const estado = normalizedEstado || normalizeEstado(pozo.estado);
 
     if (estado === STATUS.ACTIVO) return 1;
+    if (estado === STATUS.CANDIDATO || estado === STATUS.DIFERIDO) return 3;
 
-    if (
-        estado === STATUS.INACTIVO_SERVICIO ||
-        estado === STATUS.EN_SERVICIO ||
-        estado === STATUS.DIAGNOSTICO
-    ) {
+    if (estado === STATUS.EN_SERVICIO) {
+        return hasCategoria && rawCategoria === 3 ? 3 : 2;
+    }
+
+    if (estado === STATUS.INACTIVO_SERVICIO || estado === STATUS.DIAGNOSTICO) {
+        if (hasCategoria && (rawCategoria === 2 || rawCategoria === 3)) {
+            return rawCategoria;
+        }
         return 2;
     }
 
-    if (
-        estado === STATUS.CANDIDATO ||
-        estado === STATUS.DIFERIDO
-    ) {
-        return 3;
-    }
+    return hasCategoria ? rawCategoria : 2;
+}
 
-    return 3;
+function normalizeNumericValue(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(String(value).replace(',', '.'));
+    return Number.isFinite(number) ? number : null;
 }
 
 function normalizePozo(pozo) {
@@ -200,10 +194,21 @@ function normalizePozo(pozo) {
         ? pozo.coordsDiagrama
         : (isDiagramCoords(pozo.coords) ? pozo.coords : null);
 
-    const voRaw = pozo.velocidadOperacional ?? pozo.vo;
-    const voValue = (voRaw === null || voRaw === undefined || voRaw === '')
-        ? null
-        : Number(voRaw);
+    const velocidadActual = normalizeNumericValue(
+        pozo.velocidadActual ??
+        pozo.vel_actual ??
+        pozo.velocidad_actual ??
+        pozo.rpm ??
+        null
+    );
+
+    const velocidadOperacional = normalizeNumericValue(
+        pozo.velocidadOperacional ??
+        pozo.vel_operacional ??
+        pozo.velocidad_operacional ??
+        pozo.vo ??
+        null
+    );
 
     return {
         ...pozo,
@@ -216,11 +221,6 @@ function normalizePozo(pozo) {
         /**
          * Importante:
          * El estado viene desde la PWA/API y NO debe cambiarse solo porque exista taladro.
-         * Un pozo puede tener servicio asignado y aun así estar como:
-         * - inactivo-servicio
-         * - activo
-         * - candidato
-         * - diferido
          */
         estado: normalizedEstado,
 
@@ -230,7 +230,12 @@ function normalizePozo(pozo) {
 
         nota: (pozo.nota || '').toString().trim() || null,
 
-        velocidadOperacional: Number.isFinite(voValue) ? voValue : null,
+        /**
+         * Velocidad actual viene desde PWA/Aiven.
+         * El mapa la muestra, pero no debe editarla ni recalcularla.
+         */
+        velocidadActual,
+        velocidadOperacional,
         fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
 
         altoCorteAgua: parseBooleanFlag(pozo.altoCorteAgua),
@@ -896,22 +901,12 @@ async function ensureLocalForage() {
 }
 
 async function loadAuthConfigFromDb() {
-    /**
-     * Si ya estamos usando la PWA API como fuente principal,
-     * no intentamos conectar a Firestore para auth.
-     * Evita warnings y esperas de 10 segundos.
-     */
-    if (window.MapaApi) return null;
-
     if (!navigator.onLine || !isDbReady()) return null;
-
     try {
         const userRef = window.db.collection('usuarios').doc(AUTH_SEED_USER.usuario);
         const userSnap = await userRef.get();
-
         if (userSnap.exists) {
             const data = userSnap.data() || {};
-
             if (data.usuario && data.passwordHash) {
                 return {
                     usuario: data.usuario,
@@ -920,7 +915,6 @@ async function loadAuthConfigFromDb() {
                 };
             }
         }
-
         await userRef.set({
             usuario: AUTH_SEED_USER.usuario,
             nombre: AUTH_SEED_USER.nombre,
@@ -929,7 +923,6 @@ async function loadAuthConfigFromDb() {
     } catch (e) {
         console.log('No se pudo cargar/crear usuario en Firestore', e);
     }
-
     return null;
 }
 
@@ -1367,9 +1360,9 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=3',
         '/js/localforage.min.js?v=3',
-        '/js/api-client.js?v=20260523-01',
-        '/js/main.js?v=29',
-        '/js/sw-register.js?v=4',
+        '/js/api-client.js?v=20260524-01',
+        '/js/main.js?v=20260524-01',
+        '/js/sw-register.js?v=6',
         '/js/firebase-init.js?v=3',
         '/js/pozos-data.js?v=1',
         '/manifest.json',
@@ -1715,17 +1708,21 @@ function renderMarkers(zone) {
 
 function matchesCurrentFilter(pozo) {
     if (currentStatsFilter === 'all') return true;
-
+    if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
     return normalizeEstado(pozo.estado) === currentStatsFilter;
 }
 
 function matchesCurrentCategoryFilter(pozo) {
     if (currentCategoryFilter === 'all') return true;
+
     const value = Number(pozo.categoria);
+
     if (Number.isFinite(value)) {
         return String(value) === currentCategoryFilter;
     }
-    const derived = normalizeCategoria(pozo, pozo.taladro ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado));
+
+    const derived = normalizeCategoria(pozo, normalizeEstado(pozo.estado));
+
     return String(derived) === currentCategoryFilter;
 }
 
@@ -1946,8 +1943,8 @@ function popupContent(p) {
     Categoria: ${categoriaValue}`;
     if (p.cabezal) content += `<br>Cabezal: ${p.cabezal}`;
     if (p.variador) content += `<br>Variador: ${p.variador}`;
-    if (p.velocidadOperacional !== null && p.velocidadOperacional !== undefined && p.velocidadOperacional !== '') {
-        content += `<br>VO: ${p.velocidadOperacional}`;
+    if (p.velocidadActual !== null && p.velocidadActual !== undefined && p.velocidadActual !== '') {
+        content += `<br>Velocidad actual: ${p.velocidadActual} RPM`;
     }
     if (p.potencial) content += `<br>Potencial: ${p.potencial} barriles`;
     if (hasHighWaterCut(p)) content += '<br>Alto corte de agua: si';
@@ -1992,7 +1989,7 @@ function openForm(lat = null, lng = null, id = null) {
         const p = pozoData.find(p => p.id === id);
         document.getElementById('form-id').value = p.id;
         document.getElementById('form-id').disabled = true;
-        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
+        const normalizedEstado = normalizeEstado(p.estado);
         document.getElementById('form-estado').value = normalizedEstado;
         document.getElementById('form-diferido-cause').value = normalizedEstado === STATUS.DIFERIDO ? (p.causaDiferido || '') : '';
         setFormZonaValue(p.zona || '');
@@ -2001,7 +1998,7 @@ function openForm(lat = null, lng = null, id = null) {
         togglePozoDiferidoCause();
         document.getElementById('form-cabezal').value = p.cabezal || '';
         document.getElementById('form-variador').value = p.variador || '';
-        document.getElementById('form-vo').value = p.velocidadOperacional ?? '';
+        document.getElementById('form-vo').value = p.velocidadActual ?? '';
         document.getElementById('form-potencial').value = p.potencial || '';
         document.getElementById('form-alto-corte-agua').checked = !!p.altoCorteAgua;
         document.getElementById('form-fecha-ultimo-servicio').value = p.fechaUltimoServicio || '';
@@ -2430,8 +2427,6 @@ async function savePozo(e) {
     const formZona = document.getElementById('form-zona').value.trim();
     const formDiagrama = document.getElementById('form-diagrama').value;
     const formNota = document.getElementById('form-nota').value.trim();
-    const formVoRaw = document.getElementById('form-vo').value;
-    const formVo = formVoRaw === '' ? null : Number(formVoRaw);
     const formHighWaterCut = document.getElementById('form-alto-corte-agua').checked;
     const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
     const pozo = {
@@ -2451,7 +2446,12 @@ async function savePozo(e) {
         estado: formEstado,
         cabezal: document.getElementById('form-cabezal').value || null,
         variador: document.getElementById('form-variador').value || null,
-        velocidadOperacional: Number.isFinite(formVo) ? formVo : null,
+        /**
+         * La velocidad actual es informativa y viene desde la PWA/API.
+         * Se preserva el valor anterior y no se edita desde el mapa.
+         */
+        velocidadActual: previousPozo ? previousPozo.velocidadActual : null,
+        velocidadOperacional: previousPozo ? previousPozo.velocidadOperacional : null,
         potencial: document.getElementById('form-potencial').value || null,
         altoCorteAgua: formHighWaterCut,
         fechaUltimoServicio: document.getElementById('form-fecha-ultimo-servicio').value || null,
@@ -2459,10 +2459,6 @@ async function savePozo(e) {
         taladro: previousPozo ? previousPozo.taladro : null,
         causaDiferido: formEstado === STATUS.DIFERIDO ? formCausaDiferido : null
     };
-    if (pozo.taladro) {
-        pozo.estado = STATUS.EN_SERVICIO;
-        pozo.causaDiferido = null;
-    }
     if (pozo.estado !== STATUS.DIFERIDO) {
         pozo.causaDiferido = null;
     }
@@ -2535,14 +2531,12 @@ function updateStats() {
     };
 
     pozoData.forEach(p => {
-        const normalizedEstado = normalizeEstado(p.estado);
-
+        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
         if (Object.prototype.hasOwnProperty.call(counts, normalizedEstado)) {
             counts[normalizedEstado]++;
         }
 
         const categoria = Number(p.categoria);
-
         if (categoria === 1) counts.categoria1++;
         if (categoria === 2) counts.categoria2++;
         if (categoria === 3) counts.categoria3++;
@@ -2555,15 +2549,12 @@ function updateStats() {
     document.getElementById('count-diagnostic').textContent = counts.diagnostico;
     document.getElementById('count-candidate').textContent = counts.candidato;
     document.getElementById('count-deferred').textContent = counts.diferido;
-
     const countCategory1 = document.getElementById('count-category-1');
     const countCategory2 = document.getElementById('count-category-2');
     const countCategory3 = document.getElementById('count-category-3');
-
     if (countCategory1) countCategory1.textContent = counts.categoria1;
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
-
     updateFloatingLegendCounts(counts);
 }
 

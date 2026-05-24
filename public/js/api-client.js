@@ -51,6 +51,7 @@
       data = await response.json();
     } else {
       const text = await response.text();
+
       data = {
         ok: false,
         message: text || response.statusText
@@ -64,45 +65,159 @@
     return data;
   }
 
+  function normalizeText(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function normalizeNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
+
+    const number = Number(String(value).replace(',', '.'));
+
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function normalizeBoolean(value) {
+    if (value === true || value === 1) return true;
+    if (value === false || value === 0) return false;
+
+    const text = normalizeText(value);
+
+    if (['true', '1', 'si', 'sí', 'yes', 'y'].includes(text)) return true;
+    if (['false', '0', 'no', 'n'].includes(text)) return false;
+
+    return false;
+  }
+
+  function cleanNote(value) {
+    const raw = String(value || '').trim();
+
+    if (!raw) return null;
+
+    const normalized = normalizeText(raw).toUpperCase();
+
+    const placeholders = new Set([
+      'SIN INFORMACION',
+      'S/I',
+      'N/A',
+      'NA',
+      'NULL',
+      'UNDEFINED',
+      '-',
+      'SI',
+      'NO'
+    ]);
+
+    if (placeholders.has(normalized)) return null;
+
+    return raw;
+  }
+
   function normalizeEstadoForMapa(value) {
-    const text = String(value || '').trim().toLowerCase();
+    const text = normalizeText(value);
 
     if (text === 'activo') return 'activo';
     if (text === 'diferido') return 'diferido';
-    if (text === 'candidato') return 'candidato';
-    if (text === 'diagnóstico' || text === 'diagnostico') return 'diagnostico';
-    if (text === 'en servicio') return 'en-servicio';
-    if (text === 'inactivo en espera por servicio') return 'inactivo-servicio';
-    if (text === 'en espera') return 'inactivo-servicio';
+    if (text === 'candidato' || text === 'candidatos') return 'candidato';
+    if (text === 'diagnostico') return 'diagnostico';
+
+    if (
+      text === 'en servicio' ||
+      text === 'servicio' ||
+      text === 'en-servicio'
+    ) {
+      return 'en-servicio';
+    }
+
+    if (
+      text === 'inactivo en espera por servicio' ||
+      text === 'en espera' ||
+      text === 'espera' ||
+      text === 'inactivo-servicio' ||
+      text === 'inactivo por servicio'
+    ) {
+      return 'inactivo-servicio';
+    }
 
     return text || 'activo';
   }
 
   function normalizeDiagrama(value) {
-    const text = String(value || '').trim().toLowerCase();
+    const text = normalizeText(value).replace(/_/g, '-');
 
     const aliases = {
       'bare tradicional': 'bare-tradicional',
       'bare-tradicional': 'bare-tradicional',
+
       'bare 6': 'bare-6',
       'bare-6': 'bare-6',
+
       'bare 6 norte': 'bare-6-norte',
       'bare-6-norte': 'bare-6-norte',
+
       'bare este': 'bare-este',
       'bare-este': 'bare-este',
+
       'asfaltada y tigra': 'bare-este',
-      'trilla': 'bare-este'
+      'trilla': 'bare-este',
+
+      'sin asignar': 'sin-asignar',
+      'sin-asignar': 'sin-asignar'
     };
 
     return aliases[text] || text || 'sin-asignar';
   }
 
   function normalizeZona(value) {
-    const text = String(value || '').trim();
+    const raw = String(value || '').trim();
 
-    if (!text) return null;
+    if (!raw) return null;
 
-    return text;
+    const text = normalizeText(raw).replace(/_/g, '-');
+
+    const aliases = {
+      'bare-tradicional': 'Bare Tradicional',
+      'bare tradicional': 'Bare Tradicional',
+      'tradicional': 'Bare Tradicional',
+
+      'bare 6': 'Bare 6',
+      'bare-6': 'Bare 6',
+      'bare 6 norte': 'Bare 6',
+      'bare-6-norte': 'Bare 6',
+
+      'trilla': 'Trilla',
+
+      'asfaltada': 'Asfaltada y Tigra',
+      'tigra': 'Asfaltada y Tigra',
+      'asfaltada y tigra': 'Asfaltada y Tigra',
+
+      'guaicaipuro': 'Guaicaipuro'
+    };
+
+    return aliases[text] || raw;
+  }
+
+  function getVelocidadActualFromApi(pozo = {}) {
+    return normalizeNumber(
+      pozo.velocidadActual ??
+      pozo.vel_actual ??
+      pozo.velocidad_actual ??
+      pozo.rpm ??
+      null
+    );
+  }
+
+  function getVelocidadOperacionalFromApi(pozo = {}) {
+    return normalizeNumber(
+      pozo.velocidadOperacional ??
+      pozo.vel_operacional ??
+      pozo.velocidad_operacional ??
+      null
+    );
   }
 
   function normalizePozoFromApi(pozo = {}) {
@@ -119,11 +234,19 @@
       : (
         Array.isArray(pozo.coords)
           ? pozo.coords
-          : null
+          : (
+            pozo.coord_x != null && pozo.coord_y != null
+              ? [Number(pozo.coord_x), Number(pozo.coord_y)]
+              : null
+          )
       );
 
     const estado = normalizeEstadoForMapa(pozo.estado);
-    const taladro = pozo.servicioAsignado || pozo.taladro || null;
+    const servicioAsignado = pozo.servicioAsignado || pozo.servicio_asignado || pozo.taladro || null;
+    const nota = cleanNote(pozo.nota || pozo.notaOperativa || pozo.nota_operativa);
+
+    const velocidadActual = getVelocidadActualFromApi(pozo);
+    const velocidadOperacional = getVelocidadOperacionalFromApi(pozo);
 
     return {
       id: pozo.codigo || String(pozo.id || ''),
@@ -133,27 +256,37 @@
       categoria: Number(pozo.categoria) || null,
 
       zona: normalizeZona(pozo.zona || pozo.area),
-      area: pozo.area || pozo.zona || null,
+      area: normalizeZona(pozo.area || pozo.zona),
 
       diagrama: normalizeDiagrama(pozo.diagrama),
       coordsMapa,
       coordsDiagrama,
       coords: coordsMapa || coordsDiagrama,
 
-      potencial: pozo.potencial != null ? Number(pozo.potencial) : null,
-      nota: pozo.nota || pozo.notaOperativa || null,
+      potencial: normalizeNumber(pozo.potencial),
+      nota,
 
       cabezal: pozo.cabezal || null,
       variador: pozo.variador || null,
 
-      velocidadOperacional: pozo.velocidadOperacional ?? pozo.vel_operacional ?? null,
-      velocidadActual: pozo.velocidadActual ?? pozo.vel_actual ?? null,
+      /**
+       * Velocidad actual viene desde PWA/Aiven.
+       * Normalmente sale de vw_mapa_pozos_sync.vel_actual,
+       * alimentada por parametros_diarios / rpm.
+       */
+      velocidadActual,
 
-      altoCorteAgua: Boolean(pozo.altoCorteAgua),
-      vistaMapa: pozo.vistaMapa !== false,
+      /**
+       * Se conserva como referencia secundaria,
+       * pero el mapa debe mostrar velocidadActual.
+       */
+      velocidadOperacional,
 
-      taladro,
-      servicioAsignado: taladro,
+      altoCorteAgua: normalizeBoolean(pozo.altoCorteAgua ?? pozo.alto_corte_agua),
+      vistaMapa: pozo.vistaMapa !== false && pozo.vista_mapa !== false,
+
+      taladro: servicioAsignado,
+      servicioAsignado,
       tipoServicio: pozo.tipoServicio || pozo.tipo_servicio || null,
       estadoAsignacion: pozo.estadoAsignacion || pozo.estado_asignacion || null,
       fechaUltimoServicio: pozo.fechaAsignacion || pozo.fecha_asignacion || null,
@@ -166,6 +299,11 @@
   }
 
   function normalizePozoToApi(pozo = {}) {
+    /**
+     * Importante:
+     * No enviamos velocidadActual desde el mapa.
+     * Esa velocidad debe venir desde parámetros/PWA, no editarse desde mapaBare.
+     */
     return {
       codigo: pozo.id,
       estado: pozo.estado,
@@ -179,13 +317,12 @@
       coordsDiagrama: pozo.coordsDiagrama || null,
 
       potencial: pozo.potencial,
-      nota: pozo.nota,
-      notaOperativa: pozo.nota,
+      nota: cleanNote(pozo.nota),
+      notaOperativa: cleanNote(pozo.nota),
 
       cabezal: pozo.cabezal,
       variador: pozo.variador,
 
-      velocidadOperacional: pozo.velocidadOperacional,
       altoCorteAgua: pozo.altoCorteAgua,
       vistaMapa: pozo.vistaMapa
     };
@@ -208,6 +345,7 @@
 
   async function getPozo(id) {
     const data = await request(`/api/mapa/pozos/${encodeURIComponent(id)}`);
+
     return normalizePozoFromApi(data.pozo || data.data);
   }
 
@@ -246,18 +384,30 @@
 
   async function getServicios() {
     const data = await request('/api/mapa/servicios');
+
     return data.servicios || [];
   }
 
   window.MapaApi = {
     getApiBaseUrl,
     getAuthToken,
+
     getPozos,
     getPozo,
     updatePozo,
     asignarServicio,
     getServicios,
+
     normalizePozoFromApi,
-    normalizePozoToApi
+    normalizePozoToApi,
+
+    utils: {
+      normalizeEstadoForMapa,
+      normalizeDiagrama,
+      normalizeZona,
+      normalizeNumber,
+      normalizeBoolean,
+      cleanNote
+    }
   };
 })();
