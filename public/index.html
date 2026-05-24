@@ -602,21 +602,22 @@
 
   <!-- scripts -->
   <script src="js/leaflet.js?v=3"></script>
-  <!-- localForage se carga antes de main.js; se agrega un query string para
-         invalidar la cache cuando cambie de versión -->
+
+  <!-- localForage se carga antes de main.js -->
   <script src="js/localforage.min.js?v=3"
-    onerror="console.error('No se pudo cargar localforage desde el archivo local')"></script>
+    onerror="console.error('No se pudo cargar localforage desde el archivo local')">
+    </script>
+
   <script>
-    // Si localforage no está disponible (por cache antigua o fallos de SW),
-    // tratamos de cargarlo desde un CDN y finalmente caer en un envoltorio
-    // basado en localStorage para que la aplicación no se rompa.
+    // Fallback si localforage falla por cache antigua o por Service Worker.
     (function () {
       function fallbackToStorage() {
         console.warn('Usando fallback de localStorage');
+
         window.localforage = {
           getItem: async function (key) {
-            var v = localStorage.getItem(key);
-            return v ? JSON.parse(v) : null;
+            const value = localStorage.getItem(key);
+            return value ? JSON.parse(value) : null;
           },
           setItem: async function (key, value) {
             localStorage.setItem(key, JSON.stringify(value));
@@ -627,20 +628,25 @@
           }
         };
       }
+
       if (typeof localforage === 'undefined') {
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js';
-        s.onload = function () {
+        const script = document.createElement('script');
+
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js';
+
+        script.onload = function () {
           if (typeof localforage === 'undefined') {
             console.error('localforage no se definió aun después de cargar CDN');
             fallbackToStorage();
           }
         };
-        s.onerror = function () {
+
+        script.onerror = function () {
           console.error('Error cargando localforage desde CDN');
           fallbackToStorage();
         };
-        document.head.appendChild(s);
+
+        document.head.appendChild(script);
       }
     })();
   </script>
@@ -649,10 +655,53 @@
     window.MAPA_API_BASE_URL = 'https://pwa-optimizacion.onrender.com';
     window.MAPA_API_TOKEN = 'petrofield_mapa_2026_token_1708';
   </script>
+
+  <!-- Seed local solo queda como fallback. La fuente principal actual es la PWA API. -->
   <script src="js/pozos-data.js?v=20260523-03"></script>
-  <script src="js/api-client.js?v=20260523-03"></script>
-  <script src="js/main.js?v=20260523-03"></script>
-  <script src="js/sw-register.js?v=7" defer></script>
+
+  <!-- Versiones nuevas para evitar main/api viejos cacheados. -->
+  <script src="js/api-client.js?v=20260524-03"></script>
+  <script src="js/main.js?v=20260524-03"></script>
+  <script src="js/sw-register.js?v=8" defer></script>
+
+  <script>
+    // Conecta el botón "Exportar JSON" con las funciones agregadas en main.js v1.20.
+    window.addEventListener('DOMContentLoaded', function () {
+      const exportBtn = document.getElementById('export-json-btn');
+
+      if (!exportBtn) return;
+
+      exportBtn.addEventListener('click', async function () {
+        try {
+          exportBtn.disabled = true;
+          exportBtn.textContent = 'Exportando...';
+
+          if (window.debug && typeof window.debug.exportFirestorePozosJson === 'function') {
+            await window.debug.exportFirestorePozosJson({
+              download: true,
+              includeLocalCopy: true
+            });
+            return;
+          }
+
+          if (window.debug && typeof window.debug.exportFirestorePozosCompactJson === 'function') {
+            await window.debug.exportFirestorePozosCompactJson({
+              download: true
+            });
+            return;
+          }
+
+          throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260524-03 haya cargado.');
+        } catch (error) {
+          console.error('[MapaBare] Error exportando JSON:', error);
+          alert(error.message || 'No se pudo exportar el JSON.');
+        } finally {
+          exportBtn.disabled = false;
+          exportBtn.textContent = 'Exportar JSON';
+        }
+      });
+    });
+  </script>
 
   <!-- Botón flotante de búsqueda para móvil -->
   <div id="floating-search-container">
