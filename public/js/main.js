@@ -154,55 +154,88 @@ function normalizeEstado(estado) {
 function normalizeCategoria(pozo, normalizedEstado) {
     const rawCategoria = Number(pozo.categoria);
     const hasCategoria = Number.isFinite(rawCategoria);
+
+    /**
+     * Si la API/PWA ya trae categoría, se respeta.
+     * No se recalcula con base en taladro.
+     */
+    if (hasCategoria && [1, 2, 3].includes(rawCategoria)) {
+        return rawCategoria;
+    }
+
     const estado = normalizedEstado || normalizeEstado(pozo.estado);
 
     if (estado === STATUS.ACTIVO) return 1;
-    if (estado === STATUS.CANDIDATO || estado === STATUS.DIFERIDO) return 3;
 
-    if (estado === STATUS.EN_SERVICIO) {
-        return hasCategoria && rawCategoria === 3 ? 3 : 2;
-    }
-
-    if (estado === STATUS.INACTIVO_SERVICIO || estado === STATUS.DIAGNOSTICO) {
-        if (hasCategoria && (rawCategoria === 2 || rawCategoria === 3)) {
-            return rawCategoria;
-        }
+    if (
+        estado === STATUS.INACTIVO_SERVICIO ||
+        estado === STATUS.EN_SERVICIO ||
+        estado === STATUS.DIAGNOSTICO
+    ) {
         return 2;
     }
 
-    return hasCategoria ? rawCategoria : 2;
+    if (
+        estado === STATUS.CANDIDATO ||
+        estado === STATUS.DIFERIDO
+    ) {
+        return 3;
+    }
+
+    return 3;
 }
 
 function normalizePozo(pozo) {
-    const hasServicio = !!pozo.taladro;
-    const normalizedEstado = hasServicio ? STATUS.EN_SERVICIO : normalizeEstado(pozo.estado);
-    const normalizedZone = (pozo.zona || '').toString().trim().toLowerCase();
+    const normalizedEstado = normalizeEstado(pozo.estado);
+    const normalizedZone = (pozo.zona || pozo.area || '').toString().trim().toLowerCase();
     const normalizedDiagram = (pozo.diagrama || '').toString().trim().toLowerCase();
     const knownDiagram = Object.prototype.hasOwnProperty.call(zones, normalizedDiagram);
     const diagram = knownDiagram ? normalizedDiagram : 'sin-asignar';
+
     const coordsMapa = isGeoCoords(pozo.coordsMapa)
         ? pozo.coordsMapa
         : (isGeoCoords(pozo.coords) ? pozo.coords : null);
+
     const coordsDiagrama = isDiagramCoords(pozo.coordsDiagrama)
         ? pozo.coordsDiagrama
         : (isDiagramCoords(pozo.coords) ? pozo.coords : null);
+
     const voRaw = pozo.velocidadOperacional ?? pozo.vo;
     const voValue = (voRaw === null || voRaw === undefined || voRaw === '')
         ? null
         : Number(voRaw);
+
     return {
         ...pozo,
+
         zona: normalizedZone || null,
+        area: pozo.area || pozo.zona || null,
+
         diagrama: diagram,
+
+        /**
+         * Importante:
+         * El estado viene desde la PWA/API y NO debe cambiarse solo porque exista taladro.
+         * Un pozo puede tener servicio asignado y aun así estar como:
+         * - inactivo-servicio
+         * - activo
+         * - candidato
+         * - diferido
+         */
         estado: normalizedEstado,
+
         coordsMapa,
         coordsDiagrama,
         coords: coordsMapa || coordsDiagrama || pozo.coords,
+
         nota: (pozo.nota || '').toString().trim() || null,
+
         velocidadOperacional: Number.isFinite(voValue) ? voValue : null,
         fechaUltimoServicio: (pozo.fechaUltimoServicio || '').toString().trim() || null,
+
         altoCorteAgua: parseBooleanFlag(pozo.altoCorteAgua),
         vistaMapa: pozo.vistaMapa !== false,
+
         categoria: normalizeCategoria(pozo, normalizedEstado)
     };
 }
@@ -863,12 +896,22 @@ async function ensureLocalForage() {
 }
 
 async function loadAuthConfigFromDb() {
+    /**
+     * Si ya estamos usando la PWA API como fuente principal,
+     * no intentamos conectar a Firestore para auth.
+     * Evita warnings y esperas de 10 segundos.
+     */
+    if (window.MapaApi) return null;
+
     if (!navigator.onLine || !isDbReady()) return null;
+
     try {
         const userRef = window.db.collection('usuarios').doc(AUTH_SEED_USER.usuario);
         const userSnap = await userRef.get();
+
         if (userSnap.exists) {
             const data = userSnap.data() || {};
+
             if (data.usuario && data.passwordHash) {
                 return {
                     usuario: data.usuario,
@@ -877,6 +920,7 @@ async function loadAuthConfigFromDb() {
                 };
             }
         }
+
         await userRef.set({
             usuario: AUTH_SEED_USER.usuario,
             nombre: AUTH_SEED_USER.nombre,
@@ -885,6 +929,7 @@ async function loadAuthConfigFromDb() {
     } catch (e) {
         console.log('No se pudo cargar/crear usuario en Firestore', e);
     }
+
     return null;
 }
 
@@ -1670,7 +1715,7 @@ function renderMarkers(zone) {
 
 function matchesCurrentFilter(pozo) {
     if (currentStatsFilter === 'all') return true;
-    if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
+
     return normalizeEstado(pozo.estado) === currentStatsFilter;
 }
 
@@ -2490,12 +2535,14 @@ function updateStats() {
     };
 
     pozoData.forEach(p => {
-        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
+        const normalizedEstado = normalizeEstado(p.estado);
+
         if (Object.prototype.hasOwnProperty.call(counts, normalizedEstado)) {
             counts[normalizedEstado]++;
         }
 
         const categoria = Number(p.categoria);
+
         if (categoria === 1) counts.categoria1++;
         if (categoria === 2) counts.categoria2++;
         if (categoria === 3) counts.categoria3++;
@@ -2508,12 +2555,15 @@ function updateStats() {
     document.getElementById('count-diagnostic').textContent = counts.diagnostico;
     document.getElementById('count-candidate').textContent = counts.candidato;
     document.getElementById('count-deferred').textContent = counts.diferido;
+
     const countCategory1 = document.getElementById('count-category-1');
     const countCategory2 = document.getElementById('count-category-2');
     const countCategory3 = document.getElementById('count-category-3');
+
     if (countCategory1) countCategory1.textContent = counts.categoria1;
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
+
     updateFloatingLegendCounts(counts);
 }
 
