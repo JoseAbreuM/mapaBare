@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.18';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v30';
+const APP_VERSION = 'v1.19';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v31';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -153,24 +153,35 @@ function normalizeEstado(estado) {
 
 function normalizeCategoria(pozo, normalizedEstado) {
     const rawCategoria = Number(pozo.categoria);
-    const hasCategoria = Number.isFinite(rawCategoria);
+
+    /**
+     * La categoría viene desde la PWA/API y debe respetarse.
+     * NO se recalcula por estado ni por servicio asignado.
+     */
+    if (Number.isFinite(rawCategoria) && [1, 2, 3].includes(rawCategoria)) {
+        return rawCategoria;
+    }
+
     const estado = normalizedEstado || normalizeEstado(pozo.estado);
 
     if (estado === STATUS.ACTIVO) return 1;
-    if (estado === STATUS.CANDIDATO || estado === STATUS.DIFERIDO) return 3;
 
-    if (estado === STATUS.EN_SERVICIO) {
-        return hasCategoria && rawCategoria === 3 ? 3 : 2;
-    }
-
-    if (estado === STATUS.INACTIVO_SERVICIO || estado === STATUS.DIAGNOSTICO) {
-        if (hasCategoria && (rawCategoria === 2 || rawCategoria === 3)) {
-            return rawCategoria;
-        }
+    if (
+        estado === STATUS.INACTIVO_SERVICIO ||
+        estado === STATUS.EN_SERVICIO ||
+        estado === STATUS.DIAGNOSTICO
+    ) {
         return 2;
     }
 
-    return hasCategoria ? rawCategoria : 2;
+    if (
+        estado === STATUS.CANDIDATO ||
+        estado === STATUS.DIFERIDO
+    ) {
+        return 3;
+    }
+
+    return 3;
 }
 
 function normalizeNumericValue(value) {
@@ -901,6 +912,12 @@ async function ensureLocalForage() {
 }
 
 async function loadAuthConfigFromDb() {
+    /**
+     * Si mapaBare está usando la PWA API como fuente principal,
+     * no conectamos con Firestore para auth.
+     */
+    if (window.MapaApi) return null;
+
     if (!navigator.onLine || !isDbReady()) return null;
     try {
         const userRef = window.db.collection('usuarios').doc(AUTH_SEED_USER.usuario);
@@ -1360,9 +1377,9 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=3',
         '/js/localforage.min.js?v=3',
-        '/js/api-client.js?v=20260524-01',
-        '/js/main.js?v=20260524-01',
-        '/js/sw-register.js?v=6',
+        '/js/api-client.js?v=20260524-02',
+        '/js/main.js?v=20260524-02',
+        '/js/sw-register.js?v=7',
         '/js/firebase-init.js?v=3',
         '/js/pozos-data.js?v=1',
         '/manifest.json',
@@ -1708,22 +1725,25 @@ function renderMarkers(zone) {
 
 function matchesCurrentFilter(pozo) {
     if (currentStatsFilter === 'all') return true;
-    if (currentStatsFilter === STATUS.EN_SERVICIO) return !!pozo.taladro;
+
+    /**
+     * Importante:
+     * Filtrar por estado debe usar p.estado, no p.taladro.
+     * Un pozo con servicio asignado no necesariamente está en estado En servicio.
+     */
     return normalizeEstado(pozo.estado) === currentStatsFilter;
 }
 
 function matchesCurrentCategoryFilter(pozo) {
     if (currentCategoryFilter === 'all') return true;
 
-    const value = Number(pozo.categoria);
+    /**
+     * La categoría debe venir de p.categoria.
+     * No se recalcula desde estado ni desde servicio.
+     */
+    const categoria = Number(pozo.categoria);
 
-    if (Number.isFinite(value)) {
-        return String(value) === currentCategoryFilter;
-    }
-
-    const derived = normalizeCategoria(pozo, normalizeEstado(pozo.estado));
-
-    return String(derived) === currentCategoryFilter;
+    return Number.isFinite(categoria) && String(categoria) === currentCategoryFilter;
 }
 
 function crearIconoServicio(colorPrincipal, numero = null, colorBorde = '#000000', colorNumero = '#ffffff') {
@@ -2531,12 +2551,22 @@ function updateStats() {
     };
 
     pozoData.forEach(p => {
-        const normalizedEstado = p.taladro ? STATUS.EN_SERVICIO : normalizeEstado(p.estado);
+        /**
+         * El estado debe venir únicamente de p.estado.
+         * NO se debe convertir a en-servicio por tener p.taladro/servicioAsignado.
+         */
+        const normalizedEstado = normalizeEstado(p.estado);
+
         if (Object.prototype.hasOwnProperty.call(counts, normalizedEstado)) {
             counts[normalizedEstado]++;
         }
 
+        /**
+         * La categoría debe venir únicamente de p.categoria.
+         * NO se recalcula desde estado ni desde servicio.
+         */
         const categoria = Number(p.categoria);
+
         if (categoria === 1) counts.categoria1++;
         if (categoria === 2) counts.categoria2++;
         if (categoria === 3) counts.categoria3++;
@@ -2549,14 +2579,19 @@ function updateStats() {
     document.getElementById('count-diagnostic').textContent = counts.diagnostico;
     document.getElementById('count-candidate').textContent = counts.candidato;
     document.getElementById('count-deferred').textContent = counts.diferido;
+
     const countCategory1 = document.getElementById('count-category-1');
     const countCategory2 = document.getElementById('count-category-2');
     const countCategory3 = document.getElementById('count-category-3');
+
     if (countCategory1) countCategory1.textContent = counts.categoria1;
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
+
     updateFloatingLegendCounts(counts);
     updateZoneSummaryCounts();
+
+    window.__lastStatsCounts = counts;
 }
 
 function updateFloatingLegendCounts(counts) {
