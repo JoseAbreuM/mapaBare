@@ -2556,6 +2556,7 @@ function updateStats() {
     if (countCategory2) countCategory2.textContent = counts.categoria2;
     if (countCategory3) countCategory3.textContent = counts.categoria3;
     updateFloatingLegendCounts(counts);
+    updateZoneSummaryCounts();
 }
 
 function updateFloatingLegendCounts(counts) {
@@ -2583,6 +2584,140 @@ function updateFloatingLegendCounts(counts) {
         const item = document.querySelector(`[data-legend-category="${category}"] .legend-count`);
         if (item) item.textContent = `(${value})`;
     });
+}
+
+function normalizeZoneKey(value) {
+    const normalized = normalizeText(value)
+        .replaceAll('_', '-')
+        .replaceAll(' ', '-')
+        .replaceAll('--', '-');
+
+    const aliases = {
+        'bare-tradicional': 'bare-tradicional',
+        baretradicional: 'bare-tradicional',
+        tradicional: 'bare-tradicional',
+
+        'bare-6': 'bare-6',
+        bare6: 'bare-6',
+        'bare-6-norte': 'bare-6',
+        bare6norte: 'bare-6',
+
+        trilla: 'trilla',
+
+        'asfaltada-y-tigra': 'asfaltada-y-tigra',
+        asfaltadaytigra: 'asfaltada-y-tigra',
+        asfaltada: 'asfaltada-y-tigra',
+        tigra: 'asfaltada-y-tigra',
+
+        guaicaipuro: 'guaicaipuro'
+    };
+
+    return aliases[normalized] || normalized || 'sin-zona';
+}
+
+function getPozoZoneKey(pozo) {
+    return normalizeZoneKey(pozo.zona || pozo.area || 'sin-zona');
+}
+
+function sortPozosByNumericId(a, b) {
+    return pozoNumericKey(a.id).localeCompare(pozoNumericKey(b.id), undefined, { numeric: true });
+}
+
+function renderZonePozoList(zoneKey, pozos) {
+    const container = document.getElementById(`zone-list-${zoneKey}`);
+    if (!container) return;
+
+    if (!pozos.length) {
+        container.innerHTML = '<div class="zone-detail-empty">Sin pozos activos.</div>';
+        return;
+    }
+
+    container.innerHTML = pozos
+        .slice()
+        .sort(sortPozosByNumericId)
+        .map(pozo => {
+            const speed = pozo.velocidadActual !== null && pozo.velocidadActual !== undefined && pozo.velocidadActual !== ''
+                ? ` · ${pozo.velocidadActual} RPM`
+                : '';
+            const potential = pozo.potencial !== null && pozo.potencial !== undefined && pozo.potencial !== ''
+                ? ` · Pot. ${pozo.potencial}`
+                : '';
+
+            return `<button type="button" class="zone-detail-pozo" data-zone-pozo-id="${pozo.id}">
+                <span>${pozo.id}</span>
+                <small>${getPozoDiagram(pozo)}${speed}${potential}</small>
+            </button>`;
+        })
+        .join('');
+}
+
+function updateZoneSummaryCounts() {
+    const zoneKeys = [
+        'bare-tradicional',
+        'trilla',
+        'asfaltada-y-tigra',
+        'bare-6'
+    ];
+
+    const grouped = zoneKeys.reduce((acc, zoneKey) => {
+        acc[zoneKey] = [];
+        return acc;
+    }, {});
+
+    pozoData.forEach(pozo => {
+        if (normalizeEstado(pozo.estado) !== STATUS.ACTIVO) return;
+
+        const zoneKey = getPozoZoneKey(pozo);
+
+        if (!grouped[zoneKey]) {
+            grouped[zoneKey] = [];
+        }
+
+        grouped[zoneKey].push(pozo);
+    });
+
+    zoneKeys.forEach(zoneKey => {
+        const pozos = grouped[zoneKey] || [];
+        const sidebarCount = document.getElementById(`zone-count-${zoneKey}`);
+        const mobileCount = document.getElementById(`mobile-zone-count-${zoneKey}`);
+
+        if (sidebarCount) sidebarCount.textContent = pozos.length;
+        if (mobileCount) mobileCount.textContent = `(${pozos.length})`;
+
+        renderZonePozoList(zoneKey, pozos);
+    });
+}
+
+function toggleZoneDetailList(zoneKey) {
+    const list = document.getElementById(`zone-list-${zoneKey}`);
+    const button = document.querySelector(`.zone-summary-item[data-zone="${zoneKey}"]`);
+    if (!list) return;
+
+    const shouldOpen = list.classList.contains('hidden');
+
+    document.querySelectorAll('.zone-detail-list').forEach(item => {
+        item.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.zone-summary-item').forEach(item => {
+        item.classList.remove('is-open');
+        const icon = item.querySelector('.zone-summary-toggle');
+        if (icon) icon.textContent = '▾';
+    });
+
+    if (shouldOpen) {
+        list.classList.remove('hidden');
+        button?.classList.add('is-open');
+        const icon = button?.querySelector('.zone-summary-toggle');
+        if (icon) icon.textContent = '▴';
+    }
+}
+
+async function openPozoFromZoneSummary(pozoId) {
+    const pozo = pozoData.find(item => item.id === pozoId);
+    if (!pozo) return;
+
+    await runSearchById(pozo.id);
 }
 
 function updateStatsFilterUi() {
@@ -2923,6 +3058,20 @@ function attachControls() {
         btn.addEventListener('click', () => {
             applyCategoryFilter(btn.dataset.category || 'all');
         });
+    });
+
+    document.querySelectorAll('.zone-summary-item[data-zone]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            toggleZoneDetailList(btn.dataset.zone);
+        });
+    });
+
+    document.getElementById('zone-summary-container')?.addEventListener('click', async (event) => {
+        const pozoButton = event.target.closest('[data-zone-pozo-id]');
+        if (!pozoButton) return;
+
+        event.stopPropagation();
+        await openPozoFromZoneSummary(pozoButton.dataset.zonePozoId);
     });
 
     updateStatsFilterUi();
