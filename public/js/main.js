@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.21';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v33';
+const APP_VERSION = 'v1.22';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v34';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -1460,6 +1460,104 @@ async function syncPozoToPwaApi(pozo) {
     }
 }
 
+async function persistLocalPozosSnapshot({ dirty = true } = {}) {
+    await localforage.setItem(POZO_DATA_KEY, pozoData);
+
+    if (dirty) {
+        await markDataDirty();
+    } else {
+        await clearDataDirty();
+    }
+}
+
+function getUpdatedPozosFromApiResult(result) {
+    if (!result) return [];
+
+    if (Array.isArray(result)) {
+        return result;
+    }
+
+    const updated = [];
+
+    if (result.pozo) {
+        updated.push(result.pozo);
+    }
+
+    if (Array.isArray(result.pozos)) {
+        updated.push(...result.pozos);
+    }
+
+    if (Array.isArray(result.pozosSalientes)) {
+        updated.push(...result.pozosSalientes);
+    }
+
+    return updated.filter(Boolean);
+}
+
+function mergeUpdatedPozosIntoLocal(result) {
+    const updatedPozos = getUpdatedPozosFromApiResult(result);
+
+    if (!updatedPozos.length) return [];
+
+    const merged = [];
+
+    updatedPozos.forEach(updatedPozoRaw => {
+        const updatedPozo = normalizePozo(updatedPozoRaw);
+        const index = pozoData.findIndex(pozo => pozo.id === updatedPozo.id);
+
+        if (index !== -1) {
+            pozoData[index] = {
+                ...pozoData[index],
+                ...updatedPozo
+            };
+            merged.push(pozoData[index]);
+            return;
+        }
+
+        pozoData.push(updatedPozo);
+        merged.push(updatedPozo);
+    });
+
+    return merged;
+}
+
+function refreshMapAfterDataChange() {
+    const diagram = document.getElementById('zone-select')?.value || getSelectedDiagram();
+
+    if (mapMode === 'diagram') {
+        loadZone(diagram);
+        renderMarkers(diagram);
+    } else {
+        renderMarkers('mapa');
+    }
+
+    updateDatalist();
+    updateStats();
+}
+
+async function syncServiceAssignmentToPwaApi(payload) {
+    if (!window.MapaApi || !navigator.onLine || typeof window.MapaApi.asignarServicio !== 'function') {
+        return null;
+    }
+
+    const result = await window.MapaApi.asignarServicio(payload);
+    mergeUpdatedPozosIntoLocal(result);
+    await persistLocalPozosSnapshot({ dirty: false });
+    return result;
+}
+
+async function syncServiceUnassignmentToPwaApi(payload) {
+    if (!window.MapaApi || !navigator.onLine || typeof window.MapaApi.desasignarServicio !== 'function') {
+        return null;
+    }
+
+    const result = await window.MapaApi.desasignarServicio(payload);
+    mergeUpdatedPozosIntoLocal(result);
+    await persistLocalPozosSnapshot({ dirty: false });
+    return result;
+}
+
+
 async function flushPendingApiSync() {
     if (!window.MapaApi || !navigator.onLine) return;
 
@@ -1473,12 +1571,21 @@ async function flushPendingApiSync() {
             if (operation.type === 'pozo-update') {
                 const pozo = pozoData.find(p => p.id === operation.pozoId) || operation.pozo;
                 if (pozo) {
-                    await syncPozoToPwaApi(pozo);
+                    const updatedPozo = await syncPozoToPwaApi(pozo);
+                    if (updatedPozo) {
+                        mergeUpdatedPozosIntoLocal({ pozo: updatedPozo });
+                    }
                 }
             }
 
             if (operation.type === 'servicio-asignar') {
-                await window.MapaApi.asignarServicio(operation.payload);
+                const result = await window.MapaApi.asignarServicio(operation.payload);
+                mergeUpdatedPozosIntoLocal(result);
+            }
+
+            if (operation.type === 'servicio-desasignar') {
+                const result = await window.MapaApi.desasignarServicio(operation.payload);
+                mergeUpdatedPozosIntoLocal(result);
             }
         } catch (error) {
             console.warn('[MapaBare] Operación pendiente no sincronizada:', operation, error);
@@ -1487,6 +1594,7 @@ async function flushPendingApiSync() {
     }
 
     await setPendingApiSync(remaining);
+    await localforage.setItem(POZO_DATA_KEY, pozoData);
 
     if (!remaining.length) {
         await clearDataDirty();
@@ -1590,9 +1698,9 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=3',
         '/js/localforage.min.js?v=3',
-        '/js/api-client.js?v=20260524-04',
-        '/js/main.js?v=20260524-04',
-        '/js/sw-register.js?v=9',
+        '/js/api-client.js?v=20260524-07',
+        '/js/main.js?v=20260524-07',
+        '/js/sw-register.js?v=10',
         '/js/firebase-init.js?v=3',
         '/js/pozos-data.js?v=1',
         '/manifest.json',
@@ -2375,9 +2483,11 @@ function closeAssignForm() {
 async function assignTaladro(e) {
     e.preventDefault();
     if (!requireCrudAuth()) return;
+
     const pozoId = document.getElementById('assign-pozo-id').value.trim();
     const taladro = document.getElementById('assign-taladro-select').value;
     const p = resolvePozoFromInput(pozoId, getSelectedDiagram());
+
     if (!p) {
         alert('Pozo no encontrado');
         return;
@@ -2389,27 +2499,58 @@ async function assignTaladro(e) {
         return;
     }
 
-    const previousPozo = pozoData.find(pozo => pozo.taladro === taladro && pozo.id !== p.id);
+    const previousPozo = pozoData.find(pozo =>
+        (pozo.taladro || pozo.servicioAsignado || '').toLowerCase() === taladro.toLowerCase()
+        && pozo.id !== p.id
+    );
+
     if (previousPozo) {
-        pendingServiceAssignment = { pozoId: p.id, taladro, previousPozoId: previousPozo.id };
+        pendingServiceAssignment = {
+            pozoId: p.id,
+            taladro,
+            previousPozoId: previousPozo.id
+        };
         openServiceVerification(previousPozo.id);
         return;
     }
 
     p.taladro = taladro;
+    p.servicioAsignado = taladro;
+    p.tipoServicio = taladro === 'CT' || taladro === 'WT' ? taladro : 'Taladro';
+    p.estadoAsignacion = 'activo';
     p.estado = STATUS.EN_SERVICIO;
     p.causaDiferido = null;
     Object.assign(p, normalizePozo(p));
 
-    await enqueueApiSync({
-        type: 'servicio-asignar',
-        payload: {
-            pozo: p,
-            servicio: taladro
-        }
-    });
+    await persistLocalPozosSnapshot({ dirty: true });
 
-    await persistPozosAndRefresh(p);
+    const payload = {
+        pozo: p,
+        servicio: taladro,
+        estadoFinal: STATUS.ACTIVO,
+        estadoAnterior: STATUS.ACTIVO,
+        estadoSaliente: STATUS.ACTIVO
+    };
+
+    if (navigator.onLine && window.MapaApi) {
+        try {
+            await syncServiceAssignmentToPwaApi(payload);
+        } catch (error) {
+            console.warn('[MapaBare] No se pudo asignar servicio en PWA API. Queda pendiente:', error);
+            await enqueueApiSync({
+                type: 'servicio-asignar',
+                payload
+            });
+            await markDataDirty();
+        }
+    } else {
+        await enqueueApiSync({
+            type: 'servicio-asignar',
+            payload
+        });
+    }
+
+    refreshMapAfterDataChange();
     closeAssignForm();
 }
 
@@ -2476,13 +2617,46 @@ async function submitServiceVerification(e) {
             return;
         }
 
+        const previousService = previousPozo.taladro || previousPozo.servicioAsignado || null;
+
         previousPozo.taladro = null;
+        previousPozo.servicioAsignado = null;
+        previousPozo.tipoServicio = null;
+        previousPozo.estadoAsignacion = null;
         previousPozo.estado = selectedEstado;
         previousPozo.causaDiferido = selectedEstado === STATUS.DIFERIDO ? cause : null;
         Object.assign(previousPozo, normalizePozo(previousPozo));
 
+        await persistLocalPozosSnapshot({ dirty: true });
+
+        const payload = {
+            pozo: previousPozo,
+            servicio: previousService,
+            estadoFinal: selectedEstado,
+            causaDiferido: cause || null,
+            observacion: cause || null
+        };
+
+        if (navigator.onLine && window.MapaApi) {
+            try {
+                await syncServiceUnassignmentToPwaApi(payload);
+            } catch (error) {
+                console.warn('[MapaBare] No se pudo desasignar servicio en PWA API. Queda pendiente:', error);
+                await enqueueApiSync({
+                    type: 'servicio-desasignar',
+                    payload
+                });
+                await markDataDirty();
+            }
+        } else {
+            await enqueueApiSync({
+                type: 'servicio-desasignar',
+                payload
+            });
+        }
+
         pendingServiceAssignment = null;
-        await persistPozosAndRefresh(previousPozo);
+        refreshMapAfterDataChange();
         closeServiceVerification();
         closeAssignForm();
         return;
@@ -2505,28 +2679,55 @@ async function submitServiceVerification(e) {
 
     if (previousPozo) {
         previousPozo.taladro = null;
+        previousPozo.servicioAsignado = null;
+        previousPozo.tipoServicio = null;
+        previousPozo.estadoAsignacion = null;
         previousPozo.estado = selectedEstado;
         previousPozo.causaDiferido = selectedEstado === STATUS.DIFERIDO ? cause : null;
         Object.assign(previousPozo, normalizePozo(previousPozo));
     }
 
     currentPozo.taladro = taladro;
+    currentPozo.servicioAsignado = taladro;
+    currentPozo.tipoServicio = taladro === 'CT' || taladro === 'WT' ? taladro : 'Taladro';
+    currentPozo.estadoAsignacion = 'activo';
     currentPozo.estado = STATUS.EN_SERVICIO;
     currentPozo.causaDiferido = null;
     Object.assign(currentPozo, normalizePozo(currentPozo));
 
-    await enqueueApiSync({
-        type: 'servicio-asignar',
-        payload: {
-            pozo: currentPozo,
-            servicio: taladro,
-            estadoAnterior: selectedEstado,
-            causaDiferido: cause || null
+    await persistLocalPozosSnapshot({ dirty: true });
+
+    const payload = {
+        pozo: currentPozo,
+        servicio: taladro,
+        previousPozo: previousPozo || null,
+        estadoAnterior: selectedEstado,
+        estadoSaliente: selectedEstado,
+        estadoFinal: selectedEstado,
+        causaDiferido: cause || null,
+        observacion: cause || null
+    };
+
+    if (navigator.onLine && window.MapaApi) {
+        try {
+            await syncServiceAssignmentToPwaApi(payload);
+        } catch (error) {
+            console.warn('[MapaBare] No se pudo mover/asignar servicio en PWA API. Queda pendiente:', error);
+            await enqueueApiSync({
+                type: 'servicio-asignar',
+                payload
+            });
+            await markDataDirty();
         }
-    });
+    } else {
+        await enqueueApiSync({
+            type: 'servicio-asignar',
+            payload
+        });
+    }
 
     pendingServiceAssignment = null;
-    await persistPozosAndRefresh(currentPozo);
+    refreshMapAfterDataChange();
     closeServiceVerification();
     closeAssignForm();
 }

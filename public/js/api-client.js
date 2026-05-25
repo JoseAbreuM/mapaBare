@@ -22,15 +22,15 @@
     );
   }
 
-function buildHeaders(extraHeaders = {}) {
-  const token = getAuthToken();
+  function buildHeaders(extraHeaders = {}) {
+    const token = getAuthToken();
 
-  return {
-    Accept: 'application/json',
-    ...extraHeaders,
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
-}
+    return {
+      Accept: 'application/json',
+      ...extraHeaders,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+  }
 
   async function request(path, options = {}) {
     const apiBaseUrl = getApiBaseUrl();
@@ -130,15 +130,12 @@ function buildHeaders(extraHeaders = {}) {
     const text = String(value).trim();
     if (!text) return null;
 
-    // YYYY-MM-DD o ISO: 2026-03-06 / 2026-03-06T00:00:00.000Z
     const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
 
-    // DD-MM-YYYY
     const dmyDash = text.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (dmyDash) return `${dmyDash[3]}-${dmyDash[2]}-${dmyDash[1]}`;
 
-    // DD/MM/YYYY
     const dmySlash = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (dmySlash) return `${dmySlash[3]}-${dmySlash[2]}-${dmySlash[1]}`;
 
@@ -338,6 +335,7 @@ function buildHeaders(extraHeaders = {}) {
     return {
       id: pozo.codigo || String(pozo.id || ''),
       dbId: pozo.dbId || pozo.id,
+      idPozo: pozo.idPozo || pozo.id_pozo || pozo.dbId || pozo.id,
 
       estado,
       categoria: Number(pozo.categoria) || null,
@@ -356,24 +354,9 @@ function buildHeaders(extraHeaders = {}) {
       cabezal: pozo.cabezal || null,
       variador: pozo.variador || null,
 
-      /**
-       * Velocidad actual viene desde PWA/Aiven.
-       * Normalmente sale de vw_mapa_pozos_sync.vel_actual,
-       * alimentada por parametros_diarios / rpm.
-       */
       velocidadActual,
-
-      /**
-       * Se conserva como referencia secundaria,
-       * pero el mapa debe mostrar velocidadActual.
-       */
       velocidadOperacional,
 
-      /**
-       * Fecha de arranque.
-       * La API puede enviarla como fecha_arranque/fechaArranque/fechaUltimoServicio.
-       * Internamente se guarda como YYYY-MM-DD y el main.js la muestra DD-MM-YYYY.
-       */
       fechaUltimoServicio: fechaArranque,
       fechaArranque,
       fecha_arranque: fechaArranque,
@@ -397,11 +380,6 @@ function buildHeaders(extraHeaders = {}) {
   }
 
   function normalizePozoToApi(pozo = {}) {
-    /**
-     * Importante:
-     * No enviamos velocidadActual desde el mapa.
-     * Esa velocidad debe venir desde parámetros/PWA, no editarse desde mapaBare.
-     */
     const fechaArranque = normalizeDateInputValue(
       pozo.fechaUltimoServicio ??
       pozo.fechaArranque ??
@@ -411,6 +389,7 @@ function buildHeaders(extraHeaders = {}) {
 
     return {
       codigo: pozo.id,
+      id_pozo: pozo.dbId || pozo.idPozo || pozo.id_pozo || null,
       estado: normalizeEstadoForApi(pozo.estado),
       categoria: pozo.categoria,
 
@@ -437,15 +416,62 @@ function buildHeaders(extraHeaders = {}) {
     };
   }
 
-  function normalizeServicioPayload({ pozo, servicio, estadoAnterior = null, causaDiferido = null } = {}) {
+  function normalizeServicioPayload({
+    pozo,
+    servicio,
+    estadoAnterior = null,
+    estadoSaliente = null,
+    estadoFinal = null,
+    causaDiferido = null,
+    observacion = null
+  } = {}) {
+    const estadoSalida = estadoSaliente || estadoAnterior || estadoFinal || 'Activo';
+
     return {
-      id_pozo: pozo?.dbId || pozo?.id_pozo || pozo?.idPozo || null,
+      id_pozo: pozo?.dbId || pozo?.idPozo || pozo?.id_pozo || null,
       codigo: pozo?.id || pozo?.codigo || null,
+
       nombre_servicio: servicio,
       servicio,
+
       tipo_servicio: servicio === 'CT' || servicio === 'WT' ? servicio : 'Taladro',
       estado_asignacion: 'activo',
-      observacion: causaDiferido || estadoAnterior || null
+
+      estadoAnterior: estadoSalida,
+      estadoSaliente: estadoSalida,
+      estadoFinal: estadoSalida,
+
+      causaDiferido: causaDiferido || null,
+      observacion: observacion || causaDiferido || null
+    };
+  }
+
+  function normalizeAsignarServicioResponse(data = {}) {
+    const pozo = data.pozo ? normalizePozoFromApi(data.pozo) : null;
+    const pozosSalientes = Array.isArray(data.pozosSalientes)
+      ? data.pozosSalientes.map(normalizePozoFromApi)
+      : [];
+
+    return {
+      ...data,
+      pozo,
+      pozosSalientes,
+      pozos: [
+        ...(pozo ? [pozo] : []),
+        ...pozosSalientes
+      ]
+    };
+  }
+
+  function normalizeDesasignarServicioResponse(data = {}) {
+    const pozos = Array.isArray(data.pozos)
+      ? data.pozos.map(normalizePozoFromApi)
+      : [];
+
+    return {
+      ...data,
+      pozos,
+      pozo: data.pozo ? normalizePozoFromApi(data.pozo) : (pozos[0] || null)
     };
   }
 
@@ -471,7 +497,7 @@ function buildHeaders(extraHeaders = {}) {
   }
 
   async function updatePozo(pozo) {
-    const id = pozo.dbId || pozo.id;
+    const id = pozo.dbId || pozo.idPozo || pozo.id;
     const payload = normalizePozoToApi(pozo);
 
     const data = await request(`/api/mapa/pozos/${encodeURIComponent(id)}`, {
@@ -485,7 +511,15 @@ function buildHeaders(extraHeaders = {}) {
     return normalizePozoFromApi(data.pozo || data.data);
   }
 
-  async function asignarServicio({ pozo, servicio, estadoAnterior = null, causaDiferido = null }) {
+  async function asignarServicio({
+    pozo,
+    servicio,
+    estadoAnterior = null,
+    estadoSaliente = null,
+    estadoFinal = null,
+    causaDiferido = null,
+    observacion = null
+  }) {
     const data = await request('/api/mapa/servicios/asignar', {
       method: 'POST',
       headers: {
@@ -495,11 +529,14 @@ function buildHeaders(extraHeaders = {}) {
         pozo,
         servicio,
         estadoAnterior,
-        causaDiferido
+        estadoSaliente,
+        estadoFinal,
+        causaDiferido,
+        observacion
       }))
     });
 
-    return data.pozo ? normalizePozoFromApi(data.pozo) : data;
+    return normalizeAsignarServicioResponse(data);
   }
 
   async function desasignarServicio({
@@ -515,7 +552,7 @@ function buildHeaders(extraHeaders = {}) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        id_pozo: pozo?.dbId || pozo?.id_pozo || pozo?.idPozo || null,
+        id_pozo: pozo?.dbId || pozo?.idPozo || pozo?.id_pozo || null,
         codigo: pozo?.id || pozo?.codigo || null,
         servicio,
         estadoFinal,
@@ -524,11 +561,7 @@ function buildHeaders(extraHeaders = {}) {
       })
     });
 
-    if (Array.isArray(data.pozos)) {
-      return data.pozos.map(normalizePozoFromApi);
-    }
-
-    return data.pozo ? normalizePozoFromApi(data.pozo) : data;
+    return normalizeDesasignarServicioResponse(data);
   }
 
   async function updateServicioAsignado(id, payload = {}) {
@@ -541,7 +574,11 @@ function buildHeaders(extraHeaders = {}) {
     });
 
     if (Array.isArray(data.pozos)) {
-      return data.pozos.map(normalizePozoFromApi);
+      return {
+        ...data,
+        pozos: data.pozos.map(normalizePozoFromApi),
+        pozo: data.pozos[0] ? normalizePozoFromApi(data.pozos[0]) : null
+      };
     }
 
     return data.pozo ? normalizePozoFromApi(data.pozo) : data;
