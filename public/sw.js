@@ -123,7 +123,7 @@ self.addEventListener('fetch', event => {
         );
         return;
     }
-
+//a
     // Navegación: intentar red, luego cache, y fallback a index offline.
     if (event.request.mode === 'navigate') {
         event.respondWith(
