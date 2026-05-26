@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.25';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v35';
+const APP_VERSION = 'v1.27';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v36';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -1850,9 +1850,9 @@ async function warmOfflineResources() {
         '/css/styles.css?v=21',
         '/css/leaflet.css',
         '/js/leaflet.js?v=3',
-        '/js/localforage.min.js?v=3',
-        '/js/api-client.js?v=20260524-07',
-        '/js/main.js?v=20260524-07',
+        '/js/localforage.min.js?v=4',
+        '/js/api-client.js?v=20260524-08',
+        '/js/main.js?v=20260524-08',
         '/js/sw-register.js?v=10',
         '/js/firebase-init.js?v=3',
         '/js/pozos-data.js?v=1',

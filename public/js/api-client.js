@@ -22,25 +22,46 @@
     );
   }
 
-  function buildHeaders(extraHeaders = {}) {
+  function shouldSendAuthToken(method) {
+    const normalizedMethod = String(method || 'GET').trim().toUpperCase();
+
+    return ['POST', 'PATCH', 'PUT', 'DELETE'].includes(normalizedMethod);
+  }
+
+  function buildHeaders(extraHeaders = {}, method = 'GET') {
     const token = getAuthToken();
 
-    return {
+    const headers = {
       Accept: 'application/json',
-      ...extraHeaders,
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      ...extraHeaders
     };
+
+    /**
+     * Importante:
+     * Los GET de /api/mapa/pozos y /api/mapa/servicios son públicos.
+     * No enviamos token en GET para evitar preflight CORS innecesario.
+     *
+     * Tampoco usamos x-api-key desde frontend porque estaba causando:
+     * "Request header field x-api-key is not allowed by Access-Control-Allow-Headers"
+     */
+    if (shouldSendAuthToken(method) && token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    return headers;
   }
 
   async function request(path, options = {}) {
     const apiBaseUrl = getApiBaseUrl();
     const url = `${apiBaseUrl}${path}`;
+    const method = String(options.method || 'GET').trim().toUpperCase();
 
     const response = await fetch(url, {
       mode: 'cors',
       credentials: 'omit',
       ...options,
-      headers: buildHeaders(options.headers || {})
+      method,
+      headers: buildHeaders(options.headers || {}, method)
     });
 
     const contentType = response.headers.get('content-type') || '';
@@ -310,15 +331,20 @@
           : null
       );
 
+    /**
+     * Importante:
+     * El mapa histórico usa coordenadas de diagrama como [coord_x, coord_y].
+     * No invertir a [coord_y, coord_x].
+     */
     const coordsDiagrama = Array.isArray(pozo.coordsDiagrama)
       ? pozo.coordsDiagrama
       : (
         Array.isArray(pozo.coords)
           ? pozo.coords
           : (
-           pozo.coord_x != null && pozo.coord_y != null
-  ? [Number(pozo.coord_x), Number(pozo.coord_y)]
-  : null
+            pozo.coord_x != null && pozo.coord_y != null
+              ? [Number(pozo.coord_x), Number(pozo.coord_y)]
+              : null
           )
       );
 
