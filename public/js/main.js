@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.22';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v34';
+const APP_VERSION = 'v1.25';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v35';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -1236,43 +1236,153 @@ function updateAuthUi() {
     const assignExistingToggle = document.getElementById('assign-existing-toggle');
     const assignExistingMode = document.getElementById('assign-existing-mode');
 
+    const mobileAuthBtn = document.getElementById('mobile-auth-btn');
+    const mobileLoginBtn = document.getElementById('mobile-login-btn');
+    const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+    const mobileAuthUserLabel = document.getElementById('mobile-auth-user-label');
+    const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+    const mobileHeaderRoutesBtn = document.getElementById('mobile-header-routes-btn');
+    const mobileHeaderServiceBtn = document.getElementById('mobile-header-service-btn');
+
+    const editMode = document.getElementById('edit-mode');
+
+    /**
+     * Vista escritorio:
+     * usa botones normales del header.
+     */
     if (isDesktop()) {
+        if (mobileAuthBtn) mobileAuthBtn.classList.add('hidden');
+        if (mobileAuthMenu) mobileAuthMenu.classList.add('hidden');
+        if (mobileHeaderRoutesBtn) mobileHeaderRoutesBtn.classList.add('hidden');
+        if (mobileHeaderServiceBtn) mobileHeaderServiceBtn.classList.add('hidden');
+
         if (isAuthenticated && authenticatedUser) {
-            loginBtn.classList.add('hidden');
-            logoutBtn.classList.remove('hidden');
-            userLabel.classList.remove('hidden');
-            userLabel.textContent = authenticatedUser.nombre;
-            editSwitch.classList.remove('hidden');
-            assignButton.classList.remove('hidden');
-            assignExistingToggle.classList.remove('hidden');
+            if (loginBtn) loginBtn.classList.add('hidden');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+
+            if (userLabel) {
+                userLabel.classList.remove('hidden');
+                userLabel.textContent = authenticatedUser.nombre || authenticatedUser.usuario || 'Usuario';
+            }
+
+            if (editSwitch) editSwitch.classList.remove('hidden');
+            if (assignButton) assignButton.classList.remove('hidden');
+            if (assignExistingToggle) assignExistingToggle.classList.remove('hidden');
         } else {
-            loginBtn.classList.remove('hidden');
-            logoutBtn.classList.add('hidden');
-            userLabel.classList.add('hidden');
-            userLabel.textContent = '';
-            editSwitch.classList.add('hidden');
-            assignButton.classList.add('hidden');
-            assignExistingToggle.classList.add('hidden');
-            document.getElementById('edit-mode').checked = false;
+            if (loginBtn) loginBtn.classList.remove('hidden');
+            if (logoutBtn) logoutBtn.classList.add('hidden');
+
+            if (userLabel) {
+                userLabel.classList.add('hidden');
+                userLabel.textContent = '';
+            }
+
+            if (editSwitch) editSwitch.classList.add('hidden');
+            if (assignButton) assignButton.classList.add('hidden');
+            if (assignExistingToggle) assignExistingToggle.classList.add('hidden');
+
+            if (editMode) editMode.checked = false;
             if (assignExistingMode) assignExistingMode.checked = false;
+
             closeForm();
             closeAssignForm();
             closeAssignDiagramForm();
+
+            if (typeof closeMobileAssignServicePanel === 'function') {
+                closeMobileAssignServicePanel();
+            }
+
+            if (typeof closeMobilePozoEditSheet === 'function') {
+                closeMobilePozoEditSheet();
+            }
+
             pendingServiceAssignment = null;
             closeServiceVerification();
         }
+
         return;
     }
 
-    loginBtn.classList.add('hidden');
-    logoutBtn.classList.add('hidden');
-    userLabel.classList.add('hidden');
-    editSwitch.classList.add('hidden');
-    assignButton.classList.add('hidden');
-    assignExistingToggle.classList.add('hidden');
-    document.getElementById('edit-mode').checked = false;
+    /**
+     * Vista móvil:
+     * oculta controles de escritorio y muestra controles móviles.
+     */
+    if (loginBtn) loginBtn.classList.add('hidden');
+    if (logoutBtn) logoutBtn.classList.add('hidden');
+    if (userLabel) userLabel.classList.add('hidden');
+    if (editSwitch) editSwitch.classList.add('hidden');
+    if (assignButton) assignButton.classList.add('hidden');
+    if (assignExistingToggle) assignExistingToggle.classList.add('hidden');
+
+    if (editMode) editMode.checked = false;
     if (assignExistingMode) assignExistingMode.checked = false;
+
     closeAssignDiagramForm();
+
+    if (mobileAuthBtn) {
+        mobileAuthBtn.classList.remove('hidden');
+    }
+
+    if (isAuthenticated && authenticatedUser) {
+        const userName = authenticatedUser.nombre || authenticatedUser.usuario || 'Usuario';
+
+        if (mobileLoginBtn) {
+            mobileLoginBtn.textContent = userName;
+            mobileLoginBtn.classList.remove('hidden');
+        }
+
+        if (mobileAuthUserLabel) {
+            mobileAuthUserLabel.textContent = userName;
+        }
+
+        if (mobileHeaderRoutesBtn) {
+            mobileHeaderRoutesBtn.classList.remove('hidden');
+        }
+
+        if (mobileHeaderServiceBtn) {
+            mobileHeaderServiceBtn.classList.remove('hidden');
+        }
+
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.classList.remove('hidden');
+        }
+    } else {
+        if (mobileLoginBtn) {
+            mobileLoginBtn.textContent = 'Login';
+            mobileLoginBtn.classList.remove('hidden');
+        }
+
+        if (mobileAuthMenu) {
+            mobileAuthMenu.classList.add('hidden');
+        }
+
+        if (mobileAuthUserLabel) {
+            mobileAuthUserLabel.textContent = '';
+        }
+
+        if (mobileHeaderRoutesBtn) {
+            mobileHeaderRoutesBtn.classList.add('hidden');
+        }
+
+        if (mobileHeaderServiceBtn) {
+            mobileHeaderServiceBtn.classList.add('hidden');
+        }
+
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.classList.add('hidden');
+        }
+
+        if (typeof closeMobileAssignServicePanel === 'function') {
+            closeMobileAssignServicePanel();
+        }
+
+        if (typeof closeMobilePozoEditSheet === 'function') {
+            closeMobilePozoEditSheet();
+        }
+
+        pendingServiceAssignment = null;
+        closeServiceVerification();
+    }
 }
 
 async function initAuth() {
@@ -1302,6 +1412,25 @@ function closeLoginForm() {
     document.getElementById('login-form-container').classList.add('hidden');
     document.getElementById('login-form').reset();
     showLoginError('');
+}
+
+function openMobileAuthMenuOrLogin() {
+    const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+
+    if (mobileAuthMenu) {
+        mobileAuthMenu.classList.remove('hidden');
+    }
+
+    const loginPanel = document.getElementById('login-panel') || document.getElementById('login-form-container');
+
+    if (loginPanel) {
+        loginPanel.classList.remove('hidden');
+    }
+
+    const usernameInput = document.getElementById('login-username');
+    if (usernameInput) {
+        usernameInput.focus();
+    }
 }
 
 async function submitLogin(e) {
@@ -1350,15 +1479,39 @@ async function logout() {
 }
 
 function requireCrudAuth() {
-    if (!isDesktop()) {
-        return false;
-    }
     if (isAuthenticated) {
         return true;
     }
-    openLoginForm();
+
+    if (isDesktop()) {
+        openLoginForm();
+    } else {
+        openMobileAuthMenuOrLogin();
+    }
+
     alert('Debes iniciar sesión para usar funciones de edición');
     return false;
+}
+
+function openMobileAuthMenuOrLogin() {
+    const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+
+    if (mobileAuthMenu) {
+        mobileAuthMenu.classList.remove('hidden');
+    }
+
+    const loginPanel =
+        document.getElementById('login-panel') ||
+        document.getElementById('login-form-container');
+
+    if (loginPanel) {
+        loginPanel.classList.remove('hidden');
+    }
+
+    const usernameInput = document.getElementById('login-username');
+    if (usernameInput) {
+        usernameInput.focus();
+    }
 }
 
 async function loadPozosFromPwaApi() {
@@ -2305,9 +2458,15 @@ function popupContent(p) {
 
     if (p.nota) content += `<br>Nota: ${p.nota}`;
     if (normalizeEstado(p.estado) === STATUS.DIFERIDO && p.causaDiferido) content += `<br>Causa diferido: ${p.causaDiferido}`;
-    if (isDesktop() && isAuthenticated) {
+    if (isAuthenticated) {
+    if (isDesktop()) {
         content += `<br><button onclick="editPozo('${p.id}')">Editar</button> <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
+    } else {
+        content += `<br>
+            <button onclick="openMobilePozoEdit('${p.id}')">Editar</button>
+            <button onclick="openMobileAssignServiceForPozo('${p.id}')">Servicio</button>`;
     }
+}
     return content;
 }
 
@@ -2478,6 +2637,226 @@ function openAssignForm() {
 function closeAssignForm() {
     document.getElementById('assign-form-container').classList.add('hidden');
     document.getElementById('assign-taladro-form').reset();
+}
+
+let mobileSelectedPozoId = null;
+
+function getMobileSelectedPozo() {
+    if (mobileSelectedPozoId) {
+        return pozoData.find(pozo => pozo.id === mobileSelectedPozoId) || null;
+    }
+
+    const inputId = document.getElementById('mobile-assign-pozo-id')?.value;
+    if (inputId) {
+        return pozoData.find(pozo => pozo.id === inputId) || null;
+    }
+
+    const typed = document.getElementById('mobile-assign-pozo-input')?.value || '';
+    return resolvePozoFromInput(typed, getSelectedDiagram()) || resolvePozoFromInput(typed) || null;
+}
+
+function openMobileAssignServicePanel(pozo = null) {
+    if (!requireCrudAuth()) return;
+
+    const panel = document.getElementById('mobile-assign-service-panel');
+    if (!panel) return;
+
+    const selectedPozo = pozo || getMobileSelectedPozo();
+
+    mobileSelectedPozoId = selectedPozo?.id || null;
+
+    const pozoIdInput = document.getElementById('mobile-assign-pozo-id');
+    const pozoInput = document.getElementById('mobile-assign-pozo-input');
+    const pozoInputWrapper = document.getElementById('mobile-assign-pozo-input-wrapper');
+    const pozoLabel = document.getElementById('mobile-assign-pozo-label');
+    const currentServiceLabel = document.getElementById('mobile-current-service-label');
+    const serviceSelect = document.getElementById('mobile-assign-service-select');
+    const nextStatusSelect = document.getElementById('mobile-assign-next-status');
+
+    if (selectedPozo) {
+        if (pozoIdInput) pozoIdInput.value = selectedPozo.id;
+        if (pozoInput) pozoInput.value = selectedPozo.id;
+        if (pozoInputWrapper) pozoInputWrapper.classList.add('hidden');
+
+        if (pozoLabel) {
+            pozoLabel.textContent = `Pozo: ${selectedPozo.id}`;
+        }
+
+        if (currentServiceLabel) {
+            currentServiceLabel.textContent = selectedPozo.taladro
+                ? `Servicio actual: ${selectedPozo.taladro}`
+                : 'Sin servicio asignado';
+        }
+
+        if (serviceSelect) {
+            serviceSelect.value = selectedPozo.taladro || '';
+        }
+    } else {
+        if (pozoIdInput) pozoIdInput.value = '';
+        if (pozoInput) pozoInput.value = '';
+        if (pozoInputWrapper) pozoInputWrapper.classList.remove('hidden');
+
+        if (pozoLabel) {
+            pozoLabel.textContent = 'Seleccione o escriba un pozo';
+        }
+
+        if (currentServiceLabel) {
+            currentServiceLabel.textContent = '';
+        }
+
+        if (serviceSelect) {
+            serviceSelect.value = '';
+        }
+    }
+
+    if (nextStatusSelect) {
+        nextStatusSelect.value = STATUS.ACTIVO;
+    }
+
+    panel.classList.remove('hidden');
+}
+
+function closeMobileAssignServicePanel() {
+    const panel = document.getElementById('mobile-assign-service-panel');
+    const form = document.getElementById('mobile-assign-service-form');
+
+    if (panel) panel.classList.add('hidden');
+    if (form) form.reset();
+
+    mobileSelectedPozoId = null;
+}
+
+async function submitMobileAssignService(e) {
+    e.preventDefault();
+
+    if (!requireCrudAuth()) return;
+
+    const pozo = getMobileSelectedPozo();
+    const servicio = document.getElementById('mobile-assign-service-select')?.value;
+    const estadoSaliente = normalizeEstado(
+        document.getElementById('mobile-assign-next-status')?.value || STATUS.ACTIVO
+    );
+
+    if (!pozo) {
+        alert('Seleccione un pozo válido.');
+        return;
+    }
+
+    if (!servicio) {
+        alert('Seleccione un servicio.');
+        return;
+    }
+
+    const previousPozo = pozoData.find(item =>
+        (item.taladro || item.servicioAsignado || '').toLowerCase() === servicio.toLowerCase()
+        && item.id !== pozo.id
+    );
+
+    if (previousPozo) {
+        previousPozo.taladro = null;
+        previousPozo.servicioAsignado = null;
+        previousPozo.tipoServicio = null;
+        previousPozo.estadoAsignacion = null;
+        previousPozo.estado = estadoSaliente;
+        Object.assign(previousPozo, normalizePozo(previousPozo));
+    }
+
+    pozo.taladro = servicio;
+    pozo.servicioAsignado = servicio;
+    pozo.tipoServicio = servicio === 'CT' || servicio === 'WT' ? servicio : 'Taladro';
+    pozo.estadoAsignacion = 'activo';
+    pozo.estado = STATUS.EN_SERVICIO;
+    pozo.causaDiferido = null;
+    Object.assign(pozo, normalizePozo(pozo));
+
+    await persistLocalPozosSnapshot({ dirty: true });
+
+    const payload = {
+        pozo,
+        servicio,
+        previousPozo: previousPozo || null,
+        estadoAnterior: estadoSaliente,
+        estadoSaliente,
+        estadoFinal: estadoSaliente
+    };
+
+    if (navigator.onLine && window.MapaApi) {
+        try {
+            await syncServiceAssignmentToPwaApi(payload);
+        } catch (error) {
+            console.warn('[MapaBare] No se pudo asignar servicio desde móvil. Queda pendiente:', error);
+            await enqueueApiSync({
+                type: 'servicio-asignar',
+                payload
+            });
+            await markDataDirty();
+        }
+    } else {
+        await enqueueApiSync({
+            type: 'servicio-asignar',
+            payload
+        });
+    }
+
+    refreshMapAfterDataChange();
+    closeMobileAssignServicePanel();
+}
+
+async function mobileUnassignService() {
+    if (!requireCrudAuth()) return;
+
+    const pozo = getMobileSelectedPozo();
+    const estadoFinal = normalizeEstado(
+        document.getElementById('mobile-assign-next-status')?.value || STATUS.ACTIVO
+    );
+
+    if (!pozo) {
+        alert('Seleccione un pozo válido.');
+        return;
+    }
+
+    const previousService = pozo.taladro || pozo.servicioAsignado || null;
+
+    if (!previousService) {
+        alert(`El pozo ${pozo.id} no tiene servicio asignado.`);
+        return;
+    }
+
+    pozo.taladro = null;
+    pozo.servicioAsignado = null;
+    pozo.tipoServicio = null;
+    pozo.estadoAsignacion = null;
+    pozo.estado = estadoFinal;
+    Object.assign(pozo, normalizePozo(pozo));
+
+    await persistLocalPozosSnapshot({ dirty: true });
+
+    const payload = {
+        pozo,
+        servicio: previousService,
+        estadoFinal
+    };
+
+    if (navigator.onLine && window.MapaApi) {
+        try {
+            await syncServiceUnassignmentToPwaApi(payload);
+        } catch (error) {
+            console.warn('[MapaBare] No se pudo desasignar servicio desde móvil. Queda pendiente:', error);
+            await enqueueApiSync({
+                type: 'servicio-desasignar',
+                payload
+            });
+            await markDataDirty();
+        }
+    } else {
+        await enqueueApiSync({
+            type: 'servicio-desasignar',
+            payload
+        });
+    }
+
+    refreshMapAfterDataChange();
+    closeMobileAssignServicePanel();
 }
 
 async function assignTaladro(e) {
@@ -2852,6 +3231,110 @@ window.editPozo = function(id) {
     if (!requireCrudAuth()) return;
     openForm(null, null, id);
 };
+
+window.openMobileAssignServiceForPozo = function(id) {
+    const pozo = pozoData.find(p => p.id === id);
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    openMobileAssignServicePanel(pozo);
+};
+
+window.openMobilePozoEdit = function(id) {
+    const pozo = pozoData.find(p => p.id === id);
+
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    if (!requireCrudAuth()) return;
+
+    const sheet = document.getElementById('mobile-pozo-edit-sheet');
+    if (!sheet) {
+        alert('Panel móvil de edición no encontrado en index.html');
+        return;
+    }
+
+    document.getElementById('mobile-form-id').value = pozo.id;
+    document.getElementById('mobile-form-estado').value = normalizeEstado(pozo.estado);
+    document.getElementById('mobile-form-diferido-cause').value = pozo.causaDiferido || '';
+    document.getElementById('mobile-form-zona').value = pozo.zona || '';
+    document.getElementById('mobile-form-diagrama').value = getPozoDiagram(pozo);
+    document.getElementById('mobile-form-nota').value = pozo.nota || '';
+    document.getElementById('mobile-form-cabezal').value = pozo.cabezal || '';
+    document.getElementById('mobile-form-variador').value = pozo.variador || '';
+    document.getElementById('mobile-form-vo').value = pozo.velocidadActual ?? '';
+    document.getElementById('mobile-form-potencial').value = pozo.potencial || '';
+    document.getElementById('mobile-form-alto-corte-agua').checked = !!pozo.altoCorteAgua;
+    document.getElementById('mobile-form-fecha-ultimo-servicio').value = normalizeDateInputValue(
+        pozo.fechaUltimoServicio ||
+        pozo.fecha_arranque ||
+        pozo.fechaArranque ||
+        pozo.fecha_arranque_formateada
+    ) || '';
+
+    sheet.dataset.pozoId = pozo.id;
+    sheet.classList.remove('hidden');
+};
+
+function closeMobilePozoEditSheet() {
+    const sheet = document.getElementById('mobile-pozo-edit-sheet');
+    const form = document.getElementById('mobile-pozo-edit-form');
+
+    if (sheet) {
+        sheet.classList.add('hidden');
+        delete sheet.dataset.pozoId;
+    }
+
+    if (form) {
+        form.reset();
+    }
+}
+
+async function submitMobilePozoEdit(e) {
+    e.preventDefault();
+
+    if (!requireCrudAuth()) return;
+
+    const sheet = document.getElementById('mobile-pozo-edit-sheet');
+    const pozoId = sheet?.dataset.pozoId;
+    const pozo = pozoData.find(p => p.id === pozoId);
+
+    if (!pozo) {
+        alert('Pozo no encontrado');
+        return;
+    }
+
+    pozo.estado = normalizeEstado(document.getElementById('mobile-form-estado').value);
+    pozo.zona = document.getElementById('mobile-form-zona').value || null;
+    pozo.area = pozo.zona;
+    pozo.diagrama = document.getElementById('mobile-form-diagrama').value || getPozoDiagram(pozo);
+    pozo.nota = document.getElementById('mobile-form-nota').value.trim() || null;
+    pozo.cabezal = document.getElementById('mobile-form-cabezal').value || null;
+    pozo.variador = document.getElementById('mobile-form-variador').value || null;
+    pozo.potencial = document.getElementById('mobile-form-potencial').value || null;
+    pozo.altoCorteAgua = document.getElementById('mobile-form-alto-corte-agua').checked;
+
+    const fechaArranque = normalizeDateInputValue(document.getElementById('mobile-form-fecha-ultimo-servicio').value);
+    pozo.fechaUltimoServicio = fechaArranque || null;
+    pozo.fecha_arranque = fechaArranque || null;
+    pozo.fechaArranque = fechaArranque || null;
+    pozo.fechaArranqueLabel = formatDateDdMmYyyy(fechaArranque);
+    pozo.fecha_arranque_formateada = formatDateDdMmYyyy(fechaArranque);
+
+    const causa = document.getElementById('mobile-form-diferido-cause').value.trim();
+    pozo.causaDiferido = pozo.estado === STATUS.DIFERIDO ? causa : null;
+
+    Object.assign(pozo, normalizePozo(pozo));
+
+    await persistPozosAndRefresh(pozo);
+
+    refreshMapAfterDataChange();
+    closeMobilePozoEditSheet();
+}
 
 window.deletePozo = async function(id) {
     if (!requireCrudAuth()) return;
@@ -3371,7 +3854,7 @@ function attachControls() {
         });
     }
 
-    document.getElementById('zone-select').addEventListener('change', async e => {
+    document.getElementById('zone-select')?.addEventListener('change', async e => {
         if (mapMode !== 'diagram') return;
         await loadZone(e.target.value);
         renderMarkers(e.target.value);
@@ -3385,35 +3868,40 @@ function attachControls() {
     }
 
     const search = document.getElementById('search-input');
-    search.addEventListener('input', e => {
-        updateDatalist(e.target.value);
-    });
-    search.addEventListener('change', async e => {
-        await runSearchById(e.target.value);
-    });
-    search.addEventListener('keydown', async e => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
+    if (search) {
+        search.addEventListener('input', e => {
+            updateDatalist(e.target.value);
+        });
+
+        search.addEventListener('change', async e => {
             await runSearchById(e.target.value);
-        }
-    });
+        });
 
-    document.getElementById('pozo-form').addEventListener('submit', savePozo);
-    document.getElementById('form-cancel').addEventListener('click', closeForm);
-    document.getElementById('form-estado').addEventListener('change', togglePozoDiferidoCause);
-    document.getElementById('form-toggle-alto-corte').addEventListener('click', toggleHighWaterCutFromEdit);
-    document.getElementById('form-alto-corte-agua').addEventListener('change', syncHighWaterCutButtonLabel);
+        search.addEventListener('keydown', async e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                await runSearchById(e.target.value);
+            }
+        });
+    }
 
-    document.getElementById('edit-mode').addEventListener('change', (e) => {
+    document.getElementById('pozo-form')?.addEventListener('submit', savePozo);
+    document.getElementById('form-cancel')?.addEventListener('click', closeForm);
+    document.getElementById('form-estado')?.addEventListener('change', togglePozoDiferidoCause);
+    document.getElementById('form-toggle-alto-corte')?.addEventListener('click', toggleHighWaterCutFromEdit);
+    document.getElementById('form-alto-corte-agua')?.addEventListener('change', syncHighWaterCutButtonLabel);
+
+    document.getElementById('edit-mode')?.addEventListener('change', (e) => {
         if (e.target.checked && !requireCrudAuth()) {
             e.target.checked = false;
         }
     });
 
-    document.getElementById('assign-taladro-btn').addEventListener('click', openAssignForm);
-    document.getElementById('assign-taladro-form').addEventListener('submit', assignTaladro);
-    document.getElementById('assign-unassign-btn').addEventListener('click', unassignTaladroFromAssignForm);
-    document.getElementById('assign-cancel').addEventListener('click', closeAssignForm);
+    document.getElementById('assign-taladro-btn')?.addEventListener('click', openAssignForm);
+    document.getElementById('assign-taladro-form')?.addEventListener('submit', assignTaladro);
+    document.getElementById('assign-unassign-btn')?.addEventListener('click', unassignTaladroFromAssignForm);
+    document.getElementById('assign-cancel')?.addEventListener('click', closeAssignForm);
+
     const assignExistingMode = document.getElementById('assign-existing-mode');
     if (assignExistingMode) {
         assignExistingMode.addEventListener('change', (e) => {
@@ -3422,54 +3910,127 @@ function attachControls() {
                     e.target.checked = false;
                     return;
                 }
-                document.getElementById('edit-mode').checked = false;
+
+                const editMode = document.getElementById('edit-mode');
+                if (editMode) editMode.checked = false;
             }
+
             if (!e.target.checked) {
                 closeAssignDiagramForm();
             }
         });
     }
-    document.getElementById('assign-diagram-form').addEventListener('submit', submitAssignDiagramForm);
-    document.getElementById('assign-diagram-cancel').addEventListener('click', closeAssignDiagramForm);
-    document.getElementById('form-reassign-diagram').addEventListener('click', startDiagramReassignFromEdit);
-    document.getElementById('form-unassign-diagram').addEventListener('click', unassignPozoFromDiagramFromEdit);
-    document.getElementById('service-verification-form').addEventListener('submit', submitServiceVerification);
-    document.getElementById('verification-cancel').addEventListener('click', () => {
+
+    document.getElementById('assign-diagram-form')?.addEventListener('submit', submitAssignDiagramForm);
+    document.getElementById('assign-diagram-cancel')?.addEventListener('click', closeAssignDiagramForm);
+    document.getElementById('form-reassign-diagram')?.addEventListener('click', startDiagramReassignFromEdit);
+    document.getElementById('form-unassign-diagram')?.addEventListener('click', unassignPozoFromDiagramFromEdit);
+
+    document.getElementById('service-verification-form')?.addEventListener('submit', submitServiceVerification);
+    document.getElementById('verification-cancel')?.addEventListener('click', () => {
         pendingServiceAssignment = null;
         closeServiceVerification();
     });
+
     document.querySelectorAll('input[name="verification-estado"]').forEach(input => {
         input.addEventListener('change', toggleVerificationCause);
     });
 
-    document.getElementById('login-btn').addEventListener('click', openLoginForm);
-    document.getElementById('logout-btn').addEventListener('click', logout);
-    document.getElementById('login-form').addEventListener('submit', submitLogin);
-    document.getElementById('login-cancel').addEventListener('click', closeLoginForm);
+    document.getElementById('login-btn')?.addEventListener('click', openLoginForm);
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+    document.getElementById('login-form')?.addEventListener('submit', submitLogin);
+    document.getElementById('login-cancel')?.addEventListener('click', closeLoginForm);
 
-    document.getElementById('floating-search-btn').addEventListener('click', () => {
+    /**
+     * Controles móviles de autenticación.
+     */
+    document.getElementById('mobile-login-btn')?.addEventListener('click', () => {
+        if (isAuthenticated) {
+            const menu = document.getElementById('mobile-auth-menu');
+            if (menu) menu.classList.toggle('hidden');
+            return;
+        }
+
+        openMobileAuthMenuOrLogin();
+    });
+
+    document.getElementById('mobile-logout-btn')?.addEventListener('click', logout);
+
+    /**
+     * Botón Servicio en header móvil.
+     */
+    document.getElementById('mobile-header-service-btn')?.addEventListener('click', () => {
+        openMobileAssignServicePanel();
+    });
+
+    /**
+     * Botón Rutas en header móvil.
+     * Si ya tienes lógica específica de rutas móvil, este botón abre el panel móvil.
+     */
+    document.getElementById('mobile-header-routes-btn')?.addEventListener('click', () => {
+        const panel = document.getElementById('mobile-routes-panel') || document.getElementById('routes-panel');
+        if (panel) {
+            panel.classList.remove('hidden');
+        }
+    });
+
+    /**
+     * Panel móvil de asignación/desasignación de servicios.
+     */
+    document.getElementById('mobile-assign-service-close')?.addEventListener('click', closeMobileAssignServicePanel);
+    document.getElementById('mobile-assign-service-cancel')?.addEventListener('click', closeMobileAssignServicePanel);
+    document.getElementById('mobile-assign-service-form')?.addEventListener('submit', submitMobileAssignService);
+    document.getElementById('mobile-unassign-service-btn')?.addEventListener('click', mobileUnassignService);
+
+    /**
+     * Panel móvil de edición de pozo.
+     */
+    document.getElementById('mobile-pozo-edit-close')?.addEventListener('click', closeMobilePozoEditSheet);
+    document.getElementById('mobile-pozo-edit-cancel')?.addEventListener('click', closeMobilePozoEditSheet);
+    document.getElementById('mobile-pozo-edit-form')?.addEventListener('submit', submitMobilePozoEdit);
+
+    document.getElementById('mobile-form-estado')?.addEventListener('change', () => {
+        const wrapper = document.getElementById('mobile-form-diferido-cause-wrapper');
+        const estado = normalizeEstado(document.getElementById('mobile-form-estado')?.value);
+
+        if (wrapper) {
+            wrapper.classList.toggle('hidden', estado !== STATUS.DIFERIDO);
+        }
+    });
+
+    /**
+     * Búsqueda flotante móvil.
+     */
+    document.getElementById('floating-search-btn')?.addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-search-input');
+        if (!inputDiv) return;
+
         const shouldShow = inputDiv.classList.contains('hidden');
         closeFloatingPanels(shouldShow ? 'floating-search-input' : null);
         inputDiv.classList.toggle('hidden', !shouldShow);
     });
 
-    document.getElementById('mobile-search-btn').addEventListener('click', async () => {
-        await runSearchById(document.getElementById('mobile-search').value, true);
+    document.getElementById('mobile-search-btn')?.addEventListener('click', async () => {
+        await runSearchById(document.getElementById('mobile-search')?.value || '', true);
     });
 
-    document.getElementById('mobile-search').addEventListener('input', (e) => {
+    document.getElementById('mobile-search')?.addEventListener('input', (e) => {
         updateDatalist(e.target.value);
     });
 
-    document.getElementById('mobile-search').addEventListener('keydown', (e) => {
+    document.getElementById('mobile-search')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            document.getElementById('mobile-search-btn').click();
+            document.getElementById('mobile-search-btn')?.click();
         }
     });
 
-    document.getElementById('floating-zone-btn').addEventListener('click', () => {
+    /**
+     * Selector flotante de zona.
+     */
+    document.getElementById('floating-zone-btn')?.addEventListener('click', () => {
         const inputDiv = document.getElementById('floating-zone-input');
+        if (!inputDiv) return;
+
         const shouldShow = inputDiv.classList.contains('hidden');
         closeFloatingPanels(shouldShow ? 'floating-zone-input' : null);
         inputDiv.classList.toggle('hidden', !shouldShow);
@@ -3486,37 +4047,48 @@ function attachControls() {
     const floatingLegendBtn = document.getElementById('floating-legend-btn');
     const floatingLegendBox = document.getElementById('floating-legend-box');
 
-    floatingLegendBtn.addEventListener('click', () => {
-        const shouldShow = floatingLegendBox.classList.contains('hidden');
-        if (shouldShow) {
-            closeFloatingPanels('floating-legend-box');
-            floatingLegendBox.classList.remove('hidden');
-            return;
-        }
-        floatingLegendBox.classList.add('hidden');
-        floatingLegendBtn.classList.remove('is-hidden');
-    });
+    if (floatingLegendBtn && floatingLegendBox) {
+        floatingLegendBtn.addEventListener('click', () => {
+            const shouldShow = floatingLegendBox.classList.contains('hidden');
 
-    const hideFloatingLegend = () => {
-        floatingLegendBox.classList.add('hidden');
-        floatingLegendBtn.classList.remove('is-hidden');
-    };
+            if (shouldShow) {
+                closeFloatingPanels('floating-legend-box');
+                floatingLegendBox.classList.remove('hidden');
+                return;
+            }
 
-    floatingLegendBox.addEventListener('click', hideFloatingLegend);
-    floatingLegendBox.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            hideFloatingLegend();
-        }
-    });
+            floatingLegendBox.classList.add('hidden');
+            floatingLegendBtn.classList.remove('is-hidden');
+        });
 
-    document.getElementById('mobile-zone-select').addEventListener('change', async (e) => {
+        const hideFloatingLegend = () => {
+            floatingLegendBox.classList.add('hidden');
+            floatingLegendBtn.classList.remove('is-hidden');
+        };
+
+        floatingLegendBox.addEventListener('click', hideFloatingLegend);
+        floatingLegendBox.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                hideFloatingLegend();
+            }
+        });
+    }
+
+    document.getElementById('mobile-zone-select')?.addEventListener('change', async (e) => {
         if (mapMode !== 'diagram') return;
+
         const zona = e.target.value;
-        document.getElementById('zone-select').value = zona;
+        const zoneSelect = document.getElementById('zone-select');
+
+        if (zoneSelect) {
+            zoneSelect.value = zona;
+        }
+
         await loadZone(zona);
         renderMarkers(zona);
-        document.getElementById('floating-zone-input').classList.add('hidden');
+
+        document.getElementById('floating-zone-input')?.classList.add('hidden');
     });
 
     document.querySelectorAll('[data-filter-type="status"]').forEach(btn => {
