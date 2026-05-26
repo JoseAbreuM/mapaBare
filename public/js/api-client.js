@@ -316,9 +316,9 @@
         Array.isArray(pozo.coords)
           ? pozo.coords
           : (
-            pozo.coord_x != null && pozo.coord_y != null
-              ? [Number(pozo.coord_y), Number(pozo.coord_x)]
-              : null
+           pozo.coord_x != null && pozo.coord_y != null
+  ? [Number(pozo.coord_x), Number(pozo.coord_y)]
+  : null
           )
       );
 
