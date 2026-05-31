@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.30';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v40';
+const APP_VERSION = 'v1.31';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v41';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -66,9 +66,11 @@ const MAP_STATION_DEFINITIONS = [
 ];
 const SERVICE_SEARCH_CONFIG = [
     { taladro: 'Ranger-357', tags: ['357', 'ranger-357', 'ranger 357', 'servicio 357'] },
+    { taladro: 'Ranger-553', tags: ['553', 'ranger-553', 'ranger 553', 'servicio 553'] },
+    { taladro: 'Ranger-554', tags: ['554', 'ranger-554', 'ranger 554', 'servicio 554'] },
+    { taladro: 'Ranger-555', tags: ['555', 'ranger-555', 'ranger 555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
     { taladro: 'RIG-351', tags: ['351', 'rig-351', 'rig 351', 'servicio 351'] },
     { taladro: 'RIG-352', tags: ['352', 'rig-352', 'rig 352', 'servicio 352'] },
-    { taladro: 'RIG-RANGER-555', tags: ['555', 'rig-ranger-555', 'rig ranger 555', 'servicio 555'] },
     { taladro: 'Ranger-151', tags: ['151', 'ranger-151', 'ranger 151', 'servicio 151'] },
     {
         taladro: 'CT',
@@ -1863,11 +1865,11 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=5',
         '/js/localforage.min.js?v=5',
-        '/js/api-client.js?v=20260531-03',
-        '/js/main.js?v=20260531-03',
+        '/js/api-client.js?v=20260531-04',
+        '/js/main.js?v=20260531-04',
         '/js/sw-register.js?v=19',
         '/js/firebase-init.js?v=5',
-        '/js/pozos-data.js?v=20260531-03',
+        '/js/pozos-data.js?v=20260531-04',
         '/manifest.json',
         '/icons/icono.png',
         '/icons/header.png',
@@ -2351,13 +2353,15 @@ function createMarker(p, markerCoords, mapRenderConfig = null) {
         } else if (p.taladro === 'CT') {
             icon = crearIconoCT();
         } else {
-            const servicioConfig = {
-                'Ranger-357': { color: '#000000', numero: 7, borde: '#ffcc00', numeroColor: '#ffcc00' },
-                'RIG-351': { color: '#e53935', numero: 1, borde: '#000000', numeroColor: '#ffffff' },
-                'RIG-352': { color: '#3388ff', numero: 2, borde: '#000000', numeroColor: '#ffffff' },
-                'RIG-RANGER-555': { color: '#00BD3E', numero: null, borde: '#000000', numeroColor: '#ffffff' },
-                'Ranger-151': { color: '#ffcc00', numero: null, borde: '#000000', numeroColor: '#ffffff' }
-            };
+         const servicioConfig = {
+    'Ranger-357': { color: '#000000', numero: 7, borde: '#ffcc00', numeroColor: '#ffcc00' },
+    'Ranger-553': { color: '#7c3aed', numero: 3, borde: '#ffcc00', numeroColor: '#ffcc00' },
+    'Ranger-554': { color: '#f97316', numero: 4, borde: '#ffcc00', numeroColor: '#ffcc00' },
+    'Ranger-555': { color: '#00BD3E', numero: 5, borde: '#ffcc00', numeroColor: '#ffcc00' },
+    'RIG-351': { color: '#e53935', numero: 1, borde: '#000000', numeroColor: '#ffffff' },
+    'RIG-352': { color: '#3388ff', numero: 2, borde: '#000000', numeroColor: '#ffffff' },
+    'Ranger-151': { color: '#ffcc00', numero: null, borde: '#000000', numeroColor: '#ffffff' }
+};
             const config = servicioConfig[p.taladro] || { color: '#000000', numero: null, borde: '#000000', numeroColor: '#ffffff' };
             icon = crearIconoServicio(config.color, config.numero, config.borde, config.numeroColor);
         }

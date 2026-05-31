@@ -452,15 +452,17 @@
     observacion = null
   } = {}) {
     const estadoSalida = estadoSaliente || estadoAnterior || estadoFinal || 'Activo';
+    const servicioNormalizado = servicio === 'RIG-RANGER-555'
+  ? 'Ranger-555'
+  : servicio;
 
     return {
       id_pozo: pozo?.dbId || pozo?.idPozo || pozo?.id_pozo || null,
       codigo: pozo?.id || pozo?.codigo || null,
 
-      nombre_servicio: servicio,
-      servicio,
-
-      tipo_servicio: servicio === 'CT' || servicio === 'WT' ? servicio : 'Taladro',
+      nombre_servicio: servicioNormalizado,
+      servicio: servicioNormalizado,
+      tipo_servicio: servicioNormalizado === 'CT' || servicioNormalizado === 'WT' ? servicioNormalizado : 'Taladro',
       estado_asignacion: 'activo',
 
       estadoAnterior: estadoSalida,

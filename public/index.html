@@ -94,7 +94,7 @@
       <option value="Ranger-554">Ranger-554</option>
       <option value="RIG-351">RIG-351</option>
       <option value="RIG-352">RIG-352</option>
-      <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+      <option value="Ranger-555">Ranger-555</option>
       <option value="Ranger-151">Ranger-151</option>
       <option value="CT">CT</option>
       <option value="WT">WT</option>
@@ -509,7 +509,7 @@
           <option value="Ranger-554">Ranger-554</option>
           <option value="RIG-351">RIG-351</option>
           <option value="RIG-352">RIG-352</option>
-          <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+          <option value="Ranger-555">Ranger-555</option>
           <option value="Ranger-151">Ranger-151</option>
           <option value="CT">CT</option>
           <option value="WT">WT</option>
@@ -597,7 +597,7 @@
           <option value="Ranger-554">Ranger-554</option>
           <option value="RIG-351">RIG-351</option>
           <option value="RIG-352">RIG-352</option>
-          <option value="RIG-RANGER-555">RIG-RANGER-555</option>
+          <option value="Ranger-555">Ranger-555</option>
           <option value="Ranger-151">Ranger-151</option>
           <option value="CT">CT</option>
           <option value="WT">WT</option>
@@ -774,11 +774,11 @@
   </script>
 
   <!-- Seed local solo como fallback. La fuente principal es la PWA API. -->
-  <script src="js/pozos-data.js?v=20260531-03"></script>
+  <script src="js/pozos-data.js?v=20260531-04"></script>
 
   <!-- Versiones nuevas para recuperar edición/servicios móviles -->
-  <script src="js/api-client.js?v=20260531-03"></script>
-  <script src="js/main.js?v=20260531-03"></script>
+  <script src="js/api-client.js?v=20260531-04"></script>
+  <script src="js/main.js?v=20260531-04"></script>
   <script src="js/sw-register.js?v=19" defer></script>
 
   <script>
@@ -808,7 +808,7 @@
             return;
           }
 
-            throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260531-03 haya cargado.');
+          throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260531-04 haya cargado.');
         } catch (error) {
           console.error('[MapaBare] Error exportando JSON:', error);
           alert(error.message || 'No se pudo exportar el JSON.');
@@ -961,7 +961,7 @@
   </div>
 
   <div id="update-toast" class="update-toast hidden" role="status" aria-live="polite">
-    <p id="update-toast-text">Nueva actualización disponible (v1.30). ¿Desea actualizar ahora?</p>
+    <p id="update-toast-text">Nueva actualización disponible (v1.31). ¿Desea actualizar ahora?</p>
 
     <div class="update-toast-actions">
       <button id="update-now-btn" type="button">Actualizar</button>
@@ -970,7 +970,7 @@
   </div>
 
   <button id="update-fab" class="update-fab hidden" type="button">
-    Actualización disponible (v1.30)
+    Actualización disponible (v1.31)
   </button>
 </body>
 
