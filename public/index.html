@@ -10,14 +10,14 @@
   <link rel="manifest" href="manifest.json">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/leaflet.css?v=4">
-  <link rel="stylesheet" href="css/styles.css?v=29">
+  <link rel="stylesheet" href="css/leaflet.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=30">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="js/firebase-init.js?v=4"></script>
+  <script src="js/firebase-init.js?v=5"></script>
 </head>
 
 <body>
@@ -721,9 +721,9 @@
   </div>
 
   <!-- Scripts base -->
-  <script src="js/leaflet.js?v=4"></script>
+  <script src="js/leaflet.js?v=5"></script>
 
-  <script src="js/localforage.min.js?v=4"
+  <script src="js/localforage.min.js?v=5"
     onerror="console.error('No se pudo cargar localforage desde el archivo local')"></script>
 
   <script>
@@ -774,12 +774,12 @@
   </script>
 
   <!-- Seed local solo como fallback. La fuente principal es la PWA API. -->
-  <script src="js/pozos-data.js?v=20260523-10"></script>
+  <script src="js/pozos-data.js?v=20260531-01"></script>
 
   <!-- Versiones nuevas para recuperar edición/servicios móviles -->
-  <script src="js/api-client.js?v=20260525-03"></script>
-  <script src="js/main.js?v=20260525-03"></script>
-  <script src="js/sw-register.js?v=18" defer></script>
+  <script src="js/api-client.js?v=20260531-01"></script>
+  <script src="js/main.js?v=20260531-01"></script>
+  <script src="js/sw-register.js?v=19" defer></script>
 
   <script>
     // Botón Exportar JSON.
@@ -808,7 +808,7 @@
             return;
           }
 
-          throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260525-02 haya cargado.');
+          throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260531-01 haya cargado.');
         } catch (error) {
           console.error('[MapaBare] Error exportando JSON:', error);
           alert(error.message || 'No se pudo exportar el JSON.');

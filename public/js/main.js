@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.27';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v36';
+const APP_VERSION = 'v1.28';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v38';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -1414,24 +1414,29 @@ function showLoginError(message) {
 
 function openLoginForm() {
     showLoginError('');
-    document.getElementById('login-form-container').classList.remove('hidden');
-    document.getElementById('login-username').focus();
+    const loginPanel = document.getElementById('login-panel');
+    if (loginPanel) loginPanel.classList.remove('hidden');
+    document.getElementById('login-username')?.focus();
 }
 
 function closeLoginForm() {
-    document.getElementById('login-form-container').classList.add('hidden');
-    document.getElementById('login-form').reset();
+    const loginPanel = document.getElementById('login-panel');
+    if (loginPanel) loginPanel.classList.add('hidden');
+
+    const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+    if (mobileAuthMenu) mobileAuthMenu.classList.add('hidden');
+
+    document.getElementById('login-form')?.reset();
     showLoginError('');
 }
 
 function openMobileAuthMenuOrLogin() {
     const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+    const loginPanel = document.getElementById('login-panel');
 
     if (mobileAuthMenu) {
-        mobileAuthMenu.classList.remove('hidden');
+        mobileAuthMenu.classList.add('hidden');
     }
-
-    const loginPanel = document.getElementById('login-panel') || document.getElementById('login-form-container');
 
     if (loginPanel) {
         loginPanel.classList.remove('hidden');
@@ -1505,14 +1510,11 @@ function requireCrudAuth() {
 
 function openMobileAuthMenuOrLogin() {
     const mobileAuthMenu = document.getElementById('mobile-auth-menu');
+    const loginPanel = document.getElementById('login-panel');
 
     if (mobileAuthMenu) {
-        mobileAuthMenu.classList.remove('hidden');
+        mobileAuthMenu.classList.add('hidden');
     }
-
-    const loginPanel =
-        document.getElementById('login-panel') ||
-        document.getElementById('login-form-container');
 
     if (loginPanel) {
         loginPanel.classList.remove('hidden');
@@ -1857,15 +1859,15 @@ async function warmOfflineResources() {
     if (!('caches' in window)) return;
     const resources = [
         '/index.html',
-        '/css/styles.css?v=21',
+        '/css/styles.css?v=30',
         '/css/leaflet.css',
-        '/js/leaflet.js?v=3',
-        '/js/localforage.min.js?v=4',
-        '/js/api-client.js?v=20260524-08',
-        '/js/main.js?v=20260524-08',
-        '/js/sw-register.js?v=10',
-        '/js/firebase-init.js?v=3',
-        '/js/pozos-data.js?v=1',
+        '/js/leaflet.js?v=5',
+        '/js/localforage.min.js?v=5',
+        '/js/api-client.js?v=20260531-01',
+        '/js/main.js?v=20260531-01',
+        '/js/sw-register.js?v=19',
+        '/js/firebase-init.js?v=5',
+        '/js/pozos-data.js?v=20260531-01',
         '/manifest.json',
         '/icons/icono.png',
         '/icons/header.png',
@@ -2475,7 +2477,8 @@ function popupContent(p) {
     } else {
         content += `<br>
             <button onclick="openMobilePozoEdit('${p.id}')">Editar</button>
-            <button onclick="openMobileAssignServiceForPozo('${p.id}')">Servicio</button>`;
+            <button onclick="openMobileAssignServiceForPozo('${p.id}')">Servicio</button>
+            <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
     }
 }
     return content;
