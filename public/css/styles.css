@@ -2292,3 +2292,123 @@ body.modal-open {
     display: none;
   }
 }
+/* =========================================================
+   FIX HEADER MÓVIL - LOGIN / RUTAS / SERVICIO
+   ========================================================= */
+
+.mobile-auth-btn.hidden,
+.mobile-header-action.hidden,
+.mobile-auth-trigger.hidden,
+.mobile-auth-menu.hidden {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    z-index: 3600;
+  }
+
+  /*
+    En móvil ocultamos los controles grandes del header,
+    pero NO el bloque mobile-auth-btn.
+  */
+  .app-header .controls {
+    display: none !important;
+  }
+
+  #mobile-auth-btn.mobile-auth-btn {
+    position: fixed;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 4300;
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    max-width: calc(100vw - 1.1rem);
+    pointer-events: auto;
+  }
+
+  #mobile-auth-btn.mobile-auth-btn.hidden {
+    display: none !important;
+  }
+
+  #mobile-auth-btn.mobile-auth-btn:not(.hidden) {
+    display: flex !important;
+  }
+
+  #mobile-login-btn,
+  #mobile-header-routes-btn,
+  #mobile-header-service-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(2, 4, 153, 0.94);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    white-space: nowrap;
+  }
+
+  #mobile-login-btn.hidden,
+  #mobile-header-routes-btn.hidden,
+  #mobile-header-service-btn.hidden {
+    display: none !important;
+  }
+
+  #mobile-login-btn:not(.hidden),
+  #mobile-header-routes-btn:not(.hidden),
+  #mobile-header-service-btn:not(.hidden) {
+    display: inline-flex !important;
+  }
+
+  #mobile-auth-menu {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    right: 0;
+    z-index: 4400;
+    display: flex;
+    min-width: 155px;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.85rem;
+    background: rgba(17, 24, 39, 0.97);
+    color: #ffffff;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+  }
+
+  #mobile-auth-menu.hidden {
+    display: none !important;
+  }
+
+  #mobile-auth-user-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  #mobile-logout-btn {
+    min-height: 32px;
+    border: 0;
+    border-radius: 0.55rem;
+    padding: 0.45rem 0.6rem;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+}
+
+@media (min-width: 769px) {
+  #mobile-auth-btn.mobile-auth-btn {
+    display: none !important;
+  }
+}

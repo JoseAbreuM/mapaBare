@@ -1322,6 +1322,9 @@ function updateAuthUi() {
     if (mobileAuthBtn) {
         mobileAuthBtn.classList.remove('hidden');
     }
+    if (mobileAuthBtn) {
+    mobileAuthBtn.style.display = 'flex';
+}
 
     if (isAuthenticated && authenticatedUser) {
         const userName = authenticatedUser.nombre || authenticatedUser.usuario || 'Usuario';
@@ -1335,13 +1338,20 @@ function updateAuthUi() {
             mobileAuthUserLabel.textContent = userName;
         }
 
-        if (mobileHeaderRoutesBtn) {
-            mobileHeaderRoutesBtn.classList.remove('hidden');
-        }
+if (mobileHeaderRoutesBtn) {
+    mobileHeaderRoutesBtn.classList.remove('hidden');
+    mobileHeaderRoutesBtn.style.display = 'inline-flex';
+}
 
-        if (mobileHeaderServiceBtn) {
-            mobileHeaderServiceBtn.classList.remove('hidden');
-        }
+if (mobileHeaderServiceBtn) {
+    mobileHeaderServiceBtn.classList.remove('hidden');
+    mobileHeaderServiceBtn.style.display = 'inline-flex';
+}
+
+if (mobileLoginBtn) {
+    mobileLoginBtn.classList.remove('hidden');
+    mobileLoginBtn.style.display = 'inline-flex';
+}
 
         if (mobileLogoutBtn) {
             mobileLogoutBtn.classList.remove('hidden');
@@ -1944,6 +1954,7 @@ async function applyViewMode(mode, skipPersist = false) {
         currentStatsFilter = 'all';
         currentCategoryFilter = 'all';
     }
+    updateAuthUi();
     updateStatsFilterUi();
     updateResponsiveControls();
 
