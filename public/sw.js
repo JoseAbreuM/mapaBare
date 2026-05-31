@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v38';
+const CACHE_NAME = 'pozos-cache-v40';
 const BARE_TILE_BOUNDS = {
     minLat: 8.5,
     maxLat: 8.7,
@@ -42,10 +42,10 @@ const FILES_TO_CACHE = [
     '/js/leaflet.js?v=5',
     '/js/localforage.min.js?v=5',
     '/js/lucide.min.js?v=4',
-    '/js/main.js?v=20260531-01',
+    '/js/main.js?v=20260531-03',
     '/js/sw-register.js?v=19',
     '/js/firebase-init.js?v=5',
-    '/js/pozos-data.js?v=20260531-01',
+    '/js/pozos-data.js?v=20260531-03',
     '/manifest.json',
     '/icons/icono.png',
     '/icons/header.png',

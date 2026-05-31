@@ -774,11 +774,11 @@
   </script>
 
   <!-- Seed local solo como fallback. La fuente principal es la PWA API. -->
-  <script src="js/pozos-data.js?v=20260531-01"></script>
+  <script src="js/pozos-data.js?v=20260531-03"></script>
 
   <!-- Versiones nuevas para recuperar edición/servicios móviles -->
-  <script src="js/api-client.js?v=20260531-01"></script>
-  <script src="js/main.js?v=20260531-01"></script>
+  <script src="js/api-client.js?v=20260531-03"></script>
+  <script src="js/main.js?v=20260531-03"></script>
   <script src="js/sw-register.js?v=19" defer></script>
 
   <script>
@@ -808,7 +808,7 @@
             return;
           }
 
-          throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260531-01 haya cargado.');
+            throw new Error('La función de exportación no está disponible. Verifica que main.js?v=20260531-03 haya cargado.');
         } catch (error) {
           console.error('[MapaBare] Error exportando JSON:', error);
           alert(error.message || 'No se pudo exportar el JSON.');

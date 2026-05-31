@@ -26,8 +26,8 @@ let pendingServiceAssignment = null;
 let pendingDiagramAssignCoords = null;
 let pendingDiagramReassignPozoId = null;
 let resolvedCtIconHtml = null;
-const APP_VERSION = 'v1.28';
-const OFFLINE_CACHE_NAME = 'pozos-cache-v38';
+const APP_VERSION = 'v1.30';
+const OFFLINE_CACHE_NAME = 'pozos-cache-v40';
 const MAP_ROUTE_FILES = ['assets/mapas/Prueba1.gpx', 'assets/mapas/2do.gpx', 'assets/mapas/trillas.gpx'];
 const MAP_ROUTE_STYLES = {
     'Prueba1.gpx': {
@@ -153,32 +153,32 @@ function normalizeEstado(estado) {
 
 function normalizeCategoria(pozo, normalizedEstado) {
     const rawCategoria = Number(pozo.categoria);
-
-    /**
-     * La categoría viene desde la PWA/API y debe respetarse.
-     * NO se recalcula por estado ni por servicio asignado.
-     */
-    if (Number.isFinite(rawCategoria) && [1, 2, 3].includes(rawCategoria)) {
-        return rawCategoria;
-    }
-
     const estado = normalizedEstado || normalizeEstado(pozo.estado);
 
-    if (estado === STATUS.ACTIVO) return 1;
-
-    if (
-        estado === STATUS.INACTIVO_SERVICIO ||
-        estado === STATUS.EN_SERVICIO ||
-        estado === STATUS.DIAGNOSTICO
-    ) {
+    // En servicio conserva su categoría anterior siempre que sea 2 o 3.
+    // Si viene como 1 o no tiene categoría válida, pasa a 2.
+    if (estado === STATUS.EN_SERVICIO) {
+        if (Number.isFinite(rawCategoria) && [2, 3].includes(rawCategoria)) {
+            return rawCategoria;
+        }
         return 2;
     }
 
-    if (
-        estado === STATUS.CANDIDATO ||
-        estado === STATUS.DIFERIDO
-    ) {
+    if (estado === STATUS.ACTIVO || estado === STATUS.DIAGNOSTICO) {
+        return 1;
+    }
+
+    if (estado === STATUS.INACTIVO_SERVICIO) {
+        return 2;
+    }
+
+    if (estado === STATUS.CANDIDATO || estado === STATUS.DIFERIDO) {
         return 3;
+    }
+
+    // Por seguridad, devolver una categoría conocida.
+    if (Number.isFinite(rawCategoria) && [1, 2, 3].includes(rawCategoria)) {
+        return rawCategoria;
     }
 
     return 3;
@@ -1863,15 +1863,16 @@ async function warmOfflineResources() {
         '/css/leaflet.css',
         '/js/leaflet.js?v=5',
         '/js/localforage.min.js?v=5',
-        '/js/api-client.js?v=20260531-01',
-        '/js/main.js?v=20260531-01',
+        '/js/api-client.js?v=20260531-03',
+        '/js/main.js?v=20260531-03',
         '/js/sw-register.js?v=19',
         '/js/firebase-init.js?v=5',
-        '/js/pozos-data.js?v=20260531-01',
+        '/js/pozos-data.js?v=20260531-03',
         '/manifest.json',
         '/icons/icono.png',
         '/icons/header.png',
         '/assets/mapas/bare-tradicional.jpg',
+
         '/assets/mapas/bare6-1.jpg',
         '/assets/mapas/bare6-2.jpg',
         '/assets/mapas/trilla-asfaltada.jpg',
@@ -2477,7 +2478,6 @@ function popupContent(p) {
     } else {
         content += `<br>
             <button onclick="openMobilePozoEdit('${p.id}')">Editar</button>
-            <button onclick="openMobileAssignServiceForPozo('${p.id}')">Servicio</button>
             <button onclick="deletePozo('${p.id}')">Eliminar</button>`;
     }
 }
