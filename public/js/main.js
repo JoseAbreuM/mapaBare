@@ -3372,70 +3372,121 @@ window.deletePozo = async function(id) {
 
 async function savePozo(e) {
     e.preventDefault();
+
     if (!requireCrudAuth()) return;
+
     const previousPozo = editId ? pozoData.find(p => p.id === editId) : null;
-    const formEstado = normalizeEstado(document.getElementById('form-estado').value);
-    const formCausaDiferido = document.getElementById('form-diferido-cause').value.trim();
-    const formZona = document.getElementById('form-zona').value.trim();
-    const formDiagrama = document.getElementById('form-diagrama').value;
-    const formNota = document.getElementById('form-nota').value.trim();
-    const formHighWaterCut = document.getElementById('form-alto-corte-agua').checked;
-    const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama) ? formDiagrama : 'sin-asignar';
-    const formFechaArranque = normalizeDateInputValue(document.getElementById('form-fecha-ultimo-servicio').value);
+
+    const formEstado = normalizeEstado(document.getElementById('form-estado')?.value);
+    const formCausaDiferido = document.getElementById('form-diferido-cause')?.value.trim() || '';
+    const formZona = document.getElementById('form-zona')?.value.trim() || '';
+    const formDiagrama = document.getElementById('form-diagrama')?.value || 'sin-asignar';
+    const formNota = document.getElementById('form-nota')?.value.trim() || '';
+    const formHighWaterCut = !!document.getElementById('form-alto-corte-agua')?.checked;
+    const formFechaArranque = normalizeDateInputValue(
+        document.getElementById('form-fecha-ultimo-servicio')?.value || null
+    );
+
+    const formId = document.getElementById('form-id')?.value.trim().toUpperCase() || '';
+    const targetDiagram = Object.prototype.hasOwnProperty.call(zones, formDiagrama)
+        ? formDiagrama
+        : 'sin-asignar';
+
+    const formLat = parseFloat(document.getElementById('form-lat')?.value);
+    const formLng = parseFloat(document.getElementById('form-lng')?.value);
+
+    const velocidadActual = normalizeNumericValue(
+        document.getElementById('form-vo')?.value
+    );
+
+    const potencial = document.getElementById('form-potencial')?.value || null;
+
     const pozo = {
         ...(previousPozo || {}),
-        id: document.getElementById('form-id').value.trim().toUpperCase(),
+
+        id: formId,
         zona: formZona || null,
         diagrama: targetDiagram,
-        coords: previousPozo ? previousPozo.coords : [
-            parseFloat(document.getElementById('form-lat').value),
-            parseFloat(document.getElementById('form-lng').value)
-        ],
-        coordsDiagrama: previousPozo ? (previousPozo.coordsDiagrama || null) : [
-            parseFloat(document.getElementById('form-lat').value),
-            parseFloat(document.getElementById('form-lng').value)
-        ],
-        coordsMapa: previousPozo ? (previousPozo.coordsMapa || (isGeoCoords(previousPozo.coords) ? previousPozo.coords : null)) : null,
+
+        coords: previousPozo
+            ? previousPozo.coords
+            : [formLat, formLng],
+
+        coordsDiagrama: previousPozo
+            ? (previousPozo.coordsDiagrama || null)
+            : [formLat, formLng],
+
+        coordsMapa: previousPozo
+            ? (previousPozo.coordsMapa || (isGeoCoords(previousPozo.coords) ? previousPozo.coords : null))
+            : null,
+
         estado: formEstado,
-        cabezal: document.getElementById('form-cabezal').value || null,
-        variador: document.getElementById('form-variador').value || null,
+
+        cabezal: document.getElementById('form-cabezal')?.value || null,
+        variador: document.getElementById('form-variador')?.value || null,
+
         /**
-         * La velocidad actual es informativa y viene desde la PWA/API.
-         * Se preserva el valor anterior y no se edita desde el mapa.
+         * Ahora la velocidad actual sí puede editarse desde el mapa.
+         * Si el input viene vacío, se guarda null.
          */
-        velocidadActual: previousPozo ? previousPozo.velocidadActual : null,
+        velocidadActual,
+
+        /**
+         * La velocidad operacional se preserva porque todavía no tienes
+         * un input separado para editarla desde este formulario.
+         */
         velocidadOperacional: previousPozo ? previousPozo.velocidadOperacional : null,
-        potencial: document.getElementById('form-potencial').value || null,
+
+        potencial,
+
         altoCorteAgua: formHighWaterCut,
+
         fechaUltimoServicio: formFechaArranque || null,
         fecha_arranque: formFechaArranque || null,
         fechaArranque: formFechaArranque || null,
         fechaArranqueLabel: formatDateDdMmYyyy(formFechaArranque),
         fecha_arranque_formateada: formatDateDdMmYyyy(formFechaArranque),
+
         nota: formNota || null,
+
         taladro: previousPozo ? previousPozo.taladro : null,
+        servicioAsignado: previousPozo ? previousPozo.servicioAsignado : null,
+        tipoServicio: previousPozo ? previousPozo.tipoServicio : null,
+        estadoAsignacion: previousPozo ? previousPozo.estadoAsignacion : null,
+
         causaDiferido: formEstado === STATUS.DIFERIDO ? formCausaDiferido : null
     };
+
     if (pozo.estado !== STATUS.DIFERIDO) {
         pozo.causaDiferido = null;
     }
+
     if (!pozo.taladro && pozo.estado === STATUS.DIFERIDO && !pozo.causaDiferido) {
         alert('Debe indicar la causa para estado diferido');
-        document.getElementById('form-diferido-cause').focus();
+        document.getElementById('form-diferido-cause')?.focus();
         return;
     }
+
     if (!pozo.id) {
         alert('Debe indicar un ID');
         return;
     }
+
     if (!editId && pozoData.find(p => p.id === pozo.id)) {
         alert('ID ya existe');
         return;
     }
+
     const normalizedPozo = normalizePozo(pozo);
 
     if (editId) {
         const index = pozoData.findIndex(p => p.id === editId);
+
+        if (index === -1) {
+            alert('Pozo no encontrado para actualizar.');
+            return;
+        }
+
         pozoData[index] = normalizedPozo;
     } else {
         pozoData.push(normalizedPozo);
@@ -3448,28 +3499,46 @@ async function savePozo(e) {
         try {
             await persistPozosAndRefresh(normalizedPozo);
         } catch (error) {
+            console.warn('[MapaBare] No se pudo guardar pozo en PWA API. Queda pendiente:', error);
+
             await enqueueApiSync({
                 type: 'pozo-update',
                 pozoId: normalizedPozo.id,
                 pozo: normalizedPozo
             });
+
+            await markDataDirty();
         }
     } else if (navigator.onLine && isDbReady()) {
         await syncData();
+    } else {
+        await enqueueApiSync({
+            type: 'pozo-update',
+            pozoId: normalizedPozo.id,
+            pozo: normalizedPozo
+        });
     }
 
     const savedDiagram = getPozoDiagram(normalizedPozo);
+
     if (savedDiagram !== 'sin-asignar') {
-        loadZone(savedDiagram);
+        await loadZone(savedDiagram);
         renderMarkers(savedDiagram);
-        document.getElementById('zone-select').value = savedDiagram;
-        document.getElementById('mobile-zone-select').value = savedDiagram;
+
+        const zoneSelect = document.getElementById('zone-select');
+        const mobileZoneSelect = document.getElementById('mobile-zone-select');
+
+        if (zoneSelect) zoneSelect.value = savedDiagram;
+        if (mobileZoneSelect) mobileZoneSelect.value = savedDiagram;
     } else {
         renderActiveMarkers();
     }
+
     updateDatalist();
     updateStats();
+
     console.log('Pozo guardado:', normalizedPozo);
+
     closeForm();
 }
 

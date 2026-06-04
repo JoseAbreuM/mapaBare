@@ -405,42 +405,75 @@
     };
   }
 
-  function normalizePozoToApi(pozo = {}) {
+function normalizePozoToApi(pozo = {}) {
     const fechaArranque = normalizeDateInputValue(
-      pozo.fechaUltimoServicio ??
-      pozo.fechaArranque ??
-      pozo.fecha_arranque ??
-      null
+        pozo.fechaUltimoServicio ??
+        pozo.fechaArranque ??
+        pozo.fecha_arranque ??
+        null
+    );
+
+    const velocidadActual = normalizeNumber(
+        pozo.velocidadActual ??
+        pozo.vel_actual ??
+        pozo.velocidad_actual ??
+        pozo.rpm ??
+        null
+    );
+
+    const velocidadOperacional = normalizeNumber(
+        pozo.velocidadOperacional ??
+        pozo.vel_operacional ??
+        pozo.velocidad_operacional ??
+        pozo.vo ??
+        null
     );
 
     return {
-      codigo: pozo.id,
-      id_pozo: pozo.dbId || pozo.idPozo || pozo.id_pozo || null,
-      estado: normalizeEstadoForApi(pozo.estado),
-      categoria: pozo.categoria,
+        codigo: pozo.id,
+        id_pozo: pozo.dbId || pozo.idPozo || pozo.id_pozo || null,
 
-      area: pozo.zona || pozo.area,
-      zona: pozo.zona || pozo.area,
+        estado: normalizeEstadoForApi(pozo.estado),
+        categoria: pozo.categoria,
 
-      diagrama: pozo.diagrama,
-      coordsMapa: pozo.coordsMapa || null,
-      coordsDiagrama: pozo.coordsDiagrama || null,
+        area: pozo.zona || pozo.area,
+        zona: pozo.zona || pozo.area,
 
-      potencial: pozo.potencial,
-      nota: cleanNote(pozo.nota),
-      notaOperativa: cleanNote(pozo.nota),
+        diagrama: pozo.diagrama,
+        coordsMapa: pozo.coordsMapa || null,
+        coordsDiagrama: pozo.coordsDiagrama || null,
 
-      cabezal: pozo.cabezal,
-      variador: pozo.variador,
+        potencial: pozo.potencial,
+        nota: cleanNote(pozo.nota),
+        notaOperativa: cleanNote(pozo.nota),
 
-      altoCorteAgua: pozo.altoCorteAgua,
-      vistaMapa: pozo.vistaMapa,
+        cabezal: pozo.cabezal || null,
+        variador: pozo.variador || null,
 
-      fechaUltimoServicio: fechaArranque,
-      fechaArranque,
-      fecha_arranque: fechaArranque
+        /**
+         * Velocidad actual enviada a la PWA.
+         * Se mandan varios alias para que el backend pueda tomar cualquiera.
+         */
+        velocidadActual,
+        vel_actual: velocidadActual,
+        velocidad_actual: velocidadActual,
+        rpm: velocidadActual,
+
+        /**
+         * Velocidad operacional.
+         */
+        velocidadOperacional,
+        vel_operacional: velocidadOperacional,
+        velocidad_operacional: velocidadOperacional,
+
+        altoCorteAgua: pozo.altoCorteAgua,
+        vistaMapa: pozo.vistaMapa,
+
+        fechaUltimoServicio: fechaArranque,
+        fechaArranque,
+        fecha_arranque: fechaArranque
     };
-  }
+}
 
   function normalizeServicioPayload({
     pozo,
